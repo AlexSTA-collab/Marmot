@@ -1,0 +1,71 @@
+/* ---------------------------------------------------------------------
+ *                                       _
+ *  _ __ ___   __ _ _ __ _ __ ___   ___ | |_
+ * | '_ ` _ \ / _` | '__| '_ ` _ \ / _ \| __|
+ * | | | | | | (_| | |  | | | | | | (_) | |_
+ * |_| |_| |_|\__,_|_|  |_| |_| |_|\___/ \__|
+ *
+ * Unit of Strength of Materials and Structural Analysis
+ * University of Innsbruck,
+ * 2020 - today
+ *
+ * festigkeitslehre@uibk.ac.at
+ *
+ * Alexandros Stathas alexandros.stathas@boku.ac.at
+ *
+ * This file is part of the MAteRialMOdellingToolbox (marmot).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * The full text of the license can be found in the file LICENSE.md at
+ * the top level directory of marmot.
+ * ---------------------------------------------------------------------
+ */
+#pragma once
+#include "Marmot/MarmotMaterialHypoElastic.h"
+#include "Marmot/MarmotStateVarVectorManager.h"
+#include "Marmot/MarmotTypedefs.h"
+#include "Marmot/interface_material_helper_functions.h"
+
+namespace Marmot::Materials {
+
+  class InterfaceVonMisesModel : public MarmotMaterialHypoElastic {
+
+  public:
+    using MarmotMaterialHypoElastic::MarmotMaterialHypoElastic;
+
+    void computeStress( double* stress,
+                        double* dStress_dStrain,
+
+                        const double* dStrain,
+                        const double* timeOld,
+                        const double  dT,
+                        double&       pNewDT ) override;
+
+    double getDensity() override;
+
+    class InterfaceVonMisesModelStateVarManager : public MarmotStateVarVectorManager {
+
+    public:
+      inline const static auto layout = makeLayout( {
+        { .name = "kappa", .length = 1 },
+      } );
+
+      double& kappa;
+
+      InterfaceVonMisesModelStateVarManager( double* theStateVarVector )
+        : MarmotStateVarVectorManager( theStateVarVector, layout ), kappa( find( "kappa" ) ){};
+    };
+    std::unique_ptr< InterfaceVonMisesModelStateVarManager > managedStateVars;
+
+    int getNumberOfRequiredStateVars() override { return InterfaceVonMisesModelStateVarManager::layout.nRequiredStateVars; }
+
+    void assignStateVars( double* stateVars, int nStateVars ) override;
+
+    StateView getStateView( const std::string& result ) override;
+  };
+
+} // namespace Marmot::Materials

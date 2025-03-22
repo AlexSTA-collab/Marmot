@@ -1,0 +1,11 @@
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/Marmot.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/TestMarmotAutomaticDifferentiation.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/TestMarmotNumericalIntegration.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/TestLinearElastic.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/test.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/edit_cache.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/rebuild_cache.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/list_install_components.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/install.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/install/local.dir
+/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/install/strip.dir
