@@ -35,13 +35,6 @@ namespace Marmot::Materials {
     return this->materialProperties[10];
   }
 
-  //double InterfaceVonMisesModel::getNormal()
-  //{
-  //  if ( this->nMaterialProperties < 12 )
-  //    throw std::runtime_error( MakeString() << __PRETTY_FUNCTION__ << ": No normal given! nMaterialProperties < 12" );
-  //  return this->materialProperties[11];
-  //}
-
   void InterfaceVonMisesModel::computeStress( double*  force,
                                      double*       surface_stress,
                                      double*       dStress_dStrain,
@@ -69,11 +62,10 @@ namespace Marmot::Materials {
 
     // map to force, surface stress, displacement, strain, normal and tangent stiffness 
     
-    mVector3d  F( force, surface_stress );
-    mVector6d  S( force, surface_stress );
-    mMatrix6d  dS_dE( dStress_dStrain );
+    mVector6d  F( force );
+    mVector18d  S( surface_stress );
+    mMatrix21d  dS_dE( dStress_dStrain );
     
-    mMatrix15d  dS_dE( dStress_dStrain ); //dimensions x(3+6+6)
     const auto dE = Map< const Vector9d >( dStrain );
 
     // compute elastic stiffness
@@ -88,78 +80,7 @@ namespace Marmot::Materials {
       dS_dE = Cel;
       return;
     }
-
-    // get current hardening variable
-    double& kappa = managedStateVars->kappa;
-
-    // isotropic hardening law
-    auto fy = [&]( double kappa_ ) {
-      return yieldStress + HLin * kappa_ + deltaYieldStress * ( 1. - std::exp( -delta * kappa_ ) );
-    };
-
-    // derivative of fy wrt dKappa
-    auto dfy_ddKappa = [&]( double kappa_ ) { return HLin + deltaYieldStress * delta * std::exp( -delta * kappa_ ); };
-
-    // yield function
-    auto f = [&]( double rho_, double kappa_ ) { return rho_ - Constants::sqrt2_3 * fy( kappa_ ); };
-
-    // compute elastic predictor
-    const Vector6d trialStress = S + Cel * dE;
-
-    using namespace ContinuumMechanics::VoigtNotation;
-    const double rhoTrial = std::sqrt( 2. * Invariants::J2( trialStress ) );
-
-    if ( f( rhoTrial, kappa ) >= 0.0 ) {
-      // plastic step
-      const double G = E / ( 2. * ( 1. + nu ) );
-
-      auto g = [&]( double deltaKappa ) {
-        return rhoTrial - Constants::sqrt6 * G * deltaKappa - Constants::sqrt2_3 * fy( kappa + deltaKappa );
-      };
-
-      // variables for return mapping
-      int    counter    = 0;
-      double dKappa     = 0;
-      double dLambda    = 0;
-      double dg_ddKappa = 0;
-
-      // compute return mapping direction
-      Vector6d n = ContinuumMechanics::VoigtNotation::IDev * trialStress / rhoTrial;
-
-      while ( std::abs( g( dKappa ) ) > VonMisesConstants::innerNewtonTol ) {
-
-        if ( counter == VonMisesConstants::nMaxInnerNewtonCycles ) {
-          pNewDT = 0.5;
-          return;
-        }
-        // compute derivative of g wrt kappa
-        dg_ddKappa = -Constants::sqrt6 * G - Constants::sqrt2_3 * dfy_ddKappa( kappa + dKappa );
-
-        // update dKappa and iteration counter
-        dKappa -= g( dKappa ) / dg_ddKappa;
-        counter += 1;
-      }
-
-      dLambda = Constants::sqrt3_2 * dKappa;
-
-      // update material state
-      S     = trialStress - 2. * G * dLambda * n;
-      kappa = kappa + dKappa;
-
-      // compute consistent tangent in Voigt Notation
-      Matrix6d IDevHalfShear = ContinuumMechanics::VoigtNotation::IDev;
-      IDevHalfShear.block< 6, 3 >( 0, 3 ) *= 0.5;
-
-      dS_dE = Cel -
-              2. * G * ( 1. / ( 1. + dfy_ddKappa( kappa ) / ( 3. * G ) ) - 2. * G * dLambda / rhoTrial ) *
-                ( n * n.transpose() ) -
-              4. * G * G * dLambda / rhoTrial * IDevHalfShear;
-    }
-    else {
-      // elastic step
-      S     = trialStress;
-      dS_dE = Cel;
-    }
-  }
-
+    //elastic step
+    S     = S + Cel * dE;
+    dS_dE = Cel;
 } // namespace Marmot::Materials

@@ -95,10 +95,12 @@ Eigen::Matrix<double,9,9> convert4thOrderTensorToMatrix(const Tensor4D& tensor);
 Eigen::Matrix<double,9,3> convert3rdOrderTensorToMatrix(const Tensor3D& tensor);
 Eigen::Matrix<double,3,3>convert2ndOrderTensorToMatrix(const Tensor2D& tensor);
 
-Eigen::Matrix<double,21,21> calculate_interface_material_parameters(double& E_M,
-                                                                    double& nu_M,
-                                                                    double& E_I,
-                                                                    double& nu_I,
-                                                                    double& E_0,
-                                                                   double& nu_0);
+std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D>  calculate_interface_material_parameters(
+                                                                    const Tensor1D& normal,
+                                                                    const double& E_M,
+                                                                    const double& nu_M,
+                                                                    const double& E_I,
+                                                                    const double& nu_I,
+                                                                    const double& E_0,
+                                                                    const double& nu_0);
 

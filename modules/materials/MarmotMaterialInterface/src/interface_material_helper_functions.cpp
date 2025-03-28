@@ -38,7 +38,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <Marmot/interface_material_helper_functions.h>
+#include "../include/Marmot/interface_material_helper_functions.h"
 
 using namespace Eigen;
 using namespace Fastor;
@@ -95,7 +95,7 @@ std::tuple<const Tensor4D, Tensor4D, const Tensor4D, Tensor4D, Tensor2D>interfac
 
   // **Compute Q = einsum("aibjq,ijq->abq", L_expanded, N)**
   Tensor2D Q = Fastor::einsum<Fastor::Index<a,i,b,j>,Fastor::Index<i,j>,Fastor::OIndex<a,b>>(L, N);
-  Tensor2D G = compute_inv(I, Q );
+Tensor2D G = compute_inv(I, Q );
 
   Tensor4D A = Fastor::einsum<Fastor::Index<a,b>,Fastor::Index<i,j>,Fastor::OIndex<a,i,b,j>>(G, N );
   Tensor4D LA = Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(L,A);
@@ -342,7 +342,7 @@ Eigen::Matrix<double, 9, 9> create_isotropic_elasticity_tensor(double E, double 
     return C_voigt_full;
 }
 
-Eigen::Matrix<double,21,21> calculate_interface_material_parameters(double& E_M,
+std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D> calculate_interface_material_parameters(double& E_M,
                                                                                            double& nu_M,
                                                                                            double& E_I,
                                                                                            double& nu_I,
@@ -384,29 +384,18 @@ Eigen::Matrix<double,21,21> calculate_interface_material_parameters(double& E_M,
     // Step 3: Print one sample value
       
     auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculate_material_matrices(normal, I, J, N, T, C_0_aibj, C_M_aibj, C_I_aibj, S_0_aibj, S_M_aibj, S_I_aibj);
-    std:: cout << "Z:" << Z << std::endl;
-    std:: cout << "H_inv:" << H_inv << std::endl;
-    std:: cout << "H_inv_nF:" << H_inv_nF << std::endl;
-    std:: cout << "Yn_H_inv_nF:" << Yn_H_inv_Fn << std::endl;
-
-    Eigen::Matrix<double, 21, 21> Ce = Eigen::Matrix<double, 21,21>::Zero();
-
-    Ce.block(0,0,9,9) = convert4thOrderTensorToMatrix(Z);
-    Ce.block(12,12,9,9) = convert4thOrderTensorToMatrix(Yn_H_inv_Fn);
-    Ce.block(0,9,9,3) = convert3rdOrderTensorToMatrix(H_inv_nF);
-    Ce.block(9,9,3,3) = convert2ndOrderTensorToMatrix(H_inv);
     
-    return Ce; 
+    return {Z, H_inv, H_inv_nF, Yn_H_inv_Fn}; 
 }
 
-int main() {
-    double E_M= 200.0;  // Young's modulus (GPa)
-    double nu_M = 0.3;   // Poisson's ratio
-    double E_I = 200.0;
-    double nu_I = 0.3;
-    double E_0 = 200.0*0.1;
-    double nu_0 = 0.3;
+//int main() {
+//    double E_M= 200.0;  // Young's modulus (GPa)
+//    double nu_M = 0.3;   // Poisson's ratio
+//    double E_I = 200.0;
+//    double nu_I = 0.3;
+//    double E_0 = 200.0*0.1;
+//    double nu_0 = 0.3;
       
-    auto Ce = calculate_interface_material_parameters(E_M, nu_M, E_I, nu_I, E_0, nu_0); 
-    return 0;
-}
+//    auto Ce = calculate_interface_material_parameters(E_M, nu_M, E_I, nu_I, E_0, nu_0); 
+//    return 0;
+//}
