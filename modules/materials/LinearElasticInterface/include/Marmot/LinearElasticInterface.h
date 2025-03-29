@@ -63,6 +63,5 @@ namespace Marmot::Materials {
 
     int getNumberOfRequiredStateVars() { return 0; }
 
-    double getDensity();
   };
 } // namespace Marmot::Materials

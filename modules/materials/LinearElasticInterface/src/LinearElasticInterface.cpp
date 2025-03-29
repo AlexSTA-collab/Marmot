@@ -1,4 +1,4 @@
-#include "../include/Marmot/LinearElasticInterface.h"
+#include "Marmot/LinearElasticInterface.h"
 #include "Marmot/MarmotElasticity.h"
 #include "Marmot/MarmotJournal.h"
 #include "Marmot/MarmotMath.h"
@@ -7,7 +7,7 @@
 #include "Marmot/MarmotVoigt.h"
 
 #include "Fastor/Fastor.h"
-#include "../include/Marmot/interface_material_helper_functions.h"
+#include "Marmot/interface_material_helper_functions.h"
 
 namespace Marmot::Materials {
 
@@ -74,8 +74,8 @@ namespace Marmot::Materials {
     //elastic step
     enum {i,j,k,l};
     
-    Tensor1D jumpU = dU(Fastor::seq(0,3))-dU(Fastor::seq(3,Fastor::last));
-    Fastor::Tensor<double, 9,1> average_dSurface_strain = 1./2.*(dSurface_strain(Fastor::seq(0,9))+dSurface_strain(Fastor::seq(9,Fastor::last)));
+    Tensor1D jumpU = dU(Fastor::seq(0,3),0)-dU(Fastor::seq(3,Fastor::last),0);
+    Fastor::Tensor<double, 9,1> average_dSurface_strain = 1./2.*(dSurface_strain(Fastor::seq(0,9),0)+dSurface_strain(Fastor::seq(9,Fastor::last),0));
     auto average_dSurface_strain_reshape = Fastor::reshape<3,3>(average_dSurface_strain);
     force     += Fastor::einsum<Fastor::Index<i,j>,Fastor::Index<j>,Fastor::OIndex<i>>(H_inv_ij, jumpU);
     force     += Fastor::einsum<Fastor::Index<i,j,k>,Fastor::Index<j,k>,Fastor::OIndex<i>>(H_inv_nF_ijk, average_dSurface_strain_reshape);

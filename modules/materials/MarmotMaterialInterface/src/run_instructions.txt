@@ -7,11 +7,16 @@ g++ -I /home/alexsta1993/alexandros/eigen \
     
 ./material_helper_test
 
-~/alexandros/Marmot/modules/materials/MarmotMaterialInterface/src$ 
+~/alexandros/Marmot/modules/materials/LinearElasticInterface/src$ 
 g++ -I /home/alexsta1993/alexandros/eigen \
     -I /home/alexsta1993/alexandros/Fastor \
-    -I /home/alexsta1993/alexandros/Marmot/modules/materials/MarmotMaterialInterface/include \
-    interface_material_helper_functions.cpp -o MarmotInterfaceMaterial_test
+    -I /home/alexsta1993/alexandros/autodiff \
+    -I /home/alexsta1993/alexandros/Marmot/include \
+    -I /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include \
+    -I /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include \
+    -I /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include \
+    /home/alexsta1993/alexandros/Marmot/src/MarmotMaterial.cpp ./LinearElasticInterface.cpp ./interface_material_helper_functions.cpp \
+    -o LinearElasticInterface_test
 
     
 ./MarmotInterfaceMaterial_test
