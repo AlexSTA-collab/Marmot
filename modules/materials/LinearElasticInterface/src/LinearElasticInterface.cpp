@@ -44,7 +44,7 @@ namespace Marmot::Materials {
     const double& nu_I = this->materialProperties[3];
     const double& E_0  = this->materialProperties[4];
     const double& nu_0 = this->materialProperties[5];
-    
+
     // map to force, surface stress, displacement, surface strain, normal and tangent stiffness 
     // use Fastor because we really need to use the einsum  
     Fastor::Tensor<double, 3>  force_ftensor(force);
@@ -62,6 +62,10 @@ namespace Marmot::Materials {
     std:: cout << "dS_dE:" << dStress_dStrain_ftensor << std::endl;
     std:: cout << "force:" << force_ftensor << std::endl;
     std:: cout << "surface_stress:" << surface_stress_ftensor << std::endl;
+
+    std:: cout << "dU:" << dU_ftensor << std::endl;
+    std:: cout << "dSurface_strain:" << dSurface_strain_ftensor << std::endl;
+    std:: cout << "normal:" << normal_ftensor << std::endl;
 
     auto [Z_ijkl, H_inv_ij, H_inv_nF_ijk, Yn_H_inv_Fn_ijkl] = calculate_interface_material_parameters(normal_ftensor, E_M, nu_M, E_I, nu_I, E_0, nu_0); 
     

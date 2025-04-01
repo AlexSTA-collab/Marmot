@@ -1,0 +1,12 @@
+~/alexandros_development/Marmot/modules/materials/LinearElasticInterface/src$ 
+g++ -I ~/alexandros/eigen \
+    -I ~/alexandros/Fastor \
+    -I ~/alexandros/autodiff \
+    -I ~/alexandros_development/Marmot/include \
+    -I ~/alexandros_development/Marmot/modules/core/MarmotMechanicsCore/include \
+    -I ~/alexandros_development/Marmot/modules/core/MarmotMathCore/include \
+    -I ~/alexandros_development/Marmot/modules/materials/LinearElasticInterface/include \
+    ~/alexandros_development/Marmot/src/MarmotMaterial.cpp ./LinearElasticInterface.cpp ./interface_material_helper_functions.cpp \
+    -o LinearElasticInterface_test
+    
+./MarmotInterfaceMaterial_test

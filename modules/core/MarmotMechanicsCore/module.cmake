@@ -9,4 +9,6 @@ list(APPEND publicheaders
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotMaterialHyperElastic.h" 
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotMaterialGradientEnhancedMechanical.h" 
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotVoigt.h" 
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotMaterialHypoElasticInterface.h" 
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotMaterialMechanicalInterface.h" 
     )
