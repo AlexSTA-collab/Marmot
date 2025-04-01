@@ -7,6 +7,16 @@
 
 using namespace Eigen;
 
+void MarmotMaterialMechanicalInterface::computeStress( double*  force,
+                                                        double*  surface_stress,
+                                                        double* dStress_dStrain,
+                                                        const double* dU,
+                                                        const double* dSurface_strain,
+                                                        const double* normal,
+                                                        const double* timeOld,
+                                                        const double  dT,
+                                                        double&       pNewDT)
+{};
 // void MarmotMaterialHypoElasticInterface::computeStress( Tensor1D&  force,
 //                        Tensor2D&  surface_stress,
 //                        Fastor::Tensor<double, 21,21>& dStress_dStrain,

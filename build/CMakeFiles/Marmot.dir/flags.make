@@ -4,7 +4,7 @@
 # compile CXX with /home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++
 CXX_DEFINES = -DMarmot_EXPORTS
 
-CXX_INCLUDES = -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotFiniteElementCore/include -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include -I/home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/include -I/home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/include -I/home/alexsta1993/alexandros/Marmot/modules/elements/DisplacementFiniteElement/include -I/home/alexsta1993/alexandros/Marmot/include
+CXX_INCLUDES = -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotFiniteElementCore/include -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include -I/home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include -I/home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/include -I/home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include -I/home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/include -I/home/alexsta1993/alexandros/Marmot/modules/elements/DisplacementFiniteElement/include -I/home/alexsta1993/alexandros/Marmot/include
 
 CXX_FLAGS = -fvisibility-inlines-hidden -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/alexsta1993/miniforge3/envs/alexandros/include -Wall -Wextra -Wno-unused-parameter -Wno-long-long -pedantic -O3  -O3 -DNDEBUG -std=gnu++20 -fPIC
 

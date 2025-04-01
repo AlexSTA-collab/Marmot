@@ -871,6 +871,30 @@ modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.s
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.s
 
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.o: modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.o
+
+# target to build an object file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o
+
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.i: modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.i
+
+# target to preprocess a source file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i
+
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.s: modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.s
+
+# target to generate assembly for a file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s
+
 modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.o: modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.o
 
@@ -918,6 +942,30 @@ modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.s: modules/core/Ma
 modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.s
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.s
+
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.o: modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.o
+
+# target to build an object file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o
+
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.i: modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.i
+
+# target to preprocess a source file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i
+
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.s: modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.s
+
+# target to generate assembly for a file
+modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s
 
 modules/core/MarmotMechanicsCore/src/MarmotPronySeries.o: modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotPronySeries.o
@@ -1110,6 +1158,78 @@ modules/materials/LinearElastic/test/test.s: modules/materials/LinearElastic/tes
 modules/materials/LinearElastic/test/test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/TestLinearElastic.dir/build.make CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.s
 .PHONY : modules/materials/LinearElastic/test/test.cpp.s
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.o: modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.o
+
+# target to build an object file
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.i: modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.i
+
+# target to preprocess a source file
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.s: modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.s
+
+# target to generate assembly for a file
+modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.o: modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.o
+
+# target to build an object file
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.i: modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.i
+
+# target to preprocess a source file
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i
+
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.s: modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.s
+
+# target to generate assembly for a file
+modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
+
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o
+
+# target to build an object file
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
+
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i
+
+# target to preprocess a source file
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
+
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s
+
+# target to generate assembly for a file
+modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
+.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
 
 modules/materials/VonMises/src/VonMises.o: modules/materials/VonMises/src/VonMises.cpp.o
 .PHONY : modules/materials/VonMises/src/VonMises.o
@@ -1377,12 +1497,18 @@ help:
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.s"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.o"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.i"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.s"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.s"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.s"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.o"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.i"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.s"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotPronySeries.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotPronySeries.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotPronySeries.s"
@@ -1407,6 +1533,15 @@ help:
 	@echo "... modules/materials/LinearElastic/test/test.o"
 	@echo "... modules/materials/LinearElastic/test/test.i"
 	@echo "... modules/materials/LinearElastic/test/test.s"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterface.o"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterface.i"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterface.s"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.o"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.i"
+	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.s"
+	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o"
+	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i"
+	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s"
 	@echo "... modules/materials/VonMises/src/VonMises.o"
 	@echo "... modules/materials/VonMises/src/VonMises.i"
 	@echo "... modules/materials/VonMises/src/VonMises.s"

@@ -492,10 +492,24 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoEla
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.s"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.s
 
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o: CMakeFiles/Marmot.dir/flags.make
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp
+
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp > CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.i
+
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.s
+
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.i: cmake_force
@@ -509,7 +523,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoEla
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.i: cmake_force
@@ -520,10 +534,24 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechani
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.s"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.s
 
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o: CMakeFiles/Marmot.dir/flags.make
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp
+
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp > CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.i
+
+CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.s
+
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.i: cmake_force
@@ -537,7 +565,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.i: cmake_force
@@ -551,7 +579,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.s: 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.i: cmake_force
@@ -565,7 +593,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.s: cm
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o -MF CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o.d -o CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp
 
 CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.i: cmake_force
@@ -579,7 +607,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.s:
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/src/LinearElastic.cpp
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/src/LinearElastic.cpp
 
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.i: cmake_force
@@ -593,7 +621,7 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.s: c
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp
 
 CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.i: cmake_force
@@ -604,10 +632,52 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistrat
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.s"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp -o CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.s
 
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o: CMakeFiles/Marmot.dir/flags.make
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp > CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.i
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.s
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o: CMakeFiles/Marmot.dir/flags.make
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp > CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.i
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o: CMakeFiles/Marmot.dir/flags.make
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp > CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
+
+CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s"
+	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp -o CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
+
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/src/VonMises.cpp
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/src/VonMises.cpp
 
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.i: cmake_force
@@ -621,7 +691,7 @@ CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.s: cmake_force
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/src/VonMisesRegistration.cpp
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building CXX object CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o -MF CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o.d -o CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/materials/VonMises/src/VonMisesRegistration.cpp
 
 CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.i: cmake_force
@@ -635,7 +705,7 @@ CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.s:
 CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o: CMakeFiles/Marmot.dir/flags.make
 CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o: /home/alexsta1993/alexandros/Marmot/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp
 CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o: CMakeFiles/Marmot.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building CXX object CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building CXX object CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o"
 	/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o -MF CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o.d -o CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o -c /home/alexsta1993/alexandros/Marmot/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp
 
 CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.i: cmake_force
@@ -678,14 +748,19 @@ Marmot_OBJECTS = \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHyperElastic.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElastic.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.o" \
+"CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o" \
+"CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o" \
+"CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o" \
+"CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o" \
+"CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o" \
 "CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o"
@@ -723,21 +798,26 @@ lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/Mar
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHyperElastic.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElastic.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticAD.cpp.o
+lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticInterface.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoElasticNonLocal.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanical.cpp.o
+lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialMechanicalInterface.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotPronySeries.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotUtility.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotVoigt.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElastic.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/LinearElastic/src/LinearElasticRegistration.cpp.o
+lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterface.cpp.o
+lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.o
+lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMises.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/materials/VonMises/src/VonMisesRegistration.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/modules/elements/DisplacementFiniteElement/src/DisplacementFiniteElementRegistration.cpp.o
 lib/libMarmot.so: CMakeFiles/Marmot.dir/build.make
 lib/libMarmot.so: CMakeFiles/Marmot.dir/compiler_depend.ts
 lib/libMarmot.so: CMakeFiles/Marmot.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Linking CXX shared library lib/libMarmot.so"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Linking CXX shared library lib/libMarmot.so"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Marmot.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
