@@ -31,7 +31,7 @@ CMAKE_BUILD_TYPE:STRING=
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
 //CXX compiler
-CMAKE_CXX_COMPILER:FILEPATH=/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++
+CMAKE_CXX_COMPILER:STRING=/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-c++
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -81,7 +81,7 @@ CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=/home/alexsta1993/alexandros/Marmot/build/CMakeFiles/pkgRedirects
 
 //Fortran compiler
-CMAKE_Fortran_COMPILER:FILEPATH=/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-gfortran
+CMAKE_Fortran_COMPILER:STRING=/home/alexsta1993/miniforge3/envs/alexandros/bin/x86_64-conda-linux-gnu-gfortran
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler

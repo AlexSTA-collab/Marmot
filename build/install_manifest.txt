@@ -18,3 +18,6 @@
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialHyperElastic.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialGradientEnhancedMechanical.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotVoigt.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialHypoElasticInterface.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialMechanicalInterface.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/LinearElasticInterface.h

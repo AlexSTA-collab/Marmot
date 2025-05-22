@@ -95,7 +95,7 @@ std::tuple<const Tensor4D, Tensor4D, const Tensor4D, Tensor4D, Tensor2D>interfac
 
   // **Compute Q = einsum("aibjq,ijq->abq", L_expanded, N)**
   Tensor2D Q = Fastor::einsum<Fastor::Index<a,i,b,j>,Fastor::Index<i,j>,Fastor::OIndex<a,b>>(L, N);
-Tensor2D G = compute_inv(I, Q );
+  Tensor2D G = compute_inv(I, Q );
 
   Tensor4D A = Fastor::einsum<Fastor::Index<a,b>,Fastor::Index<i,j>,Fastor::OIndex<a,i,b,j>>(G, N );
   Tensor4D LA = Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(L,A);
@@ -139,7 +139,11 @@ std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D> calculate_material_matrices(
     Tensor4D B_I ;
     Tensor4D M_I ;
     Tensor4D L_I ;
-
+    
+    //std:: cout << "C_0_aibj:" << C_0_aibj << std::endl;
+    //std:: cout << "C_M_aibj:" << C_M_aibj << std::endl;
+    //std:: cout << "C_I_aibj:" << C_I_aibj << std::endl;
+    
     std::tie(M_0, B_0, L_0, A_0, G_0) = interface_geometry_system_couplings(
         I, J, N, T, C_0_aibj, S_0_aibj
     );
@@ -152,6 +156,17 @@ std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D> calculate_material_matrices(
         I, J, N, T, C_I_aibj, S_I_aibj
     );
 
+    //std:: cout << "M_M:" << M_M << std::endl;
+    //std:: cout << "B_M:" << B_M << std::endl;
+    
+    //std:: cout << "M_I:" << M_I << std::endl;
+    //std:: cout << "B_I:" << B_I << std::endl;
+
+    //std:: cout << "M_0:" << M_0 << std::endl;
+    //std:: cout << "B_0:" << B_0 << std::endl;
+    
+    //std:: cout<<"F_1st:" << Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(M_0, B_0) << std::endl;
+    
     Tensor4D F = 2.0 * Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(M_0, B_0);
     F-= Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(M_M, B_M);
     F-= Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(M_I, B_I);
@@ -163,15 +178,23 @@ std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D> calculate_material_matrices(
     assert_equivalent_F_Falt_Y(F , Y , A_0 , L_0 , A_M , L_M , A_I , L_I );
 
     Tensor2D H = 2.0 * G_0 - G_M - G_I;
+    
+    //std:: cout << "from material B_M:" << B_M << std::endl;
+    //std:: cout << "from material B_I:" << B_I << std::endl;
+    //std:: cout << "from material B_0:" << B_0 << std::endl;
+    
     Tensor4D Z = B_M + B_I - 2.0 * B_0;
-    Tensor2D H_inv = compute_inv(I, H ); 
-
+    Tensor2D H_inv = compute_inv(I, H );
+    //std:: cout << "from material H_inv:" << H_inv << std::endl;    
+    //Tensor2D I_approx = H * H_inv;
+    //std:: cout << "I_approx H H_inv:" << I_approx << std::endl;
+    
     Tensor3D nF = Fastor::einsum<Fastor::Index<a>,Fastor::Index<a,i,b,j>,Fastor::OIndex<i,b,j>>(normal, F);
     Tensor3D Fn = Fastor::einsum<Fastor::Index<a,i,b,j>,Fastor::Index<j>,Fastor::OIndex<a,i,b>>(F, normal);
     Tensor3D Yn = Fastor::einsum<Fastor::Index<a,i,b,j>,Fastor::Index<j>,Fastor::OIndex<a,i,b>>(Y, normal);
     Tensor3D H_inv_nF = Fastor::einsum<Fastor::Index<a,b>,Fastor::Index<b,i,j>,Fastor::OIndex<a,i,j>>(H_inv, nF);
     Tensor4D Yn_H_inv_Fn = Fastor::einsum<Fastor::Index<a,i,m>,Fastor::Index<m,n>,Fastor::Index<n,b,j>,Fastor::OIndex<a,i,b,j>>(Yn, H_inv, Fn);
-
+    //std:: cout << "F:" << F << std::endl;
     return std::make_tuple(Z, H_inv, H_inv_nF, Yn_H_inv_Fn);
   }
 
@@ -190,10 +213,11 @@ void assert_consistent_arrays_indices(
     Tensor4D JI = Fastor::einsum<Fastor::Index<a,b>,Fastor::Index<i,j>,Fastor::OIndex<a,i,b,j>>(J, I);
     Tensor4D LM = Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(L, M);
 
-    Fastor::print(L);
-    Fastor::print(M);
-    Fastor::print(LM);
-    Fastor::print(JI);
+    //Fastor::print(L);
+    //Fastor::print(M);
+    //Fastor::print(LM);
+    //Fastor::print(JI);
+  
   //Tensor4D ML = Fastor::einsum<Fastor::Index<a,i,m,n>,Fastor::Index<m,n,b,j>,Fastor::OIndex<a,i,b,j>>(M, L);
    
     double atol = 1e-8;
@@ -212,11 +236,11 @@ void assert_consistent_arrays_indices(
   
     double max_diff2 = (LA_plus_BM_flat-JI_flat).cwiseAbs().maxCoeff();
     if (max_diff2 > atol){
-      std::cerr << "Arrays LA+BM, JIare not equal within the tolerance."<< std::endl;
+      std::cerr << "Arrays LA+BM, JI are not equal within the tolerance."<< std::endl;
       std::abort(); 
   }
 
-    std::cout<<"Passed the assertion about proper definition of matrices A, B";
+    //std::cout<<"Passed the assertion about proper definition of matrices A, B";
 }
 
 void assert_equivalent_F_Falt_Y(
