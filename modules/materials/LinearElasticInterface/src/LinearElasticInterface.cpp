@@ -24,7 +24,7 @@ namespace Marmot::Materials {
   LinearElasticInterface::LinearElasticInterface( const double* materialProperties, int nMaterialProperties, int materialNumber )
     : MarmotMaterialHypoElasticInterface::MarmotMaterialHypoElasticInterface( materialProperties, nMaterialProperties, materialNumber )
   {
-    assert( nMaterialProperties == 6 || nMaterialProperties == 8 || nMaterialProperties == 12 );
+    assert( nMaterialProperties == 7 || nMaterialProperties == 9 || nMaterialProperties == 13 );
   }
 
   void LinearElasticInterface::computeStress( double*  force,
@@ -44,6 +44,7 @@ namespace Marmot::Materials {
     const double& nu_I = this->materialProperties[3];
     const double& E_0  = this->materialProperties[4];
     const double& nu_0 = this->materialProperties[5];
+    const double& h = this->materialProperties[6];
 
     // map to force, surface stress, displacement, surface strain, normal and tangent stiffness 
     // use Fastor because we really need to use the einsum  
@@ -77,10 +78,10 @@ namespace Marmot::Materials {
     //Assign the material matrices to a larger structure. (Not necessary ...)
     Eigen::Matrix<double, 21, 21> Cel = Eigen::Matrix<double, 21,21>::Zero();
 
-    Cel.block(0,0,9,9) = convert4thOrderTensorToMatrix(Z_ijkl);
-    Cel.block(12,12,9,9) = convert4thOrderTensorToMatrix(Yn_H_inv_Fn_ijkl);
+    Cel.block(0,0,9,9) = convert4thOrderTensorToMatrix(h/2.*Z_ijkl);
+    Cel.block(12,12,9,9) = convert4thOrderTensorToMatrix(h/2.*Yn_H_inv_Fn_ijkl);
     Cel.block(0,9,9,3) = convert3rdOrderTensorToMatrix(H_inv_nF_ijk);
-    Cel.block(9,9,3,3) = convert2ndOrderTensorToMatrix(H_inv_ij);
+    Cel.block(9,9,3,3) = convert2ndOrderTensorToMatrix(2./h*H_inv_ij);
     
     Fastor::Tensor<double,21,21> Cel_fastor(Cel.data()); 
     // handle zero strain increment
@@ -98,12 +99,12 @@ namespace Marmot::Materials {
     
     Fastor::Tensor<double, 9,1> average_dSurface_strain_ftensor = 1./2.*(dSurface_strain_ftensor(Fastor::seq(0,9),0)+dSurface_strain_ftensor(Fastor::seq(9,Fastor::last),0));
     auto average_dSurface_strain_ftensor_reshape = Fastor::reshape<3,3>(average_dSurface_strain_ftensor);
-    force_ftensor     += Fastor::einsum<Fastor::Index<i,j>,Fastor::Index<j>,Fastor::OIndex<i>>(H_inv_ij, jumpU_ftensor);
+    force_ftensor     += 2./h*Fastor::einsum<Fastor::Index<i,j>,Fastor::Index<j>,Fastor::OIndex<i>>(H_inv_ij, jumpU_ftensor);
     force_ftensor     += Fastor::einsum<Fastor::Index<i,j,k>,Fastor::Index<j,k>,Fastor::OIndex<i>>(H_inv_nF_ijk, average_dSurface_strain_ftensor_reshape);
     
-    surface_stress_ftensor += Fastor::einsum<Fastor::Index<i,j,k,l>,Fastor::Index<k,l>,Fastor::OIndex<i,j>>(Z_ijkl, average_dSurface_strain_ftensor_reshape);
+    surface_stress_ftensor += h/2.*Fastor::einsum<Fastor::Index<i,j,k,l>,Fastor::Index<k,l>,Fastor::OIndex<i,j>>(Z_ijkl, average_dSurface_strain_ftensor_reshape);
     //std:: cout << "surface_stress_ftensor after Z:" << surface_stress_ftensor << std::endl;    
-    surface_stress_ftensor += Fastor::einsum<Fastor::Index<i,j,k,l>,Fastor::Index<k,l>,Fastor::OIndex<i,j>>(Yn_H_inv_Fn_ijkl, average_dSurface_strain_ftensor_reshape);
+    surface_stress_ftensor += h/2.*Fastor::einsum<Fastor::Index<i,j,k,l>,Fastor::Index<k,l>,Fastor::OIndex<i,j>>(Yn_H_inv_Fn_ijkl, average_dSurface_strain_ftensor_reshape);
     //std:: cout << "surface_stress_ftensor after YHFn:" << surface_stress_ftensor << std::endl;    
     surface_stress_ftensor += Fastor::einsum<Fastor::Index<i,j,k>,Fastor::Index<k>,Fastor::OIndex<i,j>>(H_inv_nF_ijk, jumpU_ftensor);
     //std:: cout << "surface_stress_ftensor after HnF:" << surface_stress_ftensor << std::endl;    
@@ -140,8 +141,9 @@ int main() {
     const double nu_I = 0.3;
     const double E_0 = 200.0*0.1;
     const double nu_0 = 0.3;
+    const double h = 1e0;
     
-    const double material_props[] = {E_M, nu_M, E_I, nu_I, E_0, nu_0};
+    const double material_props[] = {E_M, nu_M, E_I, nu_I, E_0, nu_0, h};
     
     Tensor1D force(0.f);
     Tensor2D surface_stress(0.f);
