@@ -21,7 +21,6 @@ variables:
   MaterialModules:
       # repo name                 secret repo url                       default branch
     value: |
-      B4                          $B4_Repo                              master
 
 format:
   stage: .pre
@@ -85,6 +84,14 @@ build:linux:
     - cmake -DAUTODIFF_BUILD_TESTS=OFF -DAUTODIFF_BUILD_PYTHON=OFF -DAUTODIFF_BUILD_EXAMPLES=OFF -DAUTODIFF_BUILD_DOCS=OFF ..
     - make install
     - cd ../..
+
+    - git clone https://github.com/romeric/Fastor.git
+    - cd Fastor 
+    - mkdir build
+    - cd build 
+    - cmake -DBUILD_TESTING=OFF ..
+    - make install
+    - cd ../..
     
 #    - cd modules/core
 #    - install_marmot_modules ${CoreModules[@]}
@@ -133,6 +140,7 @@ build and test with edelweiss:
           install_marmot_module ${modules[@]:$i:$marmot_module_defintion_matrix_col_size};
         done; }
 
+    - micromamba install python=3.12
     - micromamba install git
     - git clone $EdelweissFE_Repo
     - micromamba install -c conda-forge --file EdelweissFE/requirements.txt
@@ -150,6 +158,14 @@ build and test with edelweiss:
     - mkdir build
     - cd build
     - cmake -DCMAKE_INSTALL_PREFIX=$(python -c "import sys; print(sys.prefix)") -DAUTODIFF_BUILD_TESTS=OFF -DAUTODIFF_BUILD_PYTHON=OFF -DAUTODIFF_BUILD_EXAMPLES=OFF -DAUTODIFF_BUILD_DOCS=OFF ..
+    - make install
+    - cd ../..
+
+    - git clone https://github.com/romeric/Fastor.git
+    - cd Fastor 
+    - mkdir build
+    - cd build 
+    - cmake -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=$(python -c "import sys; print(sys.prefix)") ..
     - make install
     - cd ../..
     
@@ -173,9 +189,5 @@ build and test with edelweiss:
     - cd ..
     # build and test EdelweissFE
     - cd EdelweissFE
-    - which python
-    - which pip
-    - python -c "import numpy as np"
-    - python setup.py install
-    # - python -m pip install .
+    - python -m pip install .
     - run_tests_edelweissfe testfiles/
