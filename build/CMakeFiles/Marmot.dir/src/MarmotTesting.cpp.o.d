@@ -2,9 +2,9 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/alexandros/Marmot/src/MarmotTesting.cpp \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdc-predef.h \
  /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotTesting.h \
- /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual/dual.hpp \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/algorithm \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_algobase.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotConstants.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cmath \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/requires_hosted.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++config.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/os_defines.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/features.h \
@@ -14,38 +14,18 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/gnu/stubs-64.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/cpu_defines.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/pstl_config.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functexcept.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_defines.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cpp_type_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/type_traits.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/numeric_traits.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_pair.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/type_traits \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/move.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/utility.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/compare \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/concepts \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_types.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/iterator_concepts.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ptr_traits.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_cmp.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_funcs.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/concept_check.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/debug/assertions.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/new \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_construct.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/debug/debug.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/predefined_ops.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bit \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_algo.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/algorithmfwd.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/initializer_list \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_heap.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uniform_int_dist.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_tempbuf.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdlib \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_val.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_valf.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_vall.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/inf.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/nan.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathdef.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathcalls.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathinline.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_abs.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdlib.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/stddef.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/waitflags.h \
@@ -67,28 +47,31 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/pthreadtypes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/alloca.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/stdlib-float.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_abs.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algo.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algobase.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_base.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/max_size_type.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/numbers \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/invoke.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_util.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_algorithm_defs.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/execution_defs.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cmath \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/requires_hosted.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/math.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_val.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_valf.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_vall.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/inf.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/nan.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathdef.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathcalls.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/mathinline.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/specfun.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_algobase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functexcept.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_defines.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/numeric_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_pair.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/type_traits \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/move.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/utility.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/compare \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/concepts \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_types.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/iterator_concepts.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ptr_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_cmp.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_funcs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/concept_check.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/debug/assertions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/new \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_construct.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/debug/debug.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/predefined_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bit \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/limits \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/gamma.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/special_function_util.h \
@@ -102,81 +85,51 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/poly_hermite.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/poly_laguerre.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/riemann_zeta.tcc \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/functional \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_function.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/backward/binders.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tuple \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uses_allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functional_hash.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hash_bytes.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/refwrap.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_function.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/typeinfo \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/unordered_map \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/unordered_map.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hashtable.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hashtable_policy.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/aligned_buffer.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/alloc_traits.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/alloc_traits.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/memoryfwd.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/new_allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/enable_special_members.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/node_handle.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/range_access.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/erase_if.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/memory_resource.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstddef \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uses_allocator_args.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/vector \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_uninitialized.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_vector.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_bvector.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/vector.tcc \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/array \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/sstream \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/istream \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ios \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iosfwd \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialHypoElastic.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanical.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotMaterial.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotUtils.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stringfwd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/memoryfwd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/char_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/postypes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cwchar \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/wchar.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdio.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/stdarg.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/wchar.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/exception \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_ptr.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_init_exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/nested_exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/char_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/new_allocator.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/localefwd.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++locale.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/clocale \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/locale.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/locale.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iosfwd \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cctype \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/ctype.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ios_base.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/atomicity.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr-default.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/pthread.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sched.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/sched.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/timex.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/setjmp.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/atomic_word.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ostream_insert.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_forced.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_function.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/backward/binders.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/refwrap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/invoke.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/range_access.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/initializer_list \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/basic_string.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/alloc_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/alloc_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string_view \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functional_hash.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hash_bytes.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/max_size_type.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/numbers \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/string_view.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/string_conversions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdlib \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdio \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/libio.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/_G_config.h \
@@ -192,6 +145,58 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/asm-generic/errno-base.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/charconv.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/basic_string.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/memory_resource.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstddef \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uses_allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uses_allocator_args.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tuple \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_util.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual/dual.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/algorithm \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_algo.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/algorithmfwd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_heap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uniform_int_dist.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_tempbuf.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algo.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algobase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_algorithm_defs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/execution_defs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/functional \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_function.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/typeinfo \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/unordered_map \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/unordered_map.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hashtable.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hashtable_policy.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/aligned_buffer.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/enable_special_members.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/node_handle.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/erase_if.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/vector \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_uninitialized.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_vector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_bvector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/vector.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/array \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/sstream \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/istream \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ios \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/exception \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_ptr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_init_exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/nested_exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ios_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/atomicity.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr-default.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/pthread.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sched.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/sched.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/timex.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/setjmp.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/atomic_word.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/system_error \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/error_constants.h \
@@ -216,6 +221,7 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/numbertraits.hpp \
  /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/meta.hpp \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Macros.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/Tensor \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/DisableStupidWarnings.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Macros.h \
@@ -383,4 +389,352 @@ CMakeFiles/Marmot.dir/src/MarmotTesting.cpp.o: \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/StlIterators.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/GlobalFunctions.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/ReenableStupidWarnings.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iostream
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/SpecialFunctions \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/DisableStupidWarnings.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsImpl.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsBFloat16.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsHalf.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsPacketMath.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsFunctors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsArrayAPI.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsBFloat16.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsHalf.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsPacketMath.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsFunctors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsArrayAPI.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/DisableStupidWarnings.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/util/CXX11Meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/util/EmulateArray.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/util/CXX11Workarounds.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/util/MaxSizeVector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/chrono \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/chrono.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ratio \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ctime \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/parse_numbers.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/shared_ptr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/shared_ptr_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/allocated_ptr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/unique_ptr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/concurrence.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/align.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/chrono_io.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iomanip \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/locale \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_facets_nonio.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/time_members.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/messages_members.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/libintl.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/codecvt.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_facets_nonio.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_conv.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/quoted_string.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/format \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/charconv \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/optional \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/span \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/variant \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/random \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/random.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/opt_random.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/random.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/numeric \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_numeric.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_numeric_defs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/thread \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/stop_token \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_thread.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/semaphore \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/semaphore_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/atomic_timed_wait.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/this_thread_sleep.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/time.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/semaphore.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/semaphore.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorMacros.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorMeta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorFunctors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorCostModel.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceDefault.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDimensionList.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorInitializer.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorTraits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorRandom.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorIntDiv.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorGlobalFunctions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorBase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorBlock.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorExpr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorReductionGpu.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorArgMax.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorConcatenation.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorContractionMapper.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorContraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorContractionGpu.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorConversion.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorConvolution.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorFFT.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorPatch.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorImagePatch.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorChipping.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorLayoutSwap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorMorphing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorPadding.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorReverse.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorStriding.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorCustomOp.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorForcedEval.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorGenerator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorAssign.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorScan.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorDevice.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorStorage.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/Tensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/Fastor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iostream \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/macros.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/util.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/timeit.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/cpuid.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/print.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/write.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/fstream \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/basic_file.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++io.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/fstream.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/types.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/SIMDVector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/extintrin.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_abi.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_scalar.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_float.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_double.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_int32.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_int64.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_scalar.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/extended_algorithms.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/resource.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/resource.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_float.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_double.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_common.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/simd_math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/SIMDVector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend_u10.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend_u35.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Tensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/util.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/backend.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/adjoint.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/cofactor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/cyclic_0.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/determinant.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/tensor_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/doublecontract.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/dyadic.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/inner.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/inverse.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/lufact.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/lut_inverse.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_mk_smalln.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_specialisations_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/tmatmul.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/norm.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/outer.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/tensor_cross.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/trace.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/transpose/transpose.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/transpose/transpose_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/AbstractTensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Ranges.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/ForwardDeclare.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_computation_types.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_matmul_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Aliasing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Tensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorTraits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/indicial.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/einsum_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/expression_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_piv_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_trans_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_ctrans_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_adj_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_cof_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_inv_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_solve_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_lu_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_trace_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_norm_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_qr_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_det_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_svd_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_cross_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/InitializerListConstructors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/SpecialisedConstructors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorInplaceOperators.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/IndexRetriever.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/ScalarIndexing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/BlockIndexing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorEvaluator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMethods.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/PODConverters.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorAssignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorIO.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorIO.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorFunctions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/AbstractTensorFunctions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/voigt.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/permutation.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/permute.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/innerproduct.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/outerproduct.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/contraction_single.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/strided_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/opmin_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/tensor_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/einsum_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_contraction_no_opmin.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum_explicit.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/abstract_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/abstract_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/expressions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_arithmetic_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_div_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_arithmetic_assignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_math_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_cmp_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/unary_ops/unary_math_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/simd_math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/unary_ops/unary_bool_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_1d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_2d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_nd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_random_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_filter_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_diag_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_1d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_2d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_nd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_assignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/voigt.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotTypedefs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Dense \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/LU \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/misc/Kernel.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/misc/Image.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/LU/FullPivLU.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/LU/PartialPivLU.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/LU/Determinant.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/LU/InverseImpl.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/LU/arch/InverseSize4.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Cholesky \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Jacobi \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Jacobi/Jacobi.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Cholesky/LLT.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Cholesky/LDLT.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/QR \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Householder \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Householder/Householder.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Householder/HouseholderSequence.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Householder/BlockHouseholder.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/QR/HouseholderQR.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/QR/FullPivHouseholderQR.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/QR/ColPivHouseholderQR.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/SVD \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/misc/RealSvd2x2.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/SVD/UpperBidiagonalization.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/SVD/SVDBase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/SVD/JacobiSVD.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/SVD/BDCSVD.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Geometry \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/OrthoMethods.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/EulerAngles.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Homogeneous.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/RotationBase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Rotation2D.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Quaternion.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/AngleAxis.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Transform.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Translation.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Scaling.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Hyperplane.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/ParametrizedLine.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/AlignedBox.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/Umeyama.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Geometry/arch/Geometry_SIMD.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Eigenvalues \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/RealSchur.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/EigenSolver.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/RealSchur.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/ComplexSchur.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/ComplexSchur.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/RealQZ.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/RealQZ.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotVoigt.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotJournal.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotMath.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/utils/derivative.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/vectortraits.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/utils/taylorseries.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/real.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/real/real.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/binomialcoefficient.hpp

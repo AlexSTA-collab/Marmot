@@ -187,15 +187,10 @@ CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.o
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_heap.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uniform_int_dist.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_tempbuf.h \
- /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialHypoElastic.h \
- /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanical.h \
- /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotTesting.h \
- /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual/dual.hpp \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/algorithm \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algo.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algobase.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_algorithm_defs.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/execution_defs.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotElasticity.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotVoigt.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotMath.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotConstants.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cmath \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/math.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/huge_val.h \
@@ -220,11 +215,7 @@ CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.o
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/poly_hermite.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/poly_laguerre.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tr1/riemann_zeta.tcc \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/utility \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_relops.h \
- /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/numbertraits.hpp \
- /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/meta.hpp \
- /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Macros.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotTypedefs.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/DisableStupidWarnings.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Macros.h \
@@ -251,6 +242,11 @@ CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.o
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/linux/limits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/posix2_lim.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/xopen_lim.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/algorithm \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algo.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_algobase.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_algorithm_defs.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/execution_defs.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Constants.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Meta.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdint \
@@ -392,7 +388,6 @@ CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.o
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/StlIterators.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/GlobalFunctions.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/ReenableStupidWarnings.h \
- /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotTypedefs.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Dense \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/LU \
@@ -586,9 +581,164 @@ CMakeFiles/TestLinearElastic.dir/modules/materials/LinearElastic/test/test.cpp.o
  /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/ReenableStupidWarnings.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/memory \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_raw_storage_iter.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/shared_ptr_atomic.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/backward/auto_ptr.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_uninitialized.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/glue_memory_defs.h
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/dual/dual.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/utility \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_relops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/numbertraits.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/meta.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/util/Macros.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/utils/derivative.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/vectortraits.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/utils/taylorseries.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/real.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/real/real.hpp \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/binomialcoefficient.hpp \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialHypoElastic.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanical.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotTesting.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/Fastor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/macros.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/util.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/timeit.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/cpuid.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/print.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/write.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/fstream \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/basic_file.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++io.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/fstream.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/types.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/SIMDVector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/extintrin.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_abi.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_scalar.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_float.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_double.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_int32.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_int64.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_scalar.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/extended_algorithms.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/resource.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/resource.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_float.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_complex_double.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/simd_vector_common.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/simd_math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_vector/SIMDVector.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend_u10.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/sleef_backend_u35.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Tensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/util/util.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/backend.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/adjoint.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/cofactor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/cyclic_0.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/determinant.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/tensor_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/doublecontract.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/dyadic.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/inner.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/inverse.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/lufact.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/lut_inverse.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_mk_smalln.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/matmul_specialisations_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/matmul/tmatmul.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/norm.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/outer.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/tensor_cross.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/trace.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/transpose/transpose.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/transpose/transpose_kernels.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/AbstractTensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Ranges.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/ForwardDeclare.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_computation_types.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_matmul_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Aliasing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/Tensor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorTraits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/indicial.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/einsum_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/expression_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_piv_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/linalg_traits.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_trans_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_ctrans_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_adj_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_cof_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_inv_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_solve_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_lu_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_trace_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_norm_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_qr_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_det_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/unary_svd_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/linalg_ops/binary_cross_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/InitializerListConstructors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/SpecialisedConstructors.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorInplaceOperators.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/IndexRetriever.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/ScalarIndexing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/BlockIndexing.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorEvaluator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMethods.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/PODConverters.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorAssignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorIO.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorIO.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorFunctions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/TensorMap.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor/AbstractTensorFunctions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/voigt.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/permutation.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/permute.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/innerproduct.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/outerproduct.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/contraction_single.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/strided_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/opmin_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/tensor_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/meta/einsum_meta.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_contraction_no_opmin.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/einsum_explicit.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/network_einsum.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/abstract_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/tensor_algebra/abstract_contraction.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/expressions.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_arithmetic_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_div_op.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_arithmetic_assignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_math_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/binary_ops/binary_cmp_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/unary_ops/unary_math_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/simd_math/simd_math.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/unary_ops/unary_bool_ops.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_1d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_2d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_fixed_views_nd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_random_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_filter_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_diag_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_1d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_2d.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_nd.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/expressions/views/tensor_views_assignment.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/backend/voigt.h
