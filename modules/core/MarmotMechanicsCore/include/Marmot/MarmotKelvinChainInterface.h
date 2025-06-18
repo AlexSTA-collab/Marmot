@@ -69,7 +69,8 @@ namespace Marmot::Materials {
       }
 
       return elasticModuli_Ju;
-      
+    }
+
     template < int k >
     Properties computeElasticModuli_Js( std::function< autodiff::Real< k, double >( autodiff::Real< k, double > ) > phi,
                                      Properties retardationTimes_Js,
@@ -96,35 +97,35 @@ namespace Marmot::Materials {
 
     Properties generateRetardationTimes( int n, double min, double spacing );
 
-    void updateStateVarMatrix(    const double                 dT,
-                                  Properties                   elasticModuli_Ju,
-                                  Properties                   retardationTimes_Ju,
-                                  Eigen::Ref< StateVarMatrix_Ju > stateVars_Ju,
-                                  const Marmot::Vector3d&      dforce,
-                                  const Marmot::Matrix3d&      unitH_ij );
+    void updateStateVarMatrix_Ju(    const double                    dT,
+                                     Properties                      elasticModuli_Ju,
+                                     Properties                      retardationTimes_Ju,
+                                     Eigen::Ref< StateVarMatrix_Ju > stateVars_Ju,
+                                     const Marmot::Vector3d&         dforce,
+                                     const Marmot::Matrix3d&         unitH_ij );
 
-    void updateStateVarMatrix(    const double                 dT,
-                                  Properties                   elasticModuli_Js,
-                                  Properties                   retardationTimes_Js,
-                                  Eigen::Ref< StateVarMatrix > stateVars_Js,
-                                  const Marmot::Vector9d&      dsurface_stress,
-                                  const Marmot::Matrix9d&      unitZ_inv_ijkl );
+    void updateStateVarMatrix_Js(    const double                 dT,
+                                     Properties                   elasticModuli_Js,
+                                     Properties                   retardationTimes_Js,
+                                     Eigen::Ref< StateVarMatrix_Js > stateVars_Js,
+                                     const Marmot::Vector9d&      dsurface_stress,
+                                     const Marmot::Matrix9d&      unitZ_inv_ijkl );
 
-    void evaluateKelvinChain(    const double      dT,
-                                 Properties        elasticModuli_Ju,
-                                 Properties        retardationTimes_Ju,
-                                 StateVarMatrix_Ju    stateVars_Ju,
-                                 double&           uniaxialCompliance_Ju,
-                                 Marmot::Vector3d& dforce,
-                                 const double      factor );
+    void evaluateKelvinChain_Ju(    const double         dT,
+                                    Properties           elasticModuli_Ju,
+                                    Properties           retardationTimes_Ju,
+                                    StateVarMatrix_Ju    stateVars_Ju,
+                                    double&              uniaxialCompliance_Ju,
+                                    Marmot::Vector3d&    dJumpu,
+                                    const double         factor );
 
-    void evaluateKelvinChain(    const double      dT,
-                                 Properties        elasticModuli_Js,
-                                 Properties        retardationTimes_Js,
-                                 StateVarMatrix_Js    stateVars_Js,
-                                 double&           uniaxialCompliance_Js,
-                                 Marmot::Vector9& dsurface_stress,
-                                 const double      factor );
+    void evaluateKelvinChain_Js(    const double         dT,
+                                    Properties           elasticModuli_Js,
+                                    Properties           retardationTimes_Js,
+                                    StateVarMatrix_Js    stateVars_Js,
+                                    double&              uniaxialCompliance_Js,
+                                    Marmot::Vector9d&    dsurface_strain,
+                                    const double         factor );
 
     void computeLambdaAndBeta( double dT, double tau, double& lambda, double& beta );
 

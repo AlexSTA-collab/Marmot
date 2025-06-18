@@ -104,3 +104,20 @@ std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D>  calculate_interface_material
                                                                     const double& E_0,
                                                                     const double& nu_0);
 
+std::tuple<Tensor2D, Tensor4D, double, double>calculate_unitcompliance_interface(
+                                                                                 const Tensor1D& normal,
+                                                                                 const double& E_M,
+                                                                                 const double& nu_M,
+                                                                                 const double& E_I,
+                                                                                 const double& nu_I,
+                                                                                 const double& E_0,
+                                                                                 const double& nu_0);
+
+
+std::tuple<Tensor2D, Tensor4D>calculate_effective_properties(const double& barC_Ju, 
+                                                             const double& barC_Js, 
+                                                             const Tensor1D& normal,
+                                                             const double& E_bar,
+                                                             const double& nu_bar
+                                                             );
+

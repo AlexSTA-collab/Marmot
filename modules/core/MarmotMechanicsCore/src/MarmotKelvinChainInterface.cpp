@@ -15,13 +15,13 @@ namespace Marmot::Materials {
       return retardationTimes;
     }
 
-    void evaluateKelvinChain( double         dT,
-                              Properties     elasticModuli_Ju,
-                              Properties     retardationTimes_Ju,
-                              StateVarMatrix stateVars_Ju,
-                              double&        uniaxialCompliance_Ju,
-                              const Vector3d&     dforce,
-                              const double   factor )
+    void evaluateKelvinChain_Ju( double            dT,
+                                 Properties        elasticModuli_Ju,
+                                 Properties        retardationTimes_Ju,
+                                 StateVarMatrix_Ju stateVars_Ju,
+                                 double&           uniaxialCompliance_Ju,
+                                 Vector3d&         dJumpU,
+                                 const double      factor )
     {
 
       for ( int i = 0; i < retardationTimes_Ju.size(); i++ ) {
@@ -31,17 +31,17 @@ namespace Marmot::Materials {
         double lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
         uniaxialCompliance_Ju += ( 1. - lambda ) / D * factor;
-        dforce += ( 1. - beta ) * stateVars_Ju.col( i ) * factor;
+        dJumpU += ( 1. - beta ) * stateVars_Ju.col( i ) * factor;
       }
     }
     
-    void evaluateKelvinChain( double         dT,
-                              Properties     elasticModuli_Js,
-                              Properties     retardationTimes_Js,
-                              StateVarMatrix stateVars_Js,
-                              double&        uniaxialCompliance_Js,
-                              const Vector9d&     dsurface_stress,
-                              const double   factor )
+    void evaluateKelvinChain_Js( double            dT,
+                                 Properties        elasticModuli_Js,
+                                 Properties        retardationTimes_Js,
+                                 StateVarMatrix_Js stateVars_Js,
+                                 double&           uniaxialCompliance_Js,
+                                 Vector9d&         dsurface_strain,
+                                 const double      factor )
     {
 
       for ( int i = 0; i < retardationTimes_Js.size(); i++ ) {
@@ -51,16 +51,16 @@ namespace Marmot::Materials {
         double lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
         uniaxialCompliance_Js += ( 1. - lambda ) / D * factor;
-        dsurface_stress += ( 1. - beta ) * stateVars_Js.col( i ) * factor;
+        dsurface_strain += ( 1. - beta ) * stateVars_Js.col( i ) * factor;
       }
     }
 
-    void updateStateVarMatrix( double                dT,
-                               Properties            elasticModuli_Ju,
-                               Properties            retardationTimes_Ju,
-                               Ref< StateVarMatrix > stateVars_Ju,
-                               const Vector3d&       dforce,
-                               const Matrix3d&       unitH_ij )
+    void updateStateVarMatrix_Ju( double                    dT,
+                                  Properties                elasticModuli_Ju,
+                                  Properties                retardationTimes_Ju,
+                                  Ref< StateVarMatrix_Ju >  stateVars_Ju,
+                                  const Vector3d&           dforce,
+                                  const Matrix3d&           unitH_ij )
     {
 
       if ( dT <= 1e-14 )
@@ -74,12 +74,12 @@ namespace Marmot::Materials {
       }
     }
 
-    void updateStateVarMatrix( double                dT,
-                               Properties            elasticModuli_Js,
-                               Properties            retardationTimes_Js,
-                               Ref< StateVarMatrix > stateVars_Js,
-                               const Vector9d&       dsurface_stress,
-                               const Matrix9d&       unitZ_inv_ijkl )
+    void updateStateVarMatrix_Js( double                   dT,
+                                  Properties               elasticModuli_Js,
+                                  Properties               retardationTimes_Js,
+                                  Ref< StateVarMatrix_Js > stateVars_Js,
+                                  const Vector9d&          dsurface_stress,
+                                  const Matrix9d&          unitZ_inv_ijkl )
     {
 
       if ( dT <= 1e-14 )

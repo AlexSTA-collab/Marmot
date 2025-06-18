@@ -1479,6 +1479,30 @@ modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.cpp.s
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.cpp.s
 
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.o: modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.o
+
+# target to build an object file
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.o
+
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.i: modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.i
+
+# target to preprocess a source file
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.i
+
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.s: modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.s
+
+# target to generate assembly for a file
+modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.cpp.s
+
 modules/core/MarmotMechanicsCore/src/MarmotKinematics.o: modules/core/MarmotMechanicsCore/src/MarmotKinematics.cpp.o
 .PHONY : modules/core/MarmotMechanicsCore/src/MarmotKinematics.o
 
@@ -1814,6 +1838,30 @@ modules/core/MarmotMechanicsCore/src/MenetreyWillam.s: modules/core/MarmotMechan
 modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.s
 .PHONY : modules/core/MarmotMechanicsCore/src/MenetreyWillam.cpp.s
+
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.o: modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.o
+
+# target to build an object file
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.o
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.o
+
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.i: modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.i
+
+# target to preprocess a source file
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.i
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.i
+
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.s: modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.s
+
+# target to generate assembly for a file
+modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.s
+.PHONY : modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.cpp.s
 
 modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.o: modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.cpp.o
 .PHONY : modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.o
@@ -2727,29 +2775,53 @@ modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
 .PHONY : modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.cpp.s
 
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.o: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.o
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.o
 
 # target to build an object file
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.o
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.o
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.o
 
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.i: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.i
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.i
 
 # target to preprocess a source file
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.i
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.i
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.i
 
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s: modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.s: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.s
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.s
 
 # target to generate assembly for a file
-modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
-.PHONY : modules/materials/LinearElasticInterface/src/interface_material_helper_functions.cpp.s
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.s
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.cpp.s
+
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.o: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.o
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.o
+
+# target to build an object file
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.o
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.o
+
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.i: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.i
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.i
+
+# target to preprocess a source file
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.i
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.i
+
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.s: modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.s
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.s
+
+# target to generate assembly for a file
+modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Marmot.dir/build.make CMakeFiles/Marmot.dir/modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.s
+.PHONY : modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.cpp.s
 
 modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.o: modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.cpp.o
 .PHONY : modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.o
@@ -3169,6 +3241,9 @@ help:
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChain.s"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.o"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.i"
+	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInterface.s"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKinematics.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKinematics.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MarmotKinematics.s"
@@ -3211,6 +3286,9 @@ help:
 	@echo "... modules/core/MarmotMechanicsCore/src/MenetreyWillam.o"
 	@echo "... modules/core/MarmotMechanicsCore/src/MenetreyWillam.i"
 	@echo "... modules/core/MarmotMechanicsCore/src/MenetreyWillam.s"
+	@echo "... modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.o"
+	@echo "... modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.i"
+	@echo "... modules/core/MarmotMechanicsCore/src/interface_material_helper_functions.s"
 	@echo "... modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.o"
 	@echo "... modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.i"
 	@echo "... modules/core/MarmotMechanicsCore/test/TestHaighWestergaard.s"
@@ -3325,9 +3403,12 @@ help:
 	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.o"
 	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.i"
 	@echo "... modules/materials/LinearElasticInterface/src/LinearElasticInterfaceRegistration.s"
-	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.o"
-	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.i"
-	@echo "... modules/materials/LinearElasticInterface/src/interface_material_helper_functions.s"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.o"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.i"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterface.s"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.o"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.i"
+	@echo "... modules/materials/LinearViscoElasticInterface/src/LinearViscoElasticInterfaceRegistration.s"
 	@echo "... modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.o"
 	@echo "... modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.i"
 	@echo "... modules/materials/LinearViscoelasticPowerLaw/src/LinearViscoelasticPowerLaw.s"

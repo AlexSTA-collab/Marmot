@@ -3,10 +3,7 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdc-predef.h \
  /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/src/../include/Marmot/LinearElasticInterface.h \
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialHypoElasticInterface.h \
- /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanicalInterface.h \
- /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotMaterial.h \
- /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotUtils.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ios \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/requires_hosted.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++config.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/os_defines.h \
@@ -17,9 +14,9 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/gnu/stubs-64.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/cpu_defines.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/pstl/pstl_config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iosfwd \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stringfwd.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/memoryfwd.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/char_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/postypes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cwchar \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/wchar.h \
@@ -28,13 +25,21 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/wchar.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/stddef.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/xlocale.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/exception \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_ptr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_defines.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_init_exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/typeinfo \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hash_bytes.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/new \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/move.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/type_traits \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/nested_exception.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/char_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/compare \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/concepts \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_construct.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/new \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/move.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_types.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/iterator_concepts.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ptr_traits.h \
@@ -42,18 +47,11 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator_base_funcs.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/concept_check.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/debug/assertions.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/new_allocator.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functexcept.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_defines.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cpp_type_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/localefwd.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++locale.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/clocale \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/locale.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/locale.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iosfwd \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cctype \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/ctype.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/types.h \
@@ -62,6 +60,26 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/endian.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/byteswap.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/byteswap-16.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ios_base.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/atomicity.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr-default.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/pthread.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sched.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/time.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/sched.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/time.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/timex.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/pthreadtypes.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/setjmp.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/atomic_word.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/new_allocator.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functexcept.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cpp_type_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ostream_insert.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_forced.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_iterator.h \
@@ -84,7 +102,6 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/alloc_traits.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/string_view \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functional_hash.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hash_bytes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_base.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/max_size_type.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/numbers \
@@ -95,13 +112,10 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/waitflags.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/waitstatus.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/types.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/time.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/select.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/select.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/sigset.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/time.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sys/sysmacros.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/pthreadtypes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/alloca.h \
  /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/stdlib-float.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/std_abs.h \
@@ -126,32 +140,6 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/uses_allocator_args.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/tuple \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ranges_util.h \
- /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/Fastor.h \
- /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cassert \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/assert.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdint \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/stdint.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdint.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iostream \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ostream \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ios \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/exception \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_ptr.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/cxxabi_init_exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/typeinfo \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/nested_exception.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ios_base.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/atomicity.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/gthr-default.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/pthread.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/sched.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/sched.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/timex.h \
- /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/bits/setjmp.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/atomic_word.h \
- /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_classes.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/system_error \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/error_constants.h \
@@ -167,9 +155,21 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/ctype_inline.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/locale_facets.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/basic_ios.tcc \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iostream \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ostream \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/ostream.tcc \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/istream \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/istream.tcc \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanicalInterface.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotMaterial.h \
+ /home/alexsta1993/alexandros/Marmot/include/Marmot/MarmotUtils.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/Fastor.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/include/Fastor/config/config.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cassert \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/assert.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cstdint \
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/stdint.h \
+ /home/alexsta1993/miniforge3/envs/alexandros/x86_64-conda-linux-gnu/sysroot/usr/include/stdint.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/emmintrin.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/xmmintrin.h \
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/mmintrin.h \

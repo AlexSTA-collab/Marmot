@@ -22,3 +22,4 @@
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialHypoElasticInterface.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialMechanicalInterface.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/LinearElasticInterface.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/LinearViscoElasticInterface.h

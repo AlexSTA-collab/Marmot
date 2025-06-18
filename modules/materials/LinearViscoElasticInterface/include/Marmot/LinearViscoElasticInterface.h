@@ -27,13 +27,13 @@
  */
 
 #pragma once
-#include "Marmot/MarmotKelvinChaiInterface.h"
-#include "Marmot/MarmotMaterialHypoElasticInterface.h"
-#include "Marmot/MarmotStateVarVectorManager.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include "Fastor/Fastor.h"
+#include "Marmot/MarmotKelvinChainInterface.h"
+#include "Marmot/MarmotMaterialHypoElasticInterface.h"
+#include "Marmot/MarmotStateVarVectorManager.h"
 
 namespace Marmot::Materials {
   /**
@@ -51,8 +51,6 @@ namespace Marmot::Materials {
 
    */
   class LinearViscoElasticInterface : public MarmotMaterialHypoElasticInterface {
-
-    LinearElasticInterface( const double* materialProperties, int nMaterialProperties, int materialNumber );
 
     /// \brief Young's modulus
     const double& E_M;
@@ -85,7 +83,7 @@ namespace Marmot::Materials {
     const size_t nKelvin_Ju;
 
     /// \brief minimal retardation time used in the viscoelastic Kelvin chain for displacement jump
-    const double& minTau_Js;
+    const double& minTau_Ju;
 
     /// \brief power law compliance parameter surface stress
     const double& m_Js;
@@ -102,7 +100,7 @@ namespace Marmot::Materials {
     /// \brief ratio of simulation time to days
     const double& timeToDays;
 
-    class LinearViscoelasticInterfacePowerLawStateVarManager : public MarmotStateVarVectorManager {
+    class LinearViscoElasticInterfaceStateVarManager : public MarmotStateVarVectorManager {
 
     public:
       inline const static auto layout = makeLayout( {
@@ -113,12 +111,13 @@ namespace Marmot::Materials {
       KelvinChainInterface::mapStateVarMatrix_Ju kelvinStateVars_Ju;
       KelvinChainInterface::mapStateVarMatrix_Js kelvinStateVars_Js;
       
-      LinearViscoelasticInterfacePowerLawStateVarManager( double* theStateVarVector, int nKelvinUnits_Ju, int nKelvinUnits_Js )
+      LinearViscoElasticInterfaceStateVarManager( double* theStateVarVector, int nKelvinUnits_Ju, int nKelvinUnits_Js )
         : MarmotStateVarVectorManager( theStateVarVector, layout ),
-          kelvinStateVars_Ju( &find( "kelvinStateVars_Ju" ), 3, nKelvinUnits_Ju ){};
-          kelvinStateVars_Js( &find( "kelvinStateVars_Js" ), 9, nKelvinUnits_Js ){};
+          kelvinStateVars_Ju( &find( "kelvinStateVars_Ju" ), 3, nKelvinUnits_Ju ), 
+          kelvinStateVars_Js( &find( "kelvinStateVars_Js" ), 9, nKelvinUnits_Js )
+          {};
     };
-    std::unique_ptr< LinearViscoelasticInterfacePowerLawStateVarManager > stateVarManager;
+    ::std::unique_ptr< LinearViscoElasticInterfaceStateVarManager > stateVarManager;
 
   public:
     using MarmotMaterialHypoElasticInterface::MarmotMaterialHypoElasticInterface;
@@ -141,7 +140,7 @@ namespace Marmot::Materials {
 
     void assignStateVars( double* stateVars_, int nStateVars );
 
-    StateView getStateView( const std::string& stateName );
+    StateView getStateView( const ::std::string& stateName );
 
   private:
     KelvinChainInterface::Properties elasticModuli_Ju;
