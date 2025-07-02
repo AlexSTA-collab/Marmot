@@ -31,7 +31,9 @@
 #include "Marmot/MarmotTypedefs.h"
 #include "autodiff/forward/real.hpp"
 #include <functional>
-
+#include <iostream>   // for std::cout / std::cerr
+#include <fstream>    // **needed for std::ofstream**
+//
 namespace Marmot::Materials {
 
   namespace KelvinChainInterface {
@@ -52,9 +54,15 @@ namespace Marmot::Materials {
                                      Properties retardationTimes_Ju,
                                      bool       gaussQuadrature = false )
     {
+      std::cerr << "DEBUG: computeElasticModuli_Ju reached\n"<< std::flush; 
+      std::cout << "Entered computeElasticModuli_Ju()\n"<< std::flush;
       Properties elasticModuli_Ju( retardationTimes_Ju.size() );
       double     spacing = retardationTimes_Ju( 1 ) / retardationTimes_Ju( 0 );
-
+      std::cout<<"KelvinChain::computeElasticModuli_Ju spacing:\n"<< spacing<<std::flush;
+      std::ofstream logfile("/home/alexsta1993/alexandros/called.log", std::ios::app);
+      if (logfile) {
+         logfile << "Entered computeElasticModuli_Ju\n";
+      } 
       for ( int i = 0; i < retardationTimes_Ju.size(); i++ ) {
         double tau = retardationTimes_Ju( i );
         if ( !gaussQuadrature ) {

@@ -12,6 +12,7 @@
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotConstants.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotTensor.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotTypedefs.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotNumericalIntegration.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialGradientEnhancedHypoElastic.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialMechanical.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialHypoElastic.h
@@ -21,5 +22,8 @@
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotVoigt.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialHypoElasticInterface.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotMaterialMechanicalInterface.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotKelvinChainInterface.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotKelvinChain.h
+/home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/MarmotStateVarVectorManager.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/LinearElasticInterface.h
 /home/alexsta1993/miniforge3/envs/alexandros/include/Marmot/LinearViscoElasticInterface.h

@@ -741,5 +741,5 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoEla
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotKinematics.h \
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotLowerDimensionalStress.h \
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMathCore/include/Marmot/MarmotTensor.h \
- /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include/Marmot/interface_material_helper_functions.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/interface_material_helper_functions.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/Matrix.h

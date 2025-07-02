@@ -12607,6 +12607,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInte
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_defines.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/exception_ptr.h
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/fstream.tcc
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functexcept.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/functional_hash.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/hash_bytes.h
@@ -12714,6 +12715,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInte
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/string_conversions.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/ext/type_traits.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/format
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/fstream
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/functional
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/initializer_list
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/iomanip
@@ -12766,8 +12768,10 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotKelvinChainInte
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/variant
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/vector
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/atomic_word.h
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/basic_file.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++allocator.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++config.h
+ /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++io.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/c++locale.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/cpu_defines.h
  /home/alexsta1993/miniforge3/envs/alexandros/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/x86_64-conda-linux-gnu/bits/ctype_base.h
@@ -16365,7 +16369,7 @@ CMakeFiles/Marmot.dir/modules/core/MarmotMechanicsCore/src/MarmotMaterialHypoEla
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialHypoElasticInterface.h
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanicalInterface.h
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotVoigt.h
- /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include/Marmot/interface_material_helper_functions.h
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/interface_material_helper_functions.h
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Cholesky
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Dense
@@ -31773,8 +31777,8 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotMaterialMechanicalInterface.h
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotUtility.h
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotVoigt.h
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/interface_material_helper_functions.h
  /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include/Marmot/LinearElasticInterface.h
- /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include/Marmot/interface_material_helper_functions.h
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Cholesky
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Core
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/Dense

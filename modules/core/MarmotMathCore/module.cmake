@@ -7,4 +7,5 @@ list(APPEND publicheaders
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotConstants.h" 
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotTensor.h" 
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotTypedefs.h" 
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotNumericalIntegration.h"
     )

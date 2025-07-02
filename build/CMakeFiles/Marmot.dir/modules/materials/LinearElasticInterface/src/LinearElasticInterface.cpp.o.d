@@ -740,5 +740,5 @@ CMakeFiles/Marmot.dir/modules/materials/LinearElasticInterface/src/LinearElastic
  /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/forward/real/real.hpp \
  /home/alexsta1993/miniforge3/envs/alexandros/include/autodiff/common/binomialcoefficient.hpp \
  /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/MarmotUtility.h \
- /home/alexsta1993/alexandros/Marmot/modules/materials/LinearElasticInterface/include/Marmot/interface_material_helper_functions.h \
+ /home/alexsta1993/alexandros/Marmot/modules/core/MarmotMechanicsCore/include/Marmot/interface_material_helper_functions.h \
  /home/alexsta1993/miniforge3/envs/alexandros/include/Eigen/src/Core/Matrix.h

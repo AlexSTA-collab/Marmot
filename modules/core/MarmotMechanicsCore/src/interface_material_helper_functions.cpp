@@ -417,7 +417,7 @@ std::tuple<Tensor4D, Tensor2D, Tensor3D, Tensor4D> calculate_interface_material_
 }
 
 
-std::tuple<Tensor2D, Tensor4D, double, double>calculate_unitcompliance_interface(
+std::tuple<Tensor2D, Tensor4D, double, double, double>calculate_unitcompliance_interface(
                                                                                            const Tensor1D& normal,
                                                                                            const double& E_M,
                                                                                            const double& nu_M,
@@ -432,35 +432,42 @@ std::tuple<Tensor2D, Tensor4D, double, double>calculate_unitcompliance_interface
                  };
 
     Tensor2D N = Fastor::einsum<Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<i,j>>(normal, normal);
-    Tensor2D T = I-N;
+    //Tensor2D T = I-N;
 
-    double mu_bar = (E_M)/(2.*(1.+nu_M))+ (E_I)/(2.*(1.+nu_I)) -  2*(E_0)/(2.*(1.+nu_0));
-    double lambda_bar = (E_M*nu_M)/((1+nu_M)*(1-2*nu_M))+ (E_I*nu_I)/((1+nu_I)*(1-2*nu_I))- 2*(E_0*nu_0)/((1+nu_0)*(1-2*nu_0));
+    //double mu_bar = (E_M)/(2.*(1.+nu_M))+ (E_I)/(2.*(1.+nu_I)) -  2*(E_0)/(2.*(1.+nu_0));
+    //double lambda_bar = (E_M*nu_M)/((1+nu_M)*(1-2*nu_M))+ (E_I*nu_I)/((1+nu_I)*(1-2*nu_I))- 2*(E_0*nu_0)/((1+nu_0)*(1-2*nu_0));
 
-    double E_bar = mu_bar*(3.*lambda_bar+2.*mu_bar)/(lambda_bar+mu_bar);
-    double nu_bar = lambda_bar/(2.*(lambda_bar+mu_bar));
-  
+    //double E_bar = mu_bar*(3.*lambda_bar+2.*mu_bar)/(lambda_bar+mu_bar);
+    double E_bar = E_M+E_I-2.*E_0;
+    double H_bar = 2.*1./E_0 - 1./E_M -1/E_I;
+    //double nu_bar = lambda_bar/(2.*(lambda_bar+mu_bar));
+    //std::cout<<"nu: "<<nu_M<<", "<<nu_I<<", "<<nu_0<<'\n';
+    double nu_bar = nu_0;  
     Eigen::Matrix<double,9,9> unitC_bar_voigt_full = create_isotropic_elasticity_tensor(1.0 , nu_bar);
-    Tensor4D unitC_bar_aibj = voigt_full_to_tensor(unitC_bar_voigt_full);
-    Tensor2D Q_ab = Fastor::einsum<Fastor::Index<a,i,b,j>, Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<a,b>>(unitC_bar_aibj, normal, normal);
-    Tensor2D unitH_bar_ab = compute_inv(I, Q_ab );
+    Tensor4D unitC_bar_tensor = voigt_full_to_tensor(unitC_bar_voigt_full);
+    Tensor2D unitQ_tensor = Fastor::einsum<Fastor::Index<a,i,b,j>, Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<a,b>>(unitC_bar_tensor, normal, normal);
+    Tensor2D unitG_tensor = compute_inv(I, unitQ_tensor );
 
-    Tensor4D unitZ_bar_klmn = Fastor::einsum<Fastor::Index<k,a>, Fastor::Index<l,i>, Fastor::Index<m,b>, Fastor::Index<n,j>, Fastor::Index<a,i,b,j>, Fastor::OIndex<k,l,m,n>>(T,T,T,T,unitC_bar_aibj); 
+    //std::cout<<"Make sure Q, G are inverses:\n"<<Fastor::norm(Fastor::einsum<Fastor::Index<i,j>,Fastor::Index<j,k>,Fastor::OIndex<i,k>>(unitQ_tensor,unitG_tensor)-I)<<'\n';
+
+    Tensor4D unitZ_bar_tensor = unitC_bar_tensor;
+    Tensor4D unitA_bar_tensor = Fastor::einsum<Fastor::Index<a,b>, Fastor::Index<i,j>, Fastor::OIndex<a,i,b,j>>(unitG_tensor,N); 
+    unitZ_bar_tensor -= Fastor::einsum<Fastor::Index<a,i,m,n>, Fastor::Index<m,n,k,l>, Fastor::Index<k,l,b,j>, Fastor::OIndex<a,i,b,j>>(unitC_bar_tensor,unitA_bar_tensor,unitC_bar_tensor);
+    //Fastor::einsum<Fastor::Index<k,a>, Fastor::Index<l,i>, Fastor::Index<m,b>, Fastor::Index<n,j>, Fastor::Index<a,i,b,j>, Fastor::OIndex<k,l,m,n>>(T,T,T,T,unitC_bar_aibj); 
     
     Eigen::Matrix<double, 9, 9> II = Eigen::Matrix<double, 9, 9>::Identity();
-    Eigen::Map<Eigen::Matrix<double,9,9, Eigen::RowMajor>> unitZ_bar_voigt_full(unitZ_bar_klmn.data());
+    Eigen::Map<Eigen::Matrix<double,9,9, Eigen::RowMajor>> unitZ_bar_voigt_full(unitZ_bar_tensor.data());
   
     Eigen::Matrix<double, 9, 9> unitZ_bar_inv_voigt_full = unitZ_bar_voigt_full.fullPivLu().solve( II );
 
-    Fastor::TensorMap<double,3,3,3,3> unitZ_bar_inv_klmn(unitZ_bar_inv_voigt_full.data());
+    Fastor::TensorMap<double,3,3,3,3> unitZ_bar_inv_tensor(unitZ_bar_inv_voigt_full.data());
 
-    return  {unitH_bar_ab, unitZ_bar_inv_klmn, E_bar, nu_bar}; 
+    return  {unitG_tensor, unitZ_bar_inv_tensor, E_bar, H_bar, nu_bar}; 
 }
 
 std::tuple<Tensor2D, Tensor4D>calculate_effective_properties(const double& barC_Ju, 
                                                              const double& barC_Js, 
                                                              const Tensor1D& normal,
-                                                             const double& E_bar,
                                                              const double& nu_bar
                                                              )
 {
@@ -470,20 +477,27 @@ std::tuple<Tensor2D, Tensor4D>calculate_effective_properties(const double& barC_
                  };
 
     Tensor2D N = Fastor::einsum<Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<i,j>>(normal, normal);
-    Tensor2D T = I-N;
+    //Tensor2D T = I-N;
 
-        // create  the 9x9 matrix representation of the constitutive modulus (can be done with Voigt 6x6 but needs extra space for 9x9) 
+        // create  the 9x9 matrix representation of the constitutive modulus (can be done with Voigt 6x6 but needs extra space for 9x9)
+    //std::cout<<"Inside material interface helper functions:"<<'\n';
+    //std::cout<<1./barC_Js<<'\n';
     Eigen::Matrix<double, 9, 9> C_Ju_full = create_isotropic_elasticity_tensor(1./barC_Ju, nu_bar);
     Eigen::Matrix<double, 9, 9> C_Js_full = create_isotropic_elasticity_tensor(1./barC_Js, nu_bar);
     
-    Tensor4D C_Ju_aibj = voigt_full_to_tensor(C_Ju_full);
-    Tensor4D C_Js_aibj = voigt_full_to_tensor(C_Js_full);
+    Tensor4D C_Ju_tensor = voigt_full_to_tensor(C_Ju_full);
+    Tensor4D C_Js_tensor = voigt_full_to_tensor(C_Js_full);
 
-    Tensor2D H_inv_ab = Fastor::einsum<Fastor::Index<a,i,b,j>, Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<a,b>>(C_Ju_aibj, normal, normal);
-
-    Tensor4D Cs_klmn = Fastor::einsum<Fastor::Index<k,a>, Fastor::Index<l,i>, Fastor::Index<m,b>, Fastor::Index<n,j>, Fastor::Index<a,i,b,j>, Fastor::OIndex<k,l,m,n>>(T,T,T,T,C_Js_aibj);
-
-    return  {H_inv_ab, Cs_klmn}; 
+    Tensor2D H_inv_Ju_tensor = Fastor::einsum<Fastor::Index<a,i,b,j>, Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<a,b>>(C_Ju_tensor, normal, normal);
+    Tensor2D H_inv_Js_tensor = Fastor::einsum<Fastor::Index<a,i,b,j>, Fastor::Index<i>, Fastor::Index<j>, Fastor::OIndex<a,b>>(C_Js_tensor, normal, normal);
+    //Tensor2D G_Ju_tensor = compute_inv(I, H_inv_Ju_tensor);
+    Tensor2D G_Js_tensor = compute_inv(I, H_inv_Js_tensor);
+    
+    Tensor4D Z_Js_tensor = C_Js_tensor;
+    Tensor4D A_Js_tensor = Fastor::einsum<Fastor::Index<a,b>, Fastor::Index<i,j>, Fastor::OIndex<a,i,b,j>>(G_Js_tensor,N); 
+    Z_Js_tensor -= Fastor::einsum<Fastor::Index<a,i,m,n>, Fastor::Index<m,n,k,l>, Fastor::Index<k,l,b,j>, Fastor::OIndex<a,i,b,j>>(C_Js_tensor,A_Js_tensor,C_Js_tensor);
+    //Tensor4D Cs_tensor = Fastor::einsum<Fastor::Index<k,a>, Fastor::Index<l,i>, Fastor::Index<m,b>, Fastor::Index<n,j>, Fastor::Index<a,i,b,j>, Fastor::OIndex<k,l,m,n>>(T,T,T,T,C_Js_aibj);
+    return  {H_inv_Ju_tensor, Z_Js_tensor}; 
 }
 //int main() {
 //    double E_M= 200.0;  // Young's modulus (GPa)

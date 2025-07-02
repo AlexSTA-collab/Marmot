@@ -1,4 +1,6 @@
 #include "Marmot/MarmotKelvinChainInterface.h"
+#include <iostream>
+#include <ostream>
 
 namespace Marmot::Materials {
 
@@ -8,7 +10,7 @@ namespace Marmot::Materials {
   namespace KelvinChainInterface {
 
     Properties generateRetardationTimes( int n, double min, double spacing )
-    {
+    { //std::cout<<"Inside generateRetardationTimes"<<std::endl;
       Properties retardationTimes( n );
       for ( int i = 0; i < n; i++ )
         retardationTimes( i ) = min * std::pow( spacing, i );
@@ -23,7 +25,7 @@ namespace Marmot::Materials {
                                  Vector3d&         dJumpU,
                                  const double      factor )
     {
-
+      //std::cout<<"Inside evaluateKelvinChain_Ju"<<std::endl;
       for ( int i = 0; i < retardationTimes_Ju.size(); i++ ) {
         const double& tau = retardationTimes_Ju( i );
         const double& D   = elasticModuli_Ju( i );
@@ -33,6 +35,8 @@ namespace Marmot::Materials {
         uniaxialCompliance_Ju += ( 1. - lambda ) / D * factor;
         dJumpU += ( 1. - beta ) * stateVars_Ju.col( i ) * factor;
       }
+      //std::cout<<"dJumpU\n"<<dJumpU<<std::endl;
+      //std::cout<<"elasticModuli_Ju\n"<<elasticModuli_Ju<<std::endl;
     }
     
     void evaluateKelvinChain_Js( double            dT,
@@ -43,7 +47,7 @@ namespace Marmot::Materials {
                                  Vector9d&         dsurface_strain,
                                  const double      factor )
     {
-
+      //std::cout<<"Inside evaluateKelvinChain_Js"<<std::endl;
       for ( int i = 0; i < retardationTimes_Js.size(); i++ ) {
         const double& tau = retardationTimes_Js( i );
         const double& D   = elasticModuli_Js( i );
@@ -53,6 +57,7 @@ namespace Marmot::Materials {
         uniaxialCompliance_Js += ( 1. - lambda ) / D * factor;
         dsurface_strain += ( 1. - beta ) * stateVars_Js.col( i ) * factor;
       }
+      //std::cout<<"dsurface_strain\n"<<dsurface_strain<<std::endl;
     }
 
     void updateStateVarMatrix_Ju( double                    dT,
@@ -89,6 +94,11 @@ namespace Marmot::Materials {
         const double& D   = elasticModuli_Js( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
+        //std::cout<<"dT: "<<dT<<'\n';
+        //std::cout<<"tau: "<<tau<<'\n';
+        //std::cout<<"D: "<<D<<'\n';
+        //std::cout<<"lambda:"<<lambda<<'\n';
+        //std::cout<<"beta: "<<beta<<'\n';
         stateVars_Js.col( i ) = ( lambda / D ) * unitZ_inv_ijkl * dsurface_stress + beta * stateVars_Js.col( i );
       }
     }
