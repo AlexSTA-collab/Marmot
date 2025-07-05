@@ -1,0 +1,25 @@
+# Object files
+*.o
+*.obj
+
+# Compiled binaries
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# Build directories
+/build/
+/bin/
+/dist/
+/CMakeFiles/
+/CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# Editor/OS junk
+*.swp
+*.DS_Store
+*.log
+
