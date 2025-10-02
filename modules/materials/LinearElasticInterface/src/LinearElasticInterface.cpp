@@ -23,8 +23,8 @@ namespace Marmot::Materials {
   
   LinearElasticInterface::LinearElasticInterface( const double* materialProperties, int nMaterialProperties, int materialNumber )
     : MarmotMaterialHypoElasticInterface::MarmotMaterialHypoElasticInterface( materialProperties, nMaterialProperties, materialNumber )
-  {
-    assert( nMaterialProperties == 7 || nMaterialProperties == 9 || nMaterialProperties == 13 );
+  { 
+    assert( nMaterialProperties == 8||nMaterialProperties == 10 || nMaterialProperties == 14);
   }
 
   void LinearElasticInterface::computeStress( double*  force,
