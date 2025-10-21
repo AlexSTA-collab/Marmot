@@ -11,7 +11,7 @@
  *
  * festigkeitslehre@uibk.ac.at
  *
- * 
+ *
  * Alexandros Stathas alexandros.stathas@boku.ac.at
  *
  * This file is part of the MAteRialMOdellingToolbox (marmot).
@@ -27,13 +27,13 @@
  */
 
 #pragma once
+#include "Fastor/Fastor.h"
+#include "Marmot/MarmotMaterialHypoElasticInterface.h"
+#include "Marmot/MarmotStateVarVectorManager.h"
+#include "Marmot/MarmotWiechertInterface.h"
 #include <iostream>
 #include <string>
 #include <vector>
-#include "Fastor/Fastor.h"
-#include "Marmot/MarmotWiechertInterface.h"
-#include "Marmot/MarmotMaterialHypoElasticInterface.h"
-#include "Marmot/MarmotStateVarVectorManager.h"
 
 namespace Marmot::Materials {
   /**
@@ -72,7 +72,7 @@ namespace Marmot::Materials {
 
     /// \brief height of the middle layer
     const double& h;
-    
+
     /// \brief power law compliance parameter displacement jump
     const double& mRu;
 
@@ -104,38 +104,37 @@ namespace Marmot::Materials {
 
     public:
       inline const static auto layout = makeLayout( {
-        { .name = "MaxwellStateVarsRu", .length = 3*1 },
-        { .name = "MaxwellStateVarsRs", .length = 9*1 },
+        { .name = "MaxwellStateVarsRu", .length = 3 * 1 },
+        { .name = "MaxwellStateVarsRs", .length = 9 * 1 },
       } );
 
       WiechertInterface::mapStateVarMatrixRu MaxwellStateVarsRu;
       WiechertInterface::mapStateVarMatrixRs MaxwellStateVarsRs;
-      
+
       LinearViscoElasticInterfaceStateVarManager( double* theStateVarVector, int nMaxwellUnitsRu, int nMaxwellUnitsRs )
         : MarmotStateVarVectorManager( theStateVarVector, layout ),
-          MaxwellStateVarsRu( &find( "MaxwellStateVarsRu" ), 3, nMaxwellUnitsRu ), 
-          MaxwellStateVarsRs( &find( "MaxwellStateVarsRs" ), 9, nMaxwellUnitsRs )
-          {};
+          MaxwellStateVarsRu( &find( "MaxwellStateVarsRu" ), 3, nMaxwellUnitsRu ),
+          MaxwellStateVarsRs( &find( "MaxwellStateVarsRs" ), 9, nMaxwellUnitsRs ){};
     };
 
     ::std::unique_ptr< LinearViscoElasticInterfaceStateVarManager > stateVarManager;
 
   public:
     using MarmotMaterialHypoElasticInterface::MarmotMaterialHypoElasticInterface;
-    using Tensor1D = Fastor::Tensor<double,3>;
-    using Tensor2D = Fastor::Tensor<double,3,3>;
+    using Tensor1D = Fastor::Tensor< double, 3 >;
+    using Tensor2D = Fastor::Tensor< double, 3, 3 >;
 
     LinearViscoElasticInterface( const double* materialProperties, int nMaterialProperties, int materialNumber );
-    
-    void computeStress( double*  force,
-                        double*  surfaceStress,
-                        double* dStressDstrain,
+
+    void computeStress( double*       force,
+                        double*       surfaceStress,
+                        double*       dStressDstrain,
                         const double* dU,
                         const double* dSurfaceStrain,
                         const double* normal,
                         const double* timeOld,
                         const double  dT,
-                        double&       pNewDT);
+                        double&       pNewDT );
 
     int getNumberOfRequiredStateVars();
 
@@ -148,8 +147,8 @@ namespace Marmot::Materials {
     WiechertInterface::Properties elasticModuliRs;
     WiechertInterface::Properties relaxationTimesRu;
     WiechertInterface::Properties relaxationTimesRs;
-    double                  zerothWiechertStiffnessRu;
-    double                  zerothWiechertStiffnessRs;
+    double                        zerothWiechertStiffnessRu;
+    double                        zerothWiechertStiffnessRs;
 
     static constexpr int powerLawApproximationOrder = 2;
   };

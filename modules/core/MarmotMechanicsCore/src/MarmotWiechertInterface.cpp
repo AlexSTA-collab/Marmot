@@ -9,72 +9,66 @@ namespace Marmot::Materials {
 
   namespace WiechertInterface {
 
-    //Properties generateRetardationTimes( int n, double min, double spacing )
+    // Properties generateRetardationTimes( int n, double min, double spacing )
     //{ //std::cout<<"Inside generateRetardationTimes"<<std::endl;
-    //  Properties retardationTimes( n );
-    //  for ( int i = 0; i < n; i++ )
-    //    retardationTimes( i ) = min * std::pow( spacing, i );
-    //  return retardationTimes;
-    //}
-    Properties initializeElasticModuliRu(int nMaxwellRu, 
-                                           double nRu)
+    //   Properties retardationTimes( n );
+    //   for ( int i = 0; i < n; i++ )
+    //     retardationTimes( i ) = min * std::pow( spacing, i );
+    //   return retardationTimes;
+    // }
+    Properties initializeElasticModuliRu( int nMaxwellRu, double nRu )
     {
-    Properties elasticModuliRu(nMaxwellRu);
-    elasticModuliRu<< nRu;
-    return elasticModuliRu;
+      Properties elasticModuliRu( nMaxwellRu );
+      elasticModuliRu << nRu;
+      return elasticModuliRu;
     }
 
-    Properties initializeElasticModuliRs(int nMaxwellRs, 
-                                           double nRs)
+    Properties initializeElasticModuliRs( int nMaxwellRs, double nRs )
     {
-    Properties elasticModuliRs(nMaxwellRs);
-    elasticModuliRs<< nRs;
-    return elasticModuliRs;
+      Properties elasticModuliRs( nMaxwellRs );
+      elasticModuliRs << nRs;
+      return elasticModuliRs;
     }
 
-    Properties initializeRelaxationTimesRu(int nMaxwellRu, 
-                                           double mRu)
+    Properties initializeRelaxationTimesRu( int nMaxwellRu, double mRu )
     {
-    Properties relaxationTimesRu(nMaxwellRu);
-    relaxationTimesRu<< mRu;
-    return relaxationTimesRu;
+      Properties relaxationTimesRu( nMaxwellRu );
+      relaxationTimesRu << mRu;
+      return relaxationTimesRu;
     }
 
-    Properties initializeRelaxationTimesRs(int nMaxwellRs, 
-                                           double mRs)
+    Properties initializeRelaxationTimesRs( int nMaxwellRs, double mRs )
     {
-    Properties relaxationTimesRs(nMaxwellRs);
-    relaxationTimesRs<< mRs;
-    return relaxationTimesRs;
+      Properties relaxationTimesRs( nMaxwellRs );
+      relaxationTimesRs << mRs;
+      return relaxationTimesRs;
     }
 
-    void evaluateWiechertRu( double            dT,
-                             Properties        elasticModuliRu,
-                             Properties        relaxationTimesRu,
+    void evaluateWiechertRu( double           dT,
+                             Properties       elasticModuliRu,
+                             Properties       relaxationTimesRu,
                              StateVarMatrixRu stateVarsRu,
-                             double&           uniaxialStiffnessRu,
-                             Vector3d&         dforce,
-                             const double      factor
-                             )
+                             double&          uniaxialStiffnessRu,
+                             Vector3d&        dforce,
+                             const double     factor )
     {
       for ( int i = 0; i < relaxationTimesRu.size(); i++ ) {
         const double& tau = relaxationTimesRu( i );
         const double& D   = elasticModuliRu( i );
-        double lambda, beta;
+        double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
         uniaxialStiffnessRu += lambda * D * factor;
         dforce += ( 1. - beta ) * stateVarsRu.col( i ) * factor;
       }
     }
-    
-    void evaluateWiechertRs( double            dT,
-                             Properties        elasticModuliRs,
-                             Properties        relaxationTimesRs,
+
+    void evaluateWiechertRs( double           dT,
+                             Properties       elasticModuliRs,
+                             Properties       relaxationTimesRs,
                              StateVarMatrixRs stateVarsRs,
-                             double&           uniaxialStiffnessRs,
-                             Vector9d&         dsurfaceStress,
-                             const double      factor 
-                            )
+                             double&          uniaxialStiffnessRs,
+                             Vector9d&        dsurfaceStress,
+                             const double     factor )
     {
       for ( int i = 0; i < relaxationTimesRs.size(); i++ ) {
         const double& tau = relaxationTimesRs( i );
@@ -88,13 +82,12 @@ namespace Marmot::Materials {
       }
     }
 
-    void updateStateVarMatrixRu( double                    dT,
-                                  Properties                elasticModuliRu,
-                                  Properties                relaxationTimesRu,
-                                  Ref< StateVarMatrixRu >  stateVarsRu,
-                                  const Vector3d&           dforce,
-                                  const Matrix3d&           unitH_inv_ij
-                                  )
+    void updateStateVarMatrixRu( double                  dT,
+                                 Properties              elasticModuliRu,
+                                 Properties              relaxationTimesRu,
+                                 Ref< StateVarMatrixRu > stateVarsRu,
+                                 const Vector3d&         dforce,
+                                 const Matrix3d&         unitH_inv_ij )
     {
 
       if ( dT <= 1e-14 )
@@ -108,12 +101,12 @@ namespace Marmot::Materials {
       }
     }
 
-    void updateStateVarMatrixRs( double                   dT,
-                                  Properties               elasticModuliRs,
-                                  Properties               relaxationTimesRs,
-                                  Ref< StateVarMatrixRs > stateVarsRs,
-                                  const Vector9d&          dsurfaceStress,
-                                  const Matrix9d&          unitZ_ijkl )
+    void updateStateVarMatrixRs( double                  dT,
+                                 Properties              elasticModuliRs,
+                                 Properties              relaxationTimesRs,
+                                 Ref< StateVarMatrixRs > stateVarsRs,
+                                 const Vector9d&         dsurfaceStress,
+                                 const Matrix9d&         unitZ_ijkl )
     {
 
       if ( dT <= 1e-14 )
@@ -145,5 +138,5 @@ namespace Marmot::Materials {
       }
     }
 
-  } // namespace WienertInterface
+  } // namespace WiechertInterface
 } // namespace Marmot::Materials
