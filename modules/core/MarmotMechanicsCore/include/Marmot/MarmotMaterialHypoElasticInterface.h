@@ -10,7 +10,7 @@
  * 2020 - today
  *
  * festigkeitslehre@uibk.ac.at
- * 
+ *
  * Alexandros Stathas alexandros.stathas@boku.ac.at
  * Matthias Neuner matthias.neuner@uibk.ac.at
  *
@@ -27,10 +27,8 @@
  */
 
 #pragma once
-#include <ios>
-#include <iostream>
-#include "Marmot/MarmotMaterialMechanicalInterface.h"
 #include "Fastor/Fastor.h"
+#include "Marmot/MarmotMaterial.h"
 
 /**
  *
@@ -55,12 +53,12 @@
  *
  * This formulation is compatible with an Abaqus interface.
  */
-class MarmotMaterialHypoElasticInterface : public MarmotMaterialMechanicalInterface {
+class MarmotMaterialHypoElasticInterface : public MarmotMaterial {
 
 public:
-  using MarmotMaterialMechanicalInterface::MarmotMaterialMechanicalInterface;
-  using Tensor1D = Fastor::Tensor<double,3>;
-  using Tensor2D = Fastor::Tensor<double,3,3>;
+  using MarmotMaterial::MarmotMaterial;
+  using Tensor1D = Fastor::Tensor< double, 3 >;
+  using Tensor2D = Fastor::Tensor< double, 3, 3 >;
 
   /// Characteristic element length
   double characteristicElementLength;
@@ -82,11 +80,9 @@ public:
    * @param[in,out]	surface_stress  conjugate surface_stress due to conjugate average surface strain
    * @param[in,out]	dStressDDstrain	Algorithmic tangent representing the derivatives of:
    *                                    1)  The Cauchy surface stress tensor with respect to:
-   *                                        a) the linearized average surface strain (the homogenization procedure -Gu et al 2011- 
-   *                                           returns two material tensors Z_{ijkl}, Yn_H_inv_nF_{ijkl}), 
-   *                                        b) the linearized displacement jump (H_inv_nF_{ijk})
-   *                                    2)  The force vector with respect to:
-   *                                        a) the linearized displacement jump (H_inv_{ij})
+   *                                        a) the linearized average surface strain (the homogenization procedure -Gu
+   * et al 2011- returns two material tensors Z_{ijkl}, Yn_H_inv_nF_{ijkl}), b) the linearized displacement jump
+   * (H_inv_nF_{ijk}) 2)  The force vector with respect to: a) the linearized displacement jump (H_inv_{ij})
    * @param[in]	dU linearized displacement increment on "top (0)" and "bottom (1)" sides of the interface
    * @param[in] dSurface_strain linearized surface strain increment on top and bottom sides of the interface
    * @param[in] normal The normal to the interface positive to the direction of the "top (0)" side
@@ -94,26 +90,81 @@ public:
    * @param[in]	dt	(Pseudo-)time increment from the old (pseudo-)time to the current (pseudo-)time
    * @param[in,out]	pNewDT	Suggestion for a new time increment
    */
-  virtual void computeStress( double*  force,
-                        double*  surface_stress,
-                        double* dStress_dStrain,
-                        const double* dU,
-                        const double* dSurface_strain,
-                        const double* normal,
-                        const double* timeOld,
-                        const double  dT,
-                        double&       pNewDT)=0;
+  virtual void computeStress( double*       force,
+                              double*       surface_stress,
+                              double*       dStress_dStrain,
+                              const double* dU,
+                              const double* dSurface_strain,
+                              const double* normal,
+                              const double* timeOld,
+                              const double  dT,
+                              double&       pNewDT ) = 0;
 
-
-
-  //virtual void computeStress(
-  //                           Tensor1D&  force,
-  //                           Tensor2D&  surface_stress,
-  //                           Fastor::Tensor<double, 21,21>& dStress_dStrain,
-  //                           const Fastor::Tensor<double, 6,1>& dU,
-  //                           const Fastor::Tensor<double, 18,1>& dSurface_strain,
-  //                           const Tensor1D& normal,
-  //                           const double* timeOld,
-  //                           const double  dT,
-  //                           double&       pNewDT );
+  // virtual void computeStress(
+  //                            Tensor1D&  force,
+  //                            Tensor2D&  surface_stress,
+  //                            Fastor::Tensor<double, 21,21>& dStress_dStrain,
+  //                            const Fastor::Tensor<double, 6,1>& dU,
+  //                            const Fastor::Tensor<double, 18,1>& dSurface_strain,
+  //                            const Tensor1D& normal,
+  //                            const double* timeOld,
+  //                            const double  dT,
+  //                            double&       pNewDT );
 };
+
+namespace MarmotLibrary {
+
+  /**
+   * @class MarmotMaterialHypoElasticInterfaceFactory
+   * @brief Factory class for creating material instances.
+   *
+   * This class provides a mechanism to register materials by name,
+   * and to create material instances based on their properties.
+   * It allows for dynamic material creation without hardcoding specific material types.
+   */
+  class MarmotMaterialHypoElasticInterfaceFactory {
+  public:
+    using materialFactoryFunction = MarmotMaterialHypoElasticInterface* (*)( const double* materialProperties,
+                                                                             int           nMaterialProperties,
+                                                                             int           materialNumber );
+    MarmotMaterialHypoElasticInterfaceFactory() = delete;
+
+    /**
+     * @brief Create a material instance based on its code and properties.
+     * @param[in] materialName Name of the material.
+     * @param[in] materialProperties Array of material properties.
+     * @param[in] nMaterialProperties Number of properties in the array.
+     * @param[in] materialNumber Unique identifier for the material instance.
+     * @return Pointer to the created MarmotMaterialHypoElasticInterface instance, or nullptr if creation failed.
+     */
+    static MarmotMaterialHypoElasticInterface* createMaterial( const std::string& materialName,
+                                                               const double*      materialProperties,
+                                                               int                nMaterialProperties,
+                                                               int                materialNumber );
+
+    /**
+     * @brief Register a material with its code and factory function.
+     * @param[in] materialName Name of the material.
+     * @param[in] factoryFunction Function to create material instances.
+     * @return True if registration was successful, false if the code already exists.
+     */
+    static bool registerMaterial( const std::string& materialName, materialFactoryFunction factoryFunction );
+
+  private:
+    static std::unordered_map< std::string, materialFactoryFunction > materialNameToModelAssociation;
+  };
+} // namespace MarmotLibrary
+
+/** @brief Creates a default factory function for MarmotMaterialHypoElasticInterface instances.
+ * @tparam T The type of the material to be created.
+ * @return A factory function that creates an instance of T using the provided material properties.
+ */
+template < typename T >
+MarmotLibrary::MarmotMaterialHypoElasticInterfaceFactory::materialFactoryFunction makeDefaultMarmotMaterialHypoElasticInterfaceFactoryFunction()
+{
+  return []( const double* materialProperties,
+             int           nMaterialProperties,
+             int           materialNumber ) -> MarmotMaterialHypoElasticInterface* {
+    return new T( materialProperties, nMaterialProperties, materialNumber );
+  };
+}
