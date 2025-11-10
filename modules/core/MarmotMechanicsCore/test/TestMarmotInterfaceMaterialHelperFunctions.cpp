@@ -115,9 +115,10 @@ void calculateMaterialMatricesTestFunction()
   const double E_0  = 1e2; // Young's modulus interphase
   const double nu_0 = 0.3; // Poisson's ratio interphase
 
-  Eigen::Matrix< double, 6, 6 > C_M_voigt_full = stiffnessTensor( E_M, nu_M );
-  Eigen::Matrix< double, 6, 6 > C_I_voigt_full = stiffnessTensor( E_I, nu_I );
-  Eigen::Matrix< double, 6, 6 > C_0_voigt_full = stiffnessTensor( E_0, nu_0 );
+  Eigen::Matrix< double, 6, 6 > C_nu_voigt_full = stiffnessTensor( 1.0, nu_0 );
+  Eigen::Matrix< double, 6, 6 > C_M_voigt_full  = stiffnessTensor( E_M, nu_M );
+  Eigen::Matrix< double, 6, 6 > C_I_voigt_full  = stiffnessTensor( E_I, nu_I );
+  Eigen::Matrix< double, 6, 6 > C_0_voigt_full  = stiffnessTensor( E_0, nu_0 );
 
   Tensor2D I      = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
   Tensor1D normal = { 1.0, 0.0, 0.0 };
@@ -126,24 +127,20 @@ void calculateMaterialMatricesTestFunction()
 
   Tensor2D T = I - N;
 
-  Tensor4D C_M_aibj = voigtToStiffness( C_M_voigt_full );
-  Tensor4D C_I_aibj = voigtToStiffness( C_I_voigt_full );
-  Tensor4D C_0_aibj = voigtToStiffness( C_0_voigt_full );
+  Tensor4D C_nu_aibj = voigtToStiffness( C_nu_voigt_full );
+  Tensor4D C_M_aibj  = voigtToStiffness( C_M_voigt_full );
+  Tensor4D C_I_aibj  = voigtToStiffness( C_I_voigt_full );
+  Tensor4D C_0_aibj  = voigtToStiffness( C_0_voigt_full );
 
-  auto [F, Y, A_0, L_0, A_M, L_M, A_I, L_I, G_0, G_M, G_I, B_0, B_M, B_I] = calculateFY( I,
-                                                                                         N,
-                                                                                         T,
-                                                                                         C_0_aibj,
-                                                                                         C_M_aibj,
-                                                                                         C_I_aibj );
+  auto [F, Y, A_nu, L_nu, G_nu, B_nu] = calculateFY( I, N, T, C_nu_aibj );
 
   Tensor4D F_alt = -2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
                                           Fastor::Index< m, n, b, j >,
-                                          Fastor::OIndex< a, i, b, j > >( A_0, L_0 );
+                                          Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
   F_alt += Fastor::
-    einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_M, L_M );
+    einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
   F_alt += Fastor::
-    einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_I, L_I );
+    einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
 
   Eigen::Map< const Eigen::Matrix< double, Eigen::Dynamic, 1 > > F_alt_flat( F_alt.data(), F_alt.size() );
   Eigen::Map< const Eigen::Matrix< double, Eigen::Dynamic, 1 > > F_flat( F.data(), F.size() );

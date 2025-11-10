@@ -88,87 +88,55 @@ namespace Marmot::Materials {
 
       return std::make_tuple( B, L, A, G );
     }
-    std::tuple< Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D,
-                Tensor2D,
-                Tensor2D,
-                Tensor2D,
-                Tensor4D,
-                Tensor4D,
-                Tensor4D >
-    calculateFY( const Tensor2D& I,
-                 const Tensor2D& N,
-                 const Tensor2D& T,
-                 const Tensor4D& C_0_aibj,
-                 const Tensor4D& C_M_aibj,
-                 const Tensor4D& C_I_aibj )
+    std::tuple< Tensor4D, Tensor4D, Tensor4D, Tensor4D, Tensor2D, Tensor4D > calculateFY( const Tensor2D& I,
+                                                                                          const Tensor2D& N,
+                                                                                          const Tensor2D& T,
+                                                                                          const Tensor4D& C_nu_aibj )
     {
-      Tensor2D G_0;
-      Tensor4D A_0;
-      Tensor4D B_0;
-      Tensor4D L_0;
+      Tensor2D G_nu;
+      Tensor4D A_nu;
+      Tensor4D B_nu;
+      Tensor4D L_nu;
 
-      Tensor2D G_M;
-      Tensor4D A_M;
-      Tensor4D B_M;
-      Tensor4D L_M;
-
-      Tensor2D G_I;
-      Tensor4D A_I;
-      Tensor4D B_I;
-      Tensor4D L_I;
-
-      std::tie( B_0, L_0, A_0, G_0 ) = interfaceGeometrySystemCouplings( I, N, T, C_0_aibj );
-
-      std::tie( B_M, L_M, A_M, G_M ) = interfaceGeometrySystemCouplings( I, N, T, C_M_aibj );
-
-      std::tie( B_I, L_I, A_I, G_I ) = interfaceGeometrySystemCouplings( I, N, T, C_I_aibj );
+      std::tie( B_nu, L_nu, A_nu, G_nu ) = interfaceGeometrySystemCouplings( I, N, T, C_nu_aibj );
 
       Tensor4D F = -2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
                                           Fastor::Index< m, n, b, j >,
-                                          Fastor::OIndex< a, i, b, j > >( A_0, L_0 );
+                                          Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
       F += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_M, L_M );
+        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
       F += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_I, L_I );
+        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
 
       Tensor4D Y = Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_M, A_M );
+        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
       Y += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_I, A_I );
+        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
       Y -= 2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
                                  Fastor::Index< m, n, b, j >,
-                                 Fastor::OIndex< a, i, b, j > >( L_0, A_0 );
-      return std::make_tuple( F, Y, A_0, L_0, A_M, L_M, A_I, L_I, G_0, G_M, G_I, B_0, B_M, B_I );
+                                 Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
+      return std::make_tuple( F, Y, A_nu, L_nu, G_nu, B_nu );
     }
 
-    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const Tensor1D& normal,
+    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const double&   E_0,
+                                                                                    const double&   E_M,
+                                                                                    const double&   E_I,
+                                                                                    const Tensor1D& normal,
                                                                                     const Tensor2D& I,
                                                                                     const Tensor2D& N,
                                                                                     const Tensor2D& T,
-                                                                                    const Tensor4D& C_0_aibj,
-                                                                                    const Tensor4D& C_M_aibj,
-                                                                                    const Tensor4D& C_I_aibj )
+                                                                                    const Tensor4D& C_nu_aibj )
     {
 
-      auto [F, Y, A_0, L_0, A_M, L_M, A_I, L_I, G_0, G_M, G_I, B_0, B_M, B_I] = calculateFY( I,
-                                                                                             N,
-                                                                                             T,
-                                                                                             C_0_aibj,
-                                                                                             C_M_aibj,
-                                                                                             C_I_aibj );
+      auto [F, Y, A_nu, L_nu, G_nu, B_nu] = calculateFY( I, N, T, C_nu_aibj );
+      std::cout << "H_factor calculation: " << 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I << std::endl;
+      std::cout << "B_factor calculation: " << E_M + E_I - 2.0 * E_0 << std::endl;
 
-      assert_equivalent_F_Falt_Y( F, Y, A_0, L_0, A_M, L_M, A_I, L_I );
+      double H_factor = std::abs( 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I );
+      double B_factor = -std::abs( E_M + E_I - 2.0 * E_0 );
 
-      Tensor2D H = 2.0 * G_0 - G_M - G_I;
-
-      Tensor4D Z     = B_M + B_I - 2.0 * B_0;
+      Tensor2D H     = H_factor * G_nu;
+      Tensor4D Z     = B_factor * B_nu;
       Tensor2D H_inv = compute_inv( I, H );
 
       Tensor3D
@@ -185,34 +153,6 @@ namespace Marmot::Materials {
                                              Fastor::Index< n, b, j >,
                                              Fastor::OIndex< a, i, b, j > >( Yn, H_inv, Fn );
       return std::make_tuple( Z, H_inv, H_inv_nF, Yn_H_inv_Fn );
-    }
-
-    void assert_equivalent_F_Falt_Y( Tensor4D F,
-                                     Tensor4D Y,
-                                     Tensor4D A_0,
-                                     Tensor4D L_0,
-                                     Tensor4D A_M,
-                                     Tensor4D L_M,
-                                     Tensor4D A_I,
-                                     Tensor4D L_I )
-    {
-      Tensor4D F_alt = -2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                              Fastor::Index< m, n, b, j >,
-                                              Fastor::OIndex< a, i, b, j > >( A_0, L_0 );
-      F_alt += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_M, L_M );
-      F_alt += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_I, L_I );
-
-      double                                                         atol = 1e-8;
-      Eigen::Map< const Eigen::Matrix< double, Eigen::Dynamic, 1 > > F_alt_flat( F_alt.data(), F_alt.size() );
-      Eigen::Map< const Eigen::Matrix< double, Eigen::Dynamic, 1 > > F_flat( F.data(), F.size() );
-
-      double max_diff = ( F_alt_flat - F_flat ).cwiseAbs().maxCoeff();
-      if ( max_diff > atol ) {
-        std::cerr << "Arrays are not equal within the tolerance." << std::endl;
-        std::abort();
-      }
     }
 
     // Convert 4th-order Fastor tensor (3x3x3x3) to Eigen 9x9 matrix
@@ -294,9 +234,7 @@ namespace Marmot::Materials {
                                                                                                const double&   nu_0 )
     {
       using namespace Marmot::ContinuumMechanics::Elasticity::Isotropic;
-      Eigen::Matrix< double, 6, 6 > C_M_voigt_full = stiffnessTensor( E_M, nu_M );
-      Eigen::Matrix< double, 6, 6 > C_I_voigt_full = stiffnessTensor( E_I, nu_I );
-      Eigen::Matrix< double, 6, 6 > C_0_voigt_full = stiffnessTensor( E_0, nu_0 );
+      Eigen::Matrix< double, 6, 6 > C_nu_voigt_full = stiffnessTensor( 1.0, nu_M );
 
       Tensor2D I = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
 
@@ -304,14 +242,9 @@ namespace Marmot::Materials {
 
       Tensor2D T = I - N;
 
-      Tensor4D C_M_aibj = voigtToStiffness( C_M_voigt_full );
-      Tensor4D C_I_aibj = voigtToStiffness( C_I_voigt_full );
-      Tensor4D C_0_aibj = voigtToStiffness( C_0_voigt_full );
+      Tensor4D C_nu_aibj = voigtToStiffness( C_nu_voigt_full );
 
-      auto [Z,
-            H_inv,
-            H_inv_nF,
-            Yn_H_inv_Fn] = calculateMaterialMatrices( normal, I, N, T, C_0_aibj, C_M_aibj, C_I_aibj );
+      auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculateMaterialMatrices( E_0, E_M, E_I, normal, I, N, T, C_nu_aibj );
 
       return { Z, H_inv, H_inv_nF, Yn_H_inv_Fn };
     }
