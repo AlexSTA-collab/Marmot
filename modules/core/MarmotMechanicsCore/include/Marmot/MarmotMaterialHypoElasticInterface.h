@@ -78,11 +78,11 @@ public:
    *
    * @param[in,out]	force           conjugate force due to displacement jump
    * @param[in,out]	surface_stress  conjugate surface_stress due to conjugate average surface strain
-   * @param[in,out]	dStressDDstrain	Algorithmic tangent representing the derivatives of:
-   *                                    1)  The Cauchy surface stress tensor with respect to:
-   *                                        a) the linearized average surface strain (the homogenization procedure -Gu
-   * et al 2011- returns two material tensors Z_{ijkl}, Yn_H_inv_nF_{ijkl}), b) the linearized displacement jump
-   * (H_inv_nF_{ijk}) 2)  The force vector with respect to: a) the linearized displacement jump (H_inv_{ij})
+   * @param[in,out]	H_inv_ij	tangent representing the derivatives of the linearized displacement jump (H_inv_{ij})
+   * @param[in,out]	Z_ijkl	  tangent representing the derivatives of the linearized average surface strain (Z_{ijkl})
+   * @param[in,out]	H_inv_nF_ijk tangent of the consistency terms
+   * @param[in,out]	Yn_H_inv_Fn_ijkl representing the derivatives of the linearized average surface strain
+   * (Yn_H_inv_Fn_{ijkl})
    * @param[in]	dU linearized displacement increment on "top (0)" and "bottom (1)" sides of the interface
    * @param[in] dSurface_strain linearized surface strain increment on top and bottom sides of the interface
    * @param[in] normal The normal to the interface positive to the direction of the "top (0)" side
@@ -92,7 +92,10 @@ public:
    */
   virtual void computeStress( double*       force,
                               double*       surface_stress,
-                              double*       dStress_dStrain,
+                              double*       H_inv_ij,
+                              double*       Z_ijkl,
+                              double*       H_inv_nF_ijk,
+                              double*       Yn_H_inv_Fn_ijkl,
                               const double* dU,
                               const double* dSurface_strain,
                               const double* normal,

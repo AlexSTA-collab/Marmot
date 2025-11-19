@@ -128,7 +128,10 @@ namespace Marmot::Materials {
 
     void computeStress( double*       force,
                         double*       surfaceStress,
-                        double*       dStressDstrain,
+                        double*       H_inv_ij,
+                        double*       Z_ijkl,
+                        double*       H_inv_nF_ijk,
+                        double*       Yn_H_inv_Fn_ijkl,
                         const double* dU,
                         const double* dSurfaceStrain,
                         const double* normal,

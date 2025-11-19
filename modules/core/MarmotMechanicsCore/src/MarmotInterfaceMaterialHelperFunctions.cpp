@@ -63,6 +63,14 @@ namespace Marmot::Materials {
       // Solve G in batch mode using LU decomposition
       Eigen::Matrix3d Im( I.data() );
       Eigen::Matrix3d Qm( Q.data() );
+
+      // Compute LU decomposition with invertibility check
+      Eigen::FullPivLU< Eigen::Matrix3d > lu( Qm );
+      // std::cout<<"Determinant of Q: "<<lu.determinant()<<std::endl;
+      if ( !lu.isInvertible() ) {
+        throw std::runtime_error( "Error in compute_inv: matrix Q is singular or near-singular." );
+      }
+
       Eigen::Matrix3d G_mat = Qm.fullPivLu().solve( Im );
 
       // Store result back into G (reinterpret as a 3D Fastor tensor)
@@ -100,21 +108,28 @@ namespace Marmot::Materials {
 
       std::tie( B_nu, L_nu, A_nu, G_nu ) = interfaceGeometrySystemCouplings( I, N, T, C_nu_aibj );
 
-      Tensor4D F = -2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                          Fastor::Index< m, n, b, j >,
-                                          Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
-      F += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
-      F += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( A_nu, L_nu );
+      Tensor4D II = Fastor::einsum< Fastor::Index< a, b >, Fastor::Index< i, j >, Fastor::OIndex< a, i, b, j > >( I,
+                                                                                                                  I );
 
-      Tensor4D Y = Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
-      Y += Fastor::
-        einsum< Fastor::Index< a, i, m, n >, Fastor::Index< m, n, b, j >, Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
-      Y -= 2.0 * Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                 Fastor::Index< m, n, b, j >,
-                                 Fastor::OIndex< a, i, b, j > >( L_nu, A_nu );
+      Tensor4D F = 2.0 * ( -Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                            Fastor::Index< m, n, b, j >,
+                                            Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
+      F -= 0. * ( II - Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                       Fastor::Index< m, n, b, j >,
+                                       Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
+      F -= 0. * ( II - Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                       Fastor::Index< m, n, b, j >,
+                                       Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
+
+      Tensor4D Y = 0. * ( -II + Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                                Fastor::Index< m, n, b, j >,
+                                                Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
+      Y += 0. * ( -II + Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                        Fastor::Index< m, n, b, j >,
+                                        Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
+      Y += 2.0 * ( -Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                    Fastor::Index< m, n, b, j >,
+                                    Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
       return std::make_tuple( F, Y, A_nu, L_nu, G_nu, B_nu );
     }
 
@@ -129,15 +144,22 @@ namespace Marmot::Materials {
     {
 
       auto [F, Y, A_nu, L_nu, G_nu, B_nu] = calculateFY( I, N, T, C_nu_aibj );
-      std::cout << "H_factor calculation: " << 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I << std::endl;
-      std::cout << "B_factor calculation: " << E_M + E_I - 2.0 * E_0 << std::endl;
 
-      double H_factor = std::abs( 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I );
-      double B_factor = -std::abs( E_M + E_I - 2.0 * E_0 );
+      // double H_factor = std::abs( 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I );
+      // double B_factor = -std::abs( E_M + E_I - 2.0 * E_0 );
 
-      Tensor2D H     = H_factor * G_nu;
-      Tensor4D Z     = B_factor * B_nu;
+      double H_factor = std::abs( 2.0 / E_0 );
+      double B_factor = -std::abs( -2.0 * E_0 );
+
+      Tensor2D H = H_factor * G_nu;
+      Tensor4D Z = B_factor * B_nu;
+
+      // std::cout<<"H_ij:\n"<<H<<std::endl;
+
+      // std::cout<<"H_inv_ij:\n"<<std::endl;
+
       Tensor2D H_inv = compute_inv( I, H );
+      // std::cout<<"H_inv_ij:\n"<<H_inv<<std::endl;
 
       Tensor3D
         nF = Fastor::einsum< Fastor::Index< a >, Fastor::Index< a, i, b, j >, Fastor::OIndex< i, b, j > >( normal, F );
@@ -147,7 +169,8 @@ namespace Marmot::Materials {
         Yn = Fastor::einsum< Fastor::Index< a, i, b, j >, Fastor::Index< j >, Fastor::OIndex< a, i, b > >( Y, normal );
       Tensor3D
         H_inv_nF = Fastor::einsum< Fastor::Index< a, b >, Fastor::Index< b, i, j >, Fastor::OIndex< a, i, j > >( H_inv,
-                                                                                                                 nF );
+                                                                                                                 Fn );
+
       Tensor4D Yn_H_inv_Fn = Fastor::einsum< Fastor::Index< a, i, m >,
                                              Fastor::Index< m, n >,
                                              Fastor::Index< n, b, j >,

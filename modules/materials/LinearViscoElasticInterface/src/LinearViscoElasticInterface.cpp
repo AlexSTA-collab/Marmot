@@ -91,7 +91,10 @@ namespace Marmot::Materials {
 
   void LinearViscoElasticInterface::computeStress( double*       force,
                                                    double*       surfaceStress,
-                                                   double*       dStressDstrain,
+                                                   double*       H_inv_ij,
+                                                   double*       Z_ijkl,
+                                                   double*       H_inv_nF_ijk,
+                                                   double*       Yn_H_inv_Fn_ijkl,
                                                    const double* dU,
                                                    const double* dSurfaceStrain,
                                                    const double* normal,
@@ -105,35 +108,40 @@ namespace Marmot::Materials {
     // use Fastor because we really need to use the einsum
     // std::cout<<"Inside proper file\n";
 
-    Fastor::Tensor< double, 3 >      forceFtensor( force );
-    Fastor::Tensor< double, 3, 3 >   surfaceStressFtensor( surfaceStress );
-    Fastor::Tensor< double, 21, 21 > dStressDstrainFtensor( dStressDstrain );
-    auto                             dUFtensorConst = Fastor::TensorMap< const double, 6, 1 >( dU );
-    auto dSurfaceStrainFtensorConst                 = Fastor::TensorMap< const double, 18, 1 >( dSurfaceStrain );
-    auto normalFtensorConst                         = Fastor::TensorMap< const double, 3 >( normal );
+    Fastor::Tensor< double, 3 >          forceFtensor( force );
+    Fastor::Tensor< double, 3, 3 >       surfaceStressFtensor( surfaceStress );
+    Fastor::Tensor< double, 3, 3 >       H_inv_ij_Ftensor( H_inv_ij );
+    Fastor::Tensor< double, 3, 3, 3, 3 > Z_ijkl_Ftensor( Z_ijkl );
+    Fastor::Tensor< double, 3, 3, 3 >    H_inv_nF_ijk_Ftensor( H_inv_nF_ijk );
+    Fastor::Tensor< double, 3, 3, 3, 3 > Yn_H_inv_Fn_ijkl_Ftensor( Yn_H_inv_Fn_ijkl );
+    auto                                 dUFtensorConst = Fastor::TensorMap< const double, 6, 1 >( dU );
+    auto dSurfaceStrainFtensorConst                     = Fastor::TensorMap< const double, 18, 1 >( dSurfaceStrain );
+    auto normalFtensorConst                             = Fastor::TensorMap< const double, 3 >( normal );
 
     Fastor::Tensor< double, 6, 1 >  dUFtensor( dUFtensorConst.data() );
     Fastor::Tensor< double, 18, 1 > dSurfaceStrainFtensor( dSurfaceStrainFtensorConst.data() );
     Fastor::Tensor< double, 3 >     normalFtensor( normalFtensorConst.data() );
 
-    auto [Z_ijkl,
-          H_inv_ij,
-          H_inv_nF_ijk,
-          Yn_H_inv_Fn_ijkl] = calculateInterfaceMaterialParameters( normalFtensor, E_M, nu_M, E_I, nu_I, E_0, nu_0 );
+    auto [Z_ijkl_mat,
+          H_inv_ij_mat,
+          H_inv_nF_ijk_mat,
+          Yn_H_inv_Fn_ijkl_mat] = calculateInterfaceMaterialParameters( normalFtensor,
+                                                                        E_M,
+                                                                        nu_M,
+                                                                        E_I,
+                                                                        nu_I,
+                                                                        E_0,
+                                                                        nu_0 );
 
     // Assign the material matrices to a larger structure. (Not necessary ...)
     Eigen::Matrix< double, 21, 21 > Cel = Eigen::Matrix< double, 21, 21 >::Zero();
 
     // handle zero strain increment
     if ( Fastor::norm( dUFtensor ) < 1e-14 && Fastor::norm( dSurfaceStrainFtensor ) < 1e-14 && dT == 0 ) {
-      Cel.block( 0, 0, 9, 9 )   = convert4thOrderTensorToMatrix( h / 2. * Z_ijkl );
-      Cel.block( 12, 12, 9, 9 ) = convert4thOrderTensorToMatrix( h / 2. * Yn_H_inv_Fn_ijkl );
-      Cel.block( 0, 9, 9, 3 )   = convert3rdOrderTensorToMatrix( H_inv_nF_ijk );
-      Cel.block( 9, 9, 3, 3 )   = convert2ndOrderTensorToMatrix( 2. / h * H_inv_ij );
-
-      Fastor::Tensor< double, 21, 21 > Cel_fastor( Cel.data() );
-      dStressDstrainFtensor = Cel_fastor;
-      std::copy( dStressDstrainFtensor.data(), dStressDstrainFtensor.data() + 21 * 21, dStressDstrain );
+      Z_ijkl_Ftensor           = h / 2. * Z_ijkl_mat;
+      Yn_H_inv_Fn_ijkl_Ftensor = h / 2. * Yn_H_inv_Fn_ijkl_mat;
+      H_inv_ij_Ftensor         = 2. / h * H_inv_ij_mat;
+      H_inv_nF_ijk_Ftensor     = H_inv_nF_ijk_mat;
       return;
     }
     // visco elastic step
@@ -216,17 +224,13 @@ namespace Marmot::Materials {
     forceFtensor += 2. / h * dForce_i;
     surfaceStressFtensor += h / 2. * dSurfaceStress_ij;
 
-    Cel.block( 0, 0, 9, 9 )   = convert4thOrderTensorToMatrix( h / 2. * Z_ijkl_effective );
-    Cel.block( 12, 12, 9, 9 ) = convert4thOrderTensorToMatrix( h / 2. * Yn_H_inv_Fn_ijkl );
-    Cel.block( 0, 9, 9, 3 )   = convert3rdOrderTensorToMatrix( H_inv_nF_ijk );
-    Cel.block( 9, 9, 3, 3 )   = convert2ndOrderTensorToMatrix( 2. / h * H_inv_ij_effective );
-
-    Fastor::Tensor< double, 21, 21 > CelFastor( Cel.data() );
-    dStressDstrainFtensor = CelFastor;
+    Z_ijkl_Ftensor           = h / 2. * Z_ijkl_effective;
+    Yn_H_inv_Fn_ijkl_Ftensor = h / 2. * Yn_H_inv_Fn_ijkl_mat;
+    H_inv_ij_Ftensor         = 2. / h * H_inv_ij_effective;
+    H_inv_nF_ijk_Ftensor     = H_inv_nF_ijk_mat;
 
     std::copy( forceFtensor.data(), forceFtensor.data() + 3, force );
     std::copy( surfaceStressFtensor.data(), surfaceStressFtensor.data() + 3 * 3, surfaceStress );
-    std::copy( dStressDstrainFtensor.data(), dStressDstrainFtensor.data() + 21 * 21, dStressDstrain );
 
     // Use already available functionality convert Fastor tensors to Eigen matricfes/vectors
     // Tranform to Eigen matrices to work with the internal machinery of KelvinChainInterface ...
