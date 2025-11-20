@@ -92,7 +92,7 @@ namespace Marmot::Materials {
                                                                         nu_0 );
 
     // std:: cout << "Z_ijkl:" << Z_ijkl << std::endl;
-    // std:: cout << "H_inv_ij:" << H_inv_ij << std::endl;
+    // std:: cout << "H_inv_ij:\n" << H_inv_ij << std::endl;
     // std:: cout << "H_inv_nF_ijk:" << H_inv_nF_ijk << std::endl;
     // std:: cout << "Yn_H_inv_nF_ijkl:" << Yn_H_inv_Fn_ijkl << std::endl;
 
@@ -121,29 +121,29 @@ namespace Marmot::Materials {
                                           dSurface_strain_ftensor( Fastor::seq( 9, Fastor::last ), 0 ) );
     auto average_dSurface_strain_ftensor_reshape = Fastor::reshape< 3, 3 >( average_dSurface_strain_ftensor );
     force_ftensor += 2. / h *
-                     Fastor::einsum< Fastor::Index< i, j >, Fastor::Index< j >, Fastor::OIndex< i > >( H_inv_ij_ftensor,
+                     Fastor::einsum< Fastor::Index< i, j >, Fastor::Index< j >, Fastor::OIndex< i > >( H_inv_ij_mat,
                                                                                                        jumpU_ftensor );
-    force_ftensor -= 0. * Fastor::einsum< Fastor::Index< i, j, k >,
-                                          Fastor::Index< j, k >,
-                                          Fastor::OIndex< i > >( H_inv_nF_ijk_ftensor,
-                                                                 average_dSurface_strain_ftensor_reshape );
+    force_ftensor -= 0. *
+                     Fastor::einsum< Fastor::Index< i, j, k >,
+                                     Fastor::Index< j, k >,
+                                     Fastor::OIndex< i > >( H_inv_Fn_ijk_mat, average_dSurface_strain_ftensor_reshape );
 
     surface_stress_ftensor -= h / 2. * 0. *
                               Fastor::einsum< Fastor::Index< i, j, k, l >,
                                               Fastor::Index< k, l >,
-                                              Fastor::OIndex< i, j > >( Z_ijkl_ftensor,
+                                              Fastor::OIndex< i, j > >( Z_ijkl_mat,
                                                                         average_dSurface_strain_ftensor_reshape );
     surface_stress_ftensor += h / 2. * 0. *
                               Fastor::einsum< Fastor::Index< i, j, k, l >,
                                               Fastor::Index< k, l >,
-                                              Fastor::OIndex< i, j > >( Yn_H_inv_Fn_ijkl_ftensor,
+                                              Fastor::OIndex< i, j > >( Yn_H_inv_Fn_ijkl_mat,
                                                                         average_dSurface_strain_ftensor_reshape );
     surface_stress_ftensor -= 0. * Fastor::einsum< Fastor::Index< i >,
                                                    Fastor::Index< i, j, k >,
-                                                   Fastor::OIndex< j, k > >( jumpU_ftensor, H_inv_nF_ijk_ftensor );
+                                                   Fastor::OIndex< j, k > >( jumpU_ftensor, H_inv_Fn_ijk_mat );
 
-    std::cout << "jumpU_ftensor:\n" << jumpU_ftensor << std::endl;
-    std::cout << "force_ftensor:\n" << force_ftensor << std::endl;
+    // std::cout << "jumpU_ftensor:\n" << jumpU_ftensor << std::endl;
+    // std::cout << "force_ftensor:\n" << force_ftensor << std::endl;
 
     std::copy( force_ftensor.data(), force_ftensor.data() + 3, force );
     std::copy( surface_stress_ftensor.data(), surface_stress_ftensor.data() + 3 * 3, surface_stress );
