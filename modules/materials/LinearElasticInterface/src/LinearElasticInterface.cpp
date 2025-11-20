@@ -142,8 +142,8 @@ namespace Marmot::Materials {
                                                    Fastor::Index< i, j, k >,
                                                    Fastor::OIndex< j, k > >( jumpU_ftensor, H_inv_nF_ijk_ftensor );
 
-    // std::cout << "jumpU_ftensor:\n" << jumpU_ftensor << std::endl;
-    // std::cout << "force_ftensor:\n" << force_ftensor << std::endl;
+    std::cout << "jumpU_ftensor:\n" << jumpU_ftensor << std::endl;
+    std::cout << "force_ftensor:\n" << force_ftensor << std::endl;
 
     std::copy( force_ftensor.data(), force_ftensor.data() + 3, force );
     std::copy( surface_stress_ftensor.data(), surface_stress_ftensor.data() + 3 * 3, surface_stress );
