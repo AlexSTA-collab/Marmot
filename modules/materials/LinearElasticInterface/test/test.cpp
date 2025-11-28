@@ -5,6 +5,7 @@
 #include "Marmot/MarmotTesting.h"
 #include <Eigen/Dense>
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 
@@ -48,9 +49,10 @@ void testForceMaterialResponse()
   // E_0: Youngs modulus of interphase
   // nu_0: Poisson's ratio of interphase
   // h : thickness of the interphase
-  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h
-  const double materialProperties[7] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7 };
-  const int    nMaterialProperties   = 7;
+  // dummy : placeholder for 8th parameter
+  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h, dummy
+  const double materialProperties[8] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7, 0.0 };
+  const int    nMaterialProperties   = 8;
 
   // Create the material object
   auto mat = createMarmotMaterialHypoElasticInterface( "LINEARELASTICINTERFACE",
@@ -70,6 +72,10 @@ void testForceMaterialResponse()
   double surface_stress[9] = { 0 };
   // Define a matrix to store the tangent stiffness (stress-strain relation)
   double dStress_dStrain[21 * 21] = { { 0 } };
+  double H_inv_ij[3 * 3]          = { { 0 } };
+  double Z_ijkl[3 * 3 * 3 * 3]    = { { 0 } };
+  double H_inv_nF_ijk[3 * 3 * 3];
+  double Yn_H_inv_Fn_ijkl[3 * 3 * 3 * 3];
   // Define displacement and surface strain increments
   //  Apply a small displacement increment on the top surface
   const double dU[6]               = { 0, 1e-3, 0, 0, 0, 0 };
@@ -83,16 +89,38 @@ void testForceMaterialResponse()
   double       pNewDT;        // Placeholder for the new time increment
 
   // Compute the stress response of the material
-  mat->computeStress( force, surface_stress, dStress_dStrain, dU, dSurface_strain, normal, &timeOld, dT, pNewDT );
+  mat->computeStress( force,
+                      surface_stress,
+                      H_inv_ij,
+                      Z_ijkl,
+                      H_inv_nF_ijk,
+                      Yn_H_inv_Fn_ijkl,
+                      dU,
+                      dSurface_strain,
+                      normal,
+                      &timeOld,
+                      dT,
+                      pNewDT );
 
   // Define the expected stress values for the applied strain increment
-  double forceTarget[3]          = { 0, -3846.538500, 0 };
-  double surface_stressTarget[9] = { 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+  double forceTarget[3]          = { 0, 38461538.4615385, 0 };
+  double surface_stressTarget[9] = { 0., 0., 0., 0., 0., 0., 0., 3.84615384615385, 0. };
   // Convert to Eigen maps for easier comparison
   Eigen::Map< Eigen::Vector3d > forceVec( force );
   Eigen::Map< Eigen::Vector3d > forceTargetVec( forceTarget );
   Eigen::Map< Eigen::VectorXd > surface_stressVec( surface_stress, 9 );
   Eigen::Map< Eigen::VectorXd > surface_stressTargetVec( surface_stressTarget, 9 );
+
+  // Print computed values with full precision for verification
+  std::cout << std::setprecision( 15 ) << "Computed force: [" << force[0] << ", " << force[1] << ", " << force[2] << "]"
+            << std::endl;
+  std::cout << std::setprecision( 15 ) << "Computed surface_stress: [";
+  for ( int i = 0; i < 9; i++ ) {
+    std::cout << surface_stress[i];
+    if ( i < 8 )
+      std::cout << ", ";
+  }
+  std::cout << "]" << std::endl;
 
   // Compare the computed stress to the expected stress and throw an exception if they differ
   throwExceptionOnFailure( checkIfEqual< double >( forceVec, forceTargetVec, 1e-10 ),
@@ -113,9 +141,10 @@ void testSurfaceStressMaterialResponse()
   // E_0: Youngs modulus of interphase
   // nu_0: Poisson's ratio of interphase
   // h : thickness of the interphase
-  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h
-  const double materialProperties[7] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7 };
-  const int    nMaterialProperties   = 7;
+  // dummy : placeholder for 8th parameter
+  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h, dummy
+  const double materialProperties[8] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7, 0.0 };
+  const int    nMaterialProperties   = 8;
 
   // Create the material object
   auto mat = createMarmotMaterialHypoElasticInterface( "LINEARELASTICINTERFACE",
@@ -132,8 +161,11 @@ void testSurfaceStressMaterialResponse()
   // Define initial force/stress state (set to zero) and strain increment
   double force[3]          = { 0, 0, 0 };
   double surface_stress[9] = { 0 };
-  // Define a matrix to store the tangent stiffness (stress-strain relation)
-  double dStress_dStrain[21 * 21] = { { 0 } };
+  // Define matrices to store the material response outputs
+  double H_inv_ij[21]              = { 0 };
+  double Z_ijkl[21 * 21]           = { 0 };
+  double H_inv_nF_ijk[21 * 3]      = { 0 };
+  double Yn_H_inv_Fn_ijkl[21 * 21] = { 0 };
   // Define displacement and surface strain increments
   //  Apply a small displacement increment on the top surface
   const double dU[6]               = { 0, 0, 0, 0, 0, 0 };
@@ -147,15 +179,37 @@ void testSurfaceStressMaterialResponse()
   double       pNewDT;        // Placeholder for the new time increment
 
   // Compute the stress response of the material
-  mat->computeStress( force, surface_stress, dStress_dStrain, dU, dSurface_strain, normal, &timeOld, dT, pNewDT );
+  mat->computeStress( force,
+                      surface_stress,
+                      H_inv_ij,
+                      Z_ijkl,
+                      H_inv_nF_ijk,
+                      Yn_H_inv_Fn_ijkl,
+                      dU,
+                      dSurface_strain,
+                      normal,
+                      &timeOld,
+                      dT,
+                      pNewDT );
 
   double forceTarget[3]          = { 0, 0, 0 };
-  double surface_stressTarget[9] = { 0, -7.69154e-07, 0, -7.69154e-07, 0, 0, 0, 0, 0 };
+  double surface_stressTarget[9] = { 0, 7.69230769230769e-07, 0, 7.69230769230769e-07, 0, 0, 0, 0, 0 };
   // Convert to Eigen maps for easier comparison
   Eigen::Map< Eigen::Vector3d > forceVec( force );
   Eigen::Map< Eigen::Vector3d > forceTargetVec( forceTarget );
   Eigen::Map< Eigen::VectorXd > surface_stressVec( surface_stress, 9 );
   Eigen::Map< Eigen::VectorXd > surface_stressTargetVec( surface_stressTarget, 9 );
+
+  // Print computed values with full precision for verification
+  std::cout << std::setprecision( 15 ) << "Computed force (test2): [" << force[0] << ", " << force[1] << ", "
+            << force[2] << "]" << std::endl;
+  std::cout << std::setprecision( 15 ) << "Computed surface_stress (test2): [";
+  for ( int i = 0; i < 9; i++ ) {
+    std::cout << surface_stress[i];
+    if ( i < 8 )
+      std::cout << ", ";
+  }
+  std::cout << "]" << std::endl;
 
   // Compare the computed stress to the expected stress and throw an exception if they differ
   throwExceptionOnFailure( checkIfEqual< double >( forceVec, forceTargetVec, 1e-10 ),
