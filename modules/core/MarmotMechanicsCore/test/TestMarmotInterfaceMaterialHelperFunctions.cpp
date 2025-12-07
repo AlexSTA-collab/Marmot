@@ -108,16 +108,10 @@ void calculateMaterialMatricesTestFunction()
 {
   using namespace Marmot::ContinuumMechanics::Elasticity::Isotropic;
   // Define material properties for the interphase
-  const double E_M  = 1.0; // Young's modulus top layer
-  const double nu_M = 0.3; // Poisson's ratio top layer
-  const double E_I  = 1.0; // Young's modulus bottom layer
-  const double nu_I = 0.3; // Poisson's ratio bottom layer
   const double E_0  = 1e2; // Young's modulus interphase
   const double nu_0 = 0.3; // Poisson's ratio interphase
 
   Eigen::Matrix< double, 6, 6 > C_nu_voigt_full = stiffnessTensor( 1.0, nu_0 );
-  Eigen::Matrix< double, 6, 6 > C_M_voigt_full  = stiffnessTensor( E_M, nu_M );
-  Eigen::Matrix< double, 6, 6 > C_I_voigt_full  = stiffnessTensor( E_I, nu_I );
   Eigen::Matrix< double, 6, 6 > C_0_voigt_full  = stiffnessTensor( E_0, nu_0 );
 
   Tensor2D I      = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
@@ -128,8 +122,6 @@ void calculateMaterialMatricesTestFunction()
   Tensor2D T = I - N;
 
   Tensor4D C_nu_aibj = voigtToStiffness( C_nu_voigt_full );
-  Tensor4D C_M_aibj  = voigtToStiffness( C_M_voigt_full );
-  Tensor4D C_I_aibj  = voigtToStiffness( C_I_voigt_full );
   Tensor4D C_0_aibj  = voigtToStiffness( C_0_voigt_full );
 
   auto [F, Y, A_nu, L_nu, G_nu, B_nu] = calculateFY( I, N, T, C_nu_aibj );

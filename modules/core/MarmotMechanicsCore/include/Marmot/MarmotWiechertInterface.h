@@ -41,11 +41,17 @@ namespace Marmot::Materials {
     typedef Eigen::VectorXd          Properties;
     typedef Eigen::Map< Properties > mapProperties;
 
-    typedef Eigen::Matrix< double, 3, Eigen::Dynamic > StateVarMatrixRu;
-    typedef Eigen::Matrix< double, 9, Eigen::Dynamic > StateVarMatrixRs;
+    typedef Eigen::Matrix< double, 3, Eigen::Dynamic > StateVarMatrix_force_uu;
+    typedef Eigen::Matrix< double, 3, Eigen::Dynamic > StateVarMatrix_force_us;
+    typedef Eigen::Matrix< double, 9, Eigen::Dynamic > StateVarMatrix_surface_stress_Z;
+    typedef Eigen::Matrix< double, 9, Eigen::Dynamic > StateVarMatrix_surface_stress_Y;
+    typedef Eigen::Matrix< double, 9, Eigen::Dynamic > StateVarMatrix_surface_stress_us;
 
-    typedef Eigen::Map< StateVarMatrixRu > mapStateVarMatrixRu;
-    typedef Eigen::Map< StateVarMatrixRs > mapStateVarMatrixRs;
+    typedef Eigen::Map< StateVarMatrix_force_uu >          mapStateVarMatrix_force_uu;
+    typedef Eigen::Map< StateVarMatrix_force_us >          mapStateVarMatrix_force_us;
+    typedef Eigen::Map< StateVarMatrix_surface_stress_Z >  mapStateVarMatrix_surface_stress_Z;
+    typedef Eigen::Map< StateVarMatrix_surface_stress_Y >  mapStateVarMatrix_surface_stress_Y;
+    typedef Eigen::Map< StateVarMatrix_surface_stress_us > mapStateVarMatrix_surface_stress_us;
 
     // template < int k >
     // Properties computeElasticModuli_Ru( std::function< autodiff::Real< k, double >( autodiff::Real< k, double > ) >
@@ -104,43 +110,63 @@ namespace Marmot::Materials {
 
     // Properties generateRelaxationTimes( int n, double min, double spacing );
 
-    Properties initializeElasticModuliRu( int nMaxwellRu, double nRu );
+    Properties initializeElasticModuli( int nMaxwell, double n );
 
-    Properties initializeElasticModuliRs( int nMaxwellRs, double nRs );
+    Properties initializeRelaxationTimes( int nMaxwell, double m );
 
-    Properties initializeRelaxationTimesRu( int nMaxwellRu, double mRu );
+    void updateStateVarMatrix_force_uu( const double                          dT,
+                                        Properties                            elasticModuli,
+                                        Properties                            relaxationTimes,
+                                        Eigen::Ref< StateVarMatrix_force_uu > stateVars_force_uu,
+                                        const Marmot::Vector3d&               dforce_uu,
+                                        const Marmot::Matrix3d&               unitH_inv_ij );
 
-    Properties initializeRelaxationTimesRs( int nMaxwellRs, double mRs );
+    void updateStateVarMatrix_force_us( const double                          dT,
+                                        Properties                            elasticModuli,
+                                        Properties                            relaxationTimes,
+                                        Eigen::Ref< StateVarMatrix_force_us > stateVars_force_us,
+                                        const Marmot::Vector9d&               dforce_us,
+                                        const Eigen::Matrix< double, 3, 9 >&  unitH_inv_nF_ijk );
 
-    void updateStateVarMatrixRu( const double                   dT,
-                                 Properties                     elasticModuli_Ru,
-                                 Properties                     relaxationTimes_Ru,
-                                 Eigen::Ref< StateVarMatrixRu > stateVarsRu,
-                                 const Marmot::Vector3d&        dforce,
-                                 const Marmot::Matrix3d&        unitH_inv_ij );
+    void updateStateVarMatrix_surface_stress_Z(
+      const double                                  dT,
+      Properties                                    elasticModuli,
+      Properties                                    relaxationTimes,
+      Eigen::Ref< StateVarMatrix_surface_stress_Z > stateVars_surface_stress_Z,
+      const Marmot::Vector9d&                       dsurfaceStress_Z,
+      const Marmot::Matrix9d&                       unitZ_ijkl );
 
-    void updateStateVarMatrixRs( const double                   dT,
-                                 Properties                     elasticModuliRs,
-                                 Properties                     relaxationTimesRs,
-                                 Eigen::Ref< StateVarMatrixRs > stateVarsRs,
-                                 const Marmot::Vector9d&        dsurface_stress,
-                                 const Marmot::Matrix9d&        unitZ_ijkl );
+    void updateStateVarMatrix_surface_stress_Y(
+      const double                                  dT,
+      Properties                                    elasticModuli,
+      Properties                                    relaxationTimes,
+      Eigen::Ref< StateVarMatrix_surface_stress_Y > stateVars_surface_stress_Y,
+      const Marmot::Vector9d&                       dsurfaceStress_Y,
+      const Marmot::Matrix9d&                       unitYn_H_inv_Fn_ijkl );
 
-    void evaluateWiechertRu( const double      dT,
-                             Properties        elasticModuliRu,
-                             Properties        relaxationTimesRu,
-                             StateVarMatrixRu  stateVarsRu,
-                             double&           uniaxialStiffnessRu,
-                             Marmot::Vector3d& dforce_v,
-                             const double      factor );
+    void updateStateVarMatrix_surface_stress_us(
+      const double                                   dT,
+      Properties                                     elasticModuli,
+      Properties                                     relaxationTimes,
+      Eigen::Ref< StateVarMatrix_surface_stress_us > stateVars_surface_stress_us,
+      const Marmot::Vector3d&                        djumpU,
+      const Eigen::Matrix< double, 9, 3 >&           unitH_inv_nF_ijk );
 
-    void evaluateWiechertRs( const double      dT,
-                             Properties        elasticModuliRs,
-                             Properties        retardationTimesRs,
-                             StateVarMatrixRs  stateVarsRs,
-                             double&           uniaxialStiffnessRs,
-                             Marmot::Vector9d& dsurface_stress,
-                             const double      factor );
+    void evaluateWiechert( const double                     dT,
+                           Properties                       elasticModuli,
+                           Properties                       relaxationTimes,
+                           StateVarMatrix_force_uu          stateVars_force_uu,
+                           StateVarMatrix_force_us          stateVars_force_us,
+                           StateVarMatrix_surface_stress_Z  stateVars_surface_stress_Z,
+                           StateVarMatrix_surface_stress_Y  stateVars_surface_stress_Y,
+                           StateVarMatrix_surface_stress_us stateVars_surface_stress_us,
+                           double&                          uniaxialStiffness,
+                           Marmot::Vector3d&                dforce_uu,
+                           Marmot::Vector3d&                dforce_us,
+                           Marmot::Vector9d&                dsurfaceStress_Z,
+                           Marmot::Vector9d&                dsurfaceStress_Y,
+                           Marmot::Vector9d&                dsurfaceStress_us,
+                           const double                     factor );
 
     void computeLambdaAndBeta( double dT, double tau, double& lambda, double& beta );
 

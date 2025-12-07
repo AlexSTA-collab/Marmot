@@ -54,7 +54,7 @@ using Tensor2D = Fastor::Tensor< double, 3, 3 >;
 using Tensor3D = Fastor::Tensor< double, 3, 3, 3 >;
 using Tensor4D = Fastor::Tensor< double, 3, 3, 3, 3 >;
 
-enum { a, i, b, j, k, l, m, n, I, J };
+enum { a, i, b, j, k, l, m, n, p, q, r, I, J };
 namespace Marmot::Materials {
 
   namespace InterfaceMaterialHelperFunctions {
@@ -114,29 +114,14 @@ namespace Marmot::Materials {
       Tensor4D F = 2.0 * ( -Fastor::einsum< Fastor::Index< a, i, m, n >,
                                             Fastor::Index< m, n, b, j >,
                                             Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
-      F -= 0. * ( II - Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                       Fastor::Index< m, n, b, j >,
-                                       Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
-      F -= 0. * ( II - Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                       Fastor::Index< m, n, b, j >,
-                                       Fastor::OIndex< a, i, b, j > >( A_nu, L_nu ) );
 
-      Tensor4D Y = 0. * ( -II + Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                                Fastor::Index< m, n, b, j >,
-                                                Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
-      Y += 0. * ( -II + Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                        Fastor::Index< m, n, b, j >,
-                                        Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
-      Y += 2.0 * ( -Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                    Fastor::Index< m, n, b, j >,
-                                    Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
+      Tensor4D Y = 2.0 * ( -Fastor::einsum< Fastor::Index< a, i, m, n >,
+                                            Fastor::Index< m, n, b, j >,
+                                            Fastor::OIndex< a, i, b, j > >( L_nu, A_nu ) );
       return std::make_tuple( F, Y, A_nu, L_nu, G_nu, B_nu );
     }
 
-    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const double&   E_0,
-                                                                                    const double&   E_M,
-                                                                                    const double&   E_I,
-                                                                                    const Tensor1D& normal,
+    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const Tensor1D& normal,
                                                                                     const Tensor2D& I,
                                                                                     const Tensor2D& N,
                                                                                     const Tensor2D& T,
@@ -148,17 +133,17 @@ namespace Marmot::Materials {
       // double H_factor = std::abs( 2.0 / E_0 - 1.0 / E_M - 1.0 / E_I );
       // double B_factor = -std::abs( E_M + E_I - 2.0 * E_0 );
 
-      double H_factor = std::abs( 2.0 / E_0 );
-      double B_factor = -std::abs( -2.0 * E_0 );
+      // double H_factor = std::abs( 2.0 / E_0 );
+      // double B_factor = -std::abs( -2.0 * E_0 );
 
-      Tensor2D H = H_factor * G_nu;
-      Tensor4D Z = B_factor * B_nu;
+      // Tensor2D H = H_factor * G_nu;
+      // Tensor4D Z = B_factor * B_nu;
 
       // std::cout<<"H_ij:\n"<<H<<std::endl;
 
       // std::cout<<"H_inv_ij:\n"<<std::endl;
 
-      Tensor2D H_inv = compute_inv( I, H );
+      Tensor2D H_inv = compute_inv( I, G_nu );
       // std::cout<<"H_inv_ij:\n"<<H_inv<<std::endl;
 
       Tensor3D
@@ -175,11 +160,12 @@ namespace Marmot::Materials {
                                              Fastor::Index< m, n >,
                                              Fastor::Index< n, b, j >,
                                              Fastor::OIndex< a, i, b, j > >( Yn, H_inv, Fn );
-      return std::make_tuple( Z, H_inv, H_inv_nF, Yn_H_inv_Fn );
+      return std::make_tuple( B_nu, H_inv, H_inv_nF, Yn_H_inv_Fn );
     }
 
     // Convert 4th-order Fastor tensor (3x3x3x3) to Eigen 9x9 matrix
-    Eigen::Matrix< double, 9, 9 > convert4thOrderTensorToMatrix( const Tensor4D& tensor )
+    // First two indices (ij) form rows, last two indices (kl) form columns
+    Eigen::Matrix< double, 9, 9 > convert4thOrderTensorToMatrix_9x9( const Tensor4D& tensor )
     {
       Eigen::Matrix< double, 9, 9 > matrix( 9, 9 );
 
@@ -199,7 +185,8 @@ namespace Marmot::Materials {
     }
 
     // Convert 3rd-order Fastor tensor (3x3x3) to Eigen 9x3 matrix
-    Eigen::Matrix< double, 9, 3 > convert3rdOrderTensorToMatrix( const Tensor3D& tensor )
+    // First two indices (ij) form rows, last index k forms columns
+    Eigen::Matrix< double, 9, 3 > convert3rdOrderTensorToMatrix_9x3( const Tensor3D& tensor )
     {
       Eigen::Matrix< double, 9, 3 > matrix( 9, 3 );
 
@@ -215,8 +202,26 @@ namespace Marmot::Materials {
       return matrix;
     }
 
+    // Convert 3rd-order Fastor tensor (3x3x3) to Eigen 3x9 matrix
+    // First index i forms rows, last two indices (jk) form columns
+    Eigen::Matrix< double, 3, 9 > convert3rdOrderTensorToMatrix_3x9( const Tensor3D& tensor )
+    {
+      Eigen::Matrix< double, 3, 9 > matrix( 3, 9 );
+
+      for ( int i = 0; i < 3; ++i ) {
+        for ( int j = 0; j < 3; ++j ) {
+          for ( int k = 0; k < 3; ++k ) {
+            int col          = 3 * j + k; // Convert (j, k) to single index
+            matrix( i, col ) = tensor( i, j, k );
+          }
+        }
+      }
+
+      return matrix;
+    }
+
     // Convert 2nd-order Fastor tensor (3x3) to Eigen 3x3 matrix
-    Eigen::Matrix< double, 3, 3 > convert2ndOrderTensorToMatrix( const Tensor2D& tensor )
+    Eigen::Matrix< double, 3, 3 > convert2ndOrderTensorToMatrix_3x3( const Tensor2D& tensor )
     {
       Eigen::Matrix< double, 3, 3 > matrix( 3, 3 );
 
@@ -249,15 +254,10 @@ namespace Marmot::Materials {
     }
 
     std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateInterfaceMaterialParameters( const Tensor1D& normal,
-                                                                                               const double&   E_M,
-                                                                                               const double&   nu_M,
-                                                                                               const double&   E_I,
-                                                                                               const double&   nu_I,
-                                                                                               const double&   E_0,
                                                                                                const double&   nu_0 )
     {
       using namespace Marmot::ContinuumMechanics::Elasticity::Isotropic;
-      Eigen::Matrix< double, 6, 6 > C_nu_voigt_full = stiffnessTensor( 1.0, nu_M );
+      Eigen::Matrix< double, 6, 6 > C_nu_voigt_full = stiffnessTensor( 1.0, nu_0 );
 
       Tensor2D I = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
 
@@ -267,61 +267,10 @@ namespace Marmot::Materials {
 
       Tensor4D C_nu_aibj = voigtToStiffness( C_nu_voigt_full );
 
-      auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculateMaterialMatrices( E_0, E_M, E_I, normal, I, N, T, C_nu_aibj );
+      auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculateMaterialMatrices( normal, I, N, T, C_nu_aibj );
 
       return { Z, H_inv, H_inv_nF, Yn_H_inv_Fn };
     }
 
-    std::tuple< Tensor2D, Tensor4D, Eigen::Matrix< double, 3, 3 >, Eigen::Matrix< double, 9, 9 > > calculateEffectiveProperties(
-      double&         zerothWienertStiffness_Ru,
-      double&         creep_Ru_stiffness,
-      double&         zerothWienertStiffness_Rs,
-      double&         creep_Rs_stiffness,
-      const Tensor1D& normal,
-      const double&   E_M,
-      const double&   nu_M,
-      const double&   E_I,
-      const double&   nu_I,
-      const double&   E_0,
-      const double&   nu_0 )
-    {
-      using namespace Marmot::ContinuumMechanics::Elasticity::Isotropic;
-      Tensor2D N = Fastor::einsum< Fastor::Index< i >, Fastor::Index< j >, Fastor::OIndex< i, j > >( normal, normal );
-
-      double E_bar = E_M + E_I - 2. * E_0;
-      double H_bar = 2. * 1. / E_0 - 1. / E_M - 1 / E_I;
-
-      double                        nu_bar               = nu_0;
-      Eigen::Matrix< double, 6, 6 > unitC_bar_voigt_full = stiffnessTensor( 1, nu_bar );
-      Tensor4D                      unitC_bar_tensor     = voigtToStiffness( unitC_bar_voigt_full );
-
-      Tensor2D unitQ_bar_tensor = Fastor::
-        einsum< Fastor::Index< a, i, b, j >, Fastor::Index< i, j >, Fastor::OIndex< a, b > >( unitC_bar_tensor, N );
-      Eigen::Map< Eigen::Matrix< double, 3, 3, Eigen::RowMajor > > unitQ_bar_voigt_full( unitQ_bar_tensor.data() );
-
-      Eigen::Matrix< double, 3, 3 >     II                   = Eigen::Matrix< double, 3, 3 >::Identity();
-      Eigen::Matrix< double, 3, 3 >     unitG_bar_voigt_full = unitQ_bar_voigt_full.fullPivLu().solve( II );
-      Fastor::TensorMap< double, 3, 3 > unitG_bar_tensor( unitG_bar_voigt_full.data() );
-
-      Tensor4D unitZ_bar_tensor = unitC_bar_tensor;
-      Tensor4D unitA_bar_tensor = Fastor::
-        einsum< Fastor::Index< a, b >, Fastor::Index< i, j >, Fastor::OIndex< a, i, b, j > >( unitG_bar_tensor, N );
-      Tensor4D unitCA_tensor = Fastor::einsum< Fastor::Index< a, i, m, n >,
-                                               Fastor::Index< m, n, k, l >,
-                                               Fastor::OIndex< a, i, k, l > >( unitC_bar_tensor, unitA_bar_tensor );
-      unitZ_bar_tensor -= Fastor::einsum< Fastor::Index< m, n, k, l >,
-                                          Fastor::Index< k, l, b, j >,
-                                          Fastor::OIndex< m, n, b, j > >( unitCA_tensor, unitC_bar_tensor );
-      Eigen::Map< Eigen::Matrix< double, 9, 9, Eigen::RowMajor > > unitZ_bar_voigt_full( unitZ_bar_tensor.data() );
-
-      double barE_Ru = 1. / H_bar + 0. * zerothWienertStiffness_Ru + creep_Ru_stiffness;
-      double barE_Rs = E_bar + 0. * zerothWienertStiffness_Rs - creep_Rs_stiffness;
-
-      Tensor2D H_inv_Ru_tensor = barE_Ru * unitQ_bar_tensor;
-
-      Tensor4D Z_Rs_tensor = barE_Rs * unitZ_bar_tensor;
-
-      return { H_inv_Ru_tensor, Z_Rs_tensor, unitQ_bar_voigt_full, unitZ_bar_voigt_full };
-    }
   } // namespace InterfaceMaterialHelperFunctions
 } // namespace Marmot::Materials

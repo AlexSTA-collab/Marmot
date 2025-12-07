@@ -42,17 +42,13 @@ std::unique_ptr< MarmotMaterialHypoElasticInterface > createMarmotMaterialHypoEl
 void testForceMaterialResponse()
 {
   // Define material parameters (Young's modulus and Poisson's ratio)
-  // E_M : Youngs modulus of top body
-  // nu_M: Poisson's ratio of top body
-  // E_I : Youngs modulus of bottom body
-  // nu_I: Poisson's ratio of bottom body
   // E_0: Youngs modulus of interphase
   // nu_0: Poisson's ratio of interphase
   // h : thickness of the interphase
   // dummy : placeholder for 8th parameter
-  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h, dummy
-  const double materialProperties[8] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7, 0.0 };
-  const int    nMaterialProperties   = 8;
+  //                                     E_0, nu_0,     h, dummy
+  const double materialProperties[4] = { 1e4, 0.3, 1e-7, 0.0 };
+  const int    nMaterialProperties   = 4;
 
   // Create the material object
   auto mat = createMarmotMaterialHypoElasticInterface( "LINEARELASTICINTERFACE",
@@ -71,11 +67,11 @@ void testForceMaterialResponse()
   double force[3]          = { 0, 0, 0 };
   double surface_stress[9] = { 0 };
   // Define a matrix to store the tangent stiffness (stress-strain relation)
-  double dStress_dStrain[21 * 21] = { { 0 } };
-  double H_inv_ij[3 * 3]          = { { 0 } };
-  double Z_ijkl[3 * 3 * 3 * 3]    = { { 0 } };
-  double H_inv_nF_ijk[3 * 3 * 3];
-  double Yn_H_inv_Fn_ijkl[3 * 3 * 3 * 3];
+  double dStress_dStrain[21 * 21]        = { { 0 } };
+  double H_inv_ij[3 * 3]                 = { { 0 } };
+  double Z_ijkl[3 * 3 * 3 * 3]           = { { 0 } };
+  double H_inv_nF_ijk[3 * 3 * 3]         = { { 0 } };
+  double Yn_H_inv_Fn_ijkl[3 * 3 * 3 * 3] = { { 0 } };
   // Define displacement and surface strain increments
   //  Apply a small displacement increment on the top surface
   const double dU[6]               = { 0, 1e-3, 0, 0, 0, 0 };
@@ -134,17 +130,13 @@ void testForceMaterialResponse()
 void testSurfaceStressMaterialResponse()
 {
   // Define material parameters (Young's modulus and Poisson's ratio)
-  // E_M : Youngs modulus of top body
-  // nu_M: Poisson's ratio of top body
-  // E_I : Youngs modulus of bottom body
-  // nu_I: Poisson's ratio of bottom body
   // E_0: Youngs modulus of interphase
   // nu_0: Poisson's ratio of interphase
   // h : thickness of the interphase
   // dummy : placeholder for 8th parameter
-  //                                     E_M,  nu_M, E_I,  nu_I, E_0, nu_0,     h, dummy
-  const double materialProperties[8] = { 1.0, 0.3, 1.0, 0.3, 1e4, 0.3, 1e-7, 0.0 };
-  const int    nMaterialProperties   = 8;
+  //                                     E_0, nu_0,     h, dummy
+  const double materialProperties[4] = { 1e4, 0.3, 1e-7, 0.0 };
+  const int    nMaterialProperties   = 4;
 
   // Create the material object
   auto mat = createMarmotMaterialHypoElasticInterface( "LINEARELASTICINTERFACE",

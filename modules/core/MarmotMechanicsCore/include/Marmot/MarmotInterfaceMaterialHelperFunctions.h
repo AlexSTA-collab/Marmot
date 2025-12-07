@@ -53,10 +53,7 @@ namespace Marmot::Materials {
                                                                                                  const Tensor2D& T,
                                                                                                  const Tensor4D& L );
 
-    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const double&   E_0,
-                                                                                    const double&   E_M,
-                                                                                    const double&   E_I,
-                                                                                    const Tensor1D& normal,
+    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateMaterialMatrices( const Tensor1D& normal,
                                                                                     const Tensor2D& I,
                                                                                     const Tensor2D& N,
                                                                                     const Tensor2D& T,
@@ -64,9 +61,10 @@ namespace Marmot::Materials {
 
     Tensor4D voigtToStiffness( const Eigen::Matrix< double, 6, 6 >& voigtStiffness );
 
-    Eigen::Matrix< double, 9, 9 > convert4thOrderTensorToMatrix( const Tensor4D& tensor );
-    Eigen::Matrix< double, 9, 3 > convert3rdOrderTensorToMatrix( const Tensor3D& tensor );
-    Eigen::Matrix< double, 3, 3 > convert2ndOrderTensorToMatrix( const Tensor2D& tensor );
+    Eigen::Matrix< double, 9, 9 > convert4thOrderTensorToMatrix_9x9( const Tensor4D& tensor );
+    Eigen::Matrix< double, 9, 3 > convert3rdOrderTensorToMatrix_9x3( const Tensor3D& tensor );
+    Eigen::Matrix< double, 3, 9 > convert3rdOrderTensorToMatrix_3x9( const Tensor3D& tensor );
+    Eigen::Matrix< double, 3, 3 > convert2ndOrderTensorToMatrix_3x3( const Tensor2D& tensor );
 
     std::tuple< Tensor4D, Tensor4D, Tensor4D, Tensor4D, Tensor2D, Tensor4D > calculateFY( const Tensor2D& I,
                                                                                           const Tensor2D& N,
@@ -74,24 +72,6 @@ namespace Marmot::Materials {
                                                                                           const Tensor4D& C_nu_aibj );
 
     std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateInterfaceMaterialParameters( const Tensor1D& normal,
-                                                                                               const double&   E_M,
-                                                                                               const double&   nu_M,
-                                                                                               const double&   E_I,
-                                                                                               const double&   nu_I,
-                                                                                               const double&   E_0,
                                                                                                const double&   nu_0 );
-
-    std::tuple< Tensor2D, Tensor4D, Eigen::Matrix< double, 3, 3 >, Eigen::Matrix< double, 9, 9 > > calculateEffectiveProperties(
-      double&         zerothWienertStiffness_Ru,
-      double&         creep_Ru_stiffness,
-      double&         zerothWienertStiffness_Rs,
-      double&         creep_Rs_stiffness,
-      const Tensor1D& normal,
-      const double&   E_M,
-      const double&   nu_M,
-      const double&   E_I,
-      const double&   nu_I,
-      const double&   E_0,
-      const double&   nu_0 );
   } // namespace InterfaceMaterialHelperFunctions
 } // namespace Marmot::Materials

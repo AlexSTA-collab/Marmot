@@ -16,107 +16,146 @@ namespace Marmot::Materials {
     //     retardationTimes( i ) = min * std::pow( spacing, i );
     //   return retardationTimes;
     // }
-    Properties initializeElasticModuliRu( int nMaxwellRu, double nRu )
+    Properties initializeElasticModuli( int nMaxwell, double n )
     {
-      Properties elasticModuliRu( nMaxwellRu );
-      elasticModuliRu << nRu;
-      return elasticModuliRu;
+      Properties elasticModuli( nMaxwell );
+      elasticModuli << n;
+      return elasticModuli;
     }
 
-    Properties initializeElasticModuliRs( int nMaxwellRs, double nRs )
+    Properties initializeRelaxationTimes( int nMaxwell, double m )
     {
-      Properties elasticModuliRs( nMaxwellRs );
-      elasticModuliRs << nRs;
-      return elasticModuliRs;
+      Properties relaxationTimes( nMaxwell );
+      relaxationTimes << m;
+      return relaxationTimes;
     }
 
-    Properties initializeRelaxationTimesRu( int nMaxwellRu, double mRu )
+    void evaluateWiechert( double                           dT,
+                           Properties                       elasticModuli,
+                           Properties                       relaxationTimes,
+                           StateVarMatrix_force_uu          stateVars_force_uu,
+                           StateVarMatrix_force_us          stateVars_force_us,
+                           StateVarMatrix_surface_stress_Z  stateVars_surface_stress_Z,
+                           StateVarMatrix_surface_stress_Y  stateVars_surface_stress_Y,
+                           StateVarMatrix_surface_stress_us stateVars_surface_stress_us,
+                           double&                          uniaxialStiffness,
+                           Vector3d&                        dforce_uu,
+                           Vector3d&                        dforce_us,
+                           Vector9d&                        dsurfaceStress_Z,
+                           Vector9d&                        dsurfaceStress_Y,
+                           Vector9d&                        dsurfaceStress_us,
+                           const double                     factor )
     {
-      Properties relaxationTimesRu( nMaxwellRu );
-      relaxationTimesRu << mRu;
-      return relaxationTimesRu;
-    }
-
-    Properties initializeRelaxationTimesRs( int nMaxwellRs, double mRs )
-    {
-      Properties relaxationTimesRs( nMaxwellRs );
-      relaxationTimesRs << mRs;
-      return relaxationTimesRs;
-    }
-
-    void evaluateWiechertRu( double           dT,
-                             Properties       elasticModuliRu,
-                             Properties       relaxationTimesRu,
-                             StateVarMatrixRu stateVarsRu,
-                             double&          uniaxialStiffnessRu,
-                             Vector3d&        dforce,
-                             const double     factor )
-    {
-      for ( int i = 0; i < relaxationTimesRu.size(); i++ ) {
-        const double& tau = relaxationTimesRu( i );
-        const double& D   = elasticModuliRu( i );
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
-        uniaxialStiffnessRu += lambda * D * factor;
-        dforce += ( 1. - beta ) * stateVarsRu.col( i ) * factor;
+        uniaxialStiffness += lambda * D * factor;
+        dforce_uu += ( 1. - beta ) * stateVars_force_uu.col( i ).eval() * factor;
+        dforce_us += ( 1. - beta ) * stateVars_force_us.col( i ).eval() * factor;
+        dsurfaceStress_Z += ( 1. - beta ) * stateVars_surface_stress_Z.col( i ).eval() * factor;
+        dsurfaceStress_Y += ( 1. - beta ) * stateVars_surface_stress_Y.col( i ).eval() * factor;
+        dsurfaceStress_us += ( 1. - beta ) * stateVars_surface_stress_us.col( i ).eval() * factor;
       }
     }
 
-    void evaluateWiechertRs( double           dT,
-                             Properties       elasticModuliRs,
-                             Properties       relaxationTimesRs,
-                             StateVarMatrixRs stateVarsRs,
-                             double&          uniaxialStiffnessRs,
-                             Vector9d&        dsurfaceStress,
-                             const double     factor )
-    {
-      for ( int i = 0; i < relaxationTimesRs.size(); i++ ) {
-        const double& tau = relaxationTimesRs( i );
-        const double& D   = elasticModuliRs( i );
-
-        double lambda, beta;
-        computeLambdaAndBeta( dT, tau, lambda, beta );
-
-        uniaxialStiffnessRs += lambda * D * factor;
-        dsurfaceStress += ( 1. - beta ) * stateVarsRs.col( i ) * factor;
-      }
-    }
-
-    void updateStateVarMatrixRu( double                  dT,
-                                 Properties              elasticModuliRu,
-                                 Properties              relaxationTimesRu,
-                                 Ref< StateVarMatrixRu > stateVarsRu,
-                                 const Vector3d&         dforce,
-                                 const Matrix3d&         unitH_inv_ij )
+    void updateStateVarMatrix_force_uu( double                         dT,
+                                        Properties                     elasticModuli,
+                                        Properties                     relaxationTimes,
+                                        Ref< StateVarMatrix_force_uu > stateVars_force_uu,
+                                        const Vector3d&                djumpU,
+                                        const Matrix3d&                unitH_inv_ij )
     {
 
       if ( dT <= 1e-14 )
         return;
-      for ( int i = 0; i < relaxationTimesRu.size(); i++ ) {
-        const double& tau = relaxationTimesRu( i );
-        const double& D   = elasticModuliRu( i );
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
-        stateVarsRu.col( i ) = ( lambda * D ) * unitH_inv_ij * dforce + beta * stateVarsRu.col( i );
+        stateVars_force_uu.col( i ) = ( lambda * D ) * unitH_inv_ij * djumpU + beta * stateVars_force_uu.col( i );
       }
     }
 
-    void updateStateVarMatrixRs( double                  dT,
-                                 Properties              elasticModuliRs,
-                                 Properties              relaxationTimesRs,
-                                 Ref< StateVarMatrixRs > stateVarsRs,
-                                 const Vector9d&         dsurfaceStress,
-                                 const Matrix9d&         unitZ_ijkl )
+    void updateStateVarMatrix_force_us( double                         dT,
+                                        Properties                     elasticModuli,
+                                        Properties                     relaxationTimes,
+                                        Ref< StateVarMatrix_force_us > stateVars_force_us,
+                                        const Vector9d&                daverage_strain,
+                                        const Matrix< double, 3, 9 >&  unitH_inv_nF_ijk )
     {
 
       if ( dT <= 1e-14 )
         return;
-      for ( int i = 0; i < relaxationTimesRs.size(); i++ ) {
-        const double& tau = relaxationTimesRs( i );
-        const double& D   = elasticModuliRs( i );
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
-        stateVarsRs.col( i ) = ( lambda * D ) * unitZ_ijkl * dsurfaceStress + beta * stateVarsRs.col( i );
+        stateVars_force_us.col( i ) = ( lambda * D ) * unitH_inv_nF_ijk * daverage_strain +
+                                      beta * stateVars_force_us.col( i );
+      }
+    }
+
+    void updateStateVarMatrix_surface_stress_Z( double                                 dT,
+                                                Properties                             elasticModuli,
+                                                Properties                             relaxationTimes,
+                                                Ref< StateVarMatrix_surface_stress_Z > stateVars_surface_stress_Z,
+                                                const Vector9d&                        dsurfaceStrain,
+                                                const Matrix9d&                        unitZ_ijkl )
+    {
+
+      if ( dT <= 1e-14 )
+        return;
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
+        double        lambda, beta;
+        computeLambdaAndBeta( dT, tau, lambda, beta );
+        stateVars_surface_stress_Z.col( i ) = ( lambda * D ) * unitZ_ijkl * dsurfaceStrain +
+                                              beta * stateVars_surface_stress_Z.col( i );
+      }
+    }
+
+    void updateStateVarMatrix_surface_stress_Y( double                                 dT,
+                                                Properties                             elasticModuli,
+                                                Properties                             relaxationTimes,
+                                                Ref< StateVarMatrix_surface_stress_Y > stateVars_surface_stress_Y,
+                                                const Vector9d&                        dsurfaceStrain,
+                                                const Matrix9d&                        unitYn_H_inv_Fn_ijkl )
+    {
+
+      if ( dT <= 1e-14 )
+        return;
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
+        double        lambda, beta;
+        computeLambdaAndBeta( dT, tau, lambda, beta );
+        stateVars_surface_stress_Y.col( i ) = ( lambda * D ) * unitYn_H_inv_Fn_ijkl * dsurfaceStrain +
+                                              beta * stateVars_surface_stress_Y.col( i );
+      }
+    }
+
+    void updateStateVarMatrix_surface_stress_us( double                                  dT,
+                                                 Properties                              elasticModuli,
+                                                 Properties                              relaxationTimes,
+                                                 Ref< StateVarMatrix_surface_stress_us > stateVars_surface_stress_us,
+                                                 const Vector3d&                         djumpU,
+                                                 const Matrix< double, 9, 3 >&           unitH_inv_nF_ijk )
+    {
+
+      if ( dT <= 1e-14 )
+        return;
+      for ( int i = 0; i < relaxationTimes.size(); i++ ) {
+        const double& tau = relaxationTimes( i );
+        const double& D   = elasticModuli( i );
+        double        lambda, beta;
+        computeLambdaAndBeta( dT, tau, lambda, beta );
+        stateVars_surface_stress_us.col( i ) = ( lambda * D ) * unitH_inv_nF_ijk * djumpU +
+                                               beta * stateVars_surface_stress_us.col( i );
       }
     }
 

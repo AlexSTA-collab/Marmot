@@ -53,18 +53,6 @@ namespace Marmot::Materials {
   class LinearViscoElasticInterface : public MarmotMaterialHypoElasticInterface {
 
     /// \brief Young's modulus
-    const double& E_M;
-
-    /// \brief Poisson's ratio
-    const double& nu_M;
-
-    /// \brief Young's modulus
-    const double& E_I;
-
-    /// \brief Poisson's ratio
-    const double& nu_I;
-
-    /// \brief Young's modulus
     const double& E_0;
 
     /// \brief Poisson's ratio
@@ -73,29 +61,17 @@ namespace Marmot::Materials {
     /// \brief height of the middle layer
     const double& h;
 
-    /// \brief power law compliance parameter displacement jump
-    const double& mRu;
+    /// \brief power law compliance parameter for interphase layer
+    const double& m;
 
-    /// \brief power law exponent displacement jump
-    const double& nRu;
+    /// \brief power law exponent for interphase layer
+    const double& n;
 
-    /// \brief number of Kelvin units to approximate the viscoelastic compliance for displacement jump
-    const size_t nMaxwellRu;
+    /// \brief number of Kelvin units to approximate the viscoelastic compliance for interphase layer
+    const size_t nMaxwell;
 
-    /// \brief minimal retardation time used in the viscoelastic Kelvin chain for displacement jump
-    const double& minTauRu;
-
-    /// \brief power law compliance parameter surface stress
-    const double& mRs;
-
-    /// \brief power law exponent surface stress
-    const double& nRs;
-
-    /// \brief number of Kelvin units to approximate the viscoelastic compliance for surface stress
-    const size_t nMaxwellRs;
-
-    /// \brief minimal retardation time used in the viscoelastic Kelvin chain for surface stress
-    const double& minTauRs;
+    /// \brief minimal retardation time used in the viscoelastic Kelvin chain for interphase layer
+    const double& minTau;
 
     /// \brief ratio of simulation time to days
     const double& timeToDays;
@@ -104,17 +80,25 @@ namespace Marmot::Materials {
 
     public:
       inline const static auto layout = makeLayout( {
-        { .name = "MaxwellStateVarsRu", .length = 3 * 1 },
-        { .name = "MaxwellStateVarsRs", .length = 9 * 1 },
+        { .name = "MaxwellStateVars_force_uu", .length = 3 * 1 },
+        { .name = "MaxwellStateVars_force_us", .length = 3 * 1 },
+        { .name = "MaxwellStateVars_surface_stress_Z", .length = 9 * 1 },
+        { .name = "MaxwellStateVars_surface_stress_Y", .length = 9 * 1 },
+        { .name = "MaxwellStateVars_surface_stress_us", .length = 9 * 1 },
       } );
 
-      WiechertInterface::mapStateVarMatrixRu MaxwellStateVarsRu;
-      WiechertInterface::mapStateVarMatrixRs MaxwellStateVarsRs;
-
-      LinearViscoElasticInterfaceStateVarManager( double* theStateVarVector, int nMaxwellUnitsRu, int nMaxwellUnitsRs )
+      WiechertInterface::mapStateVarMatrix_force_uu          MaxwellStateVars_force_uu;
+      WiechertInterface::mapStateVarMatrix_force_us          MaxwellStateVars_force_us;
+      WiechertInterface::mapStateVarMatrix_surface_stress_Z  MaxwellStateVars_surface_stress_Z;
+      WiechertInterface::mapStateVarMatrix_surface_stress_Y  MaxwellStateVars_surface_stress_Y;
+      WiechertInterface::mapStateVarMatrix_surface_stress_us MaxwellStateVars_surface_stress_us;
+      LinearViscoElasticInterfaceStateVarManager( double* theStateVarVector, int nMaxwellUnits )
         : MarmotStateVarVectorManager( theStateVarVector, layout ),
-          MaxwellStateVarsRu( &find( "MaxwellStateVarsRu" ), 3, nMaxwellUnitsRu ),
-          MaxwellStateVarsRs( &find( "MaxwellStateVarsRs" ), 9, nMaxwellUnitsRs ){};
+          MaxwellStateVars_force_uu( &find( "MaxwellStateVars_force_uu" ), 3, nMaxwellUnits ),
+          MaxwellStateVars_force_us( &find( "MaxwellStateVars_force_us" ), 3, nMaxwellUnits ),
+          MaxwellStateVars_surface_stress_Z( &find( "MaxwellStateVars_surface_stress_Z" ), 9, nMaxwellUnits ),
+          MaxwellStateVars_surface_stress_Y( &find( "MaxwellStateVars_surface_stress_Y" ), 9, nMaxwellUnits ),
+          MaxwellStateVars_surface_stress_us( &find( "MaxwellStateVars_surface_stress_us" ), 9, nMaxwellUnits ){};
     };
 
     ::std::unique_ptr< LinearViscoElasticInterfaceStateVarManager > stateVarManager;
@@ -146,13 +130,10 @@ namespace Marmot::Materials {
     StateView getStateView( const ::std::string& stateName );
 
   private:
-    WiechertInterface::Properties elasticModuliRu;
-    WiechertInterface::Properties elasticModuliRs;
-    WiechertInterface::Properties relaxationTimesRu;
-    WiechertInterface::Properties relaxationTimesRs;
-    double                        zerothWiechertStiffnessRu;
-    double                        zerothWiechertStiffnessRs;
+    WiechertInterface::Properties elasticModuli;
+    WiechertInterface::Properties relaxationTimes;
+    double                        zerothWiechertStiffness;
 
-    static constexpr int powerLawApproximationOrder = 2;
+    static constexpr int powerLawApproximationOrder = 1;
   };
 } // namespace Marmot::Materials
