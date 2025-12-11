@@ -150,7 +150,7 @@ namespace Marmot::Materials {
       Properties                                     relaxationTimes,
       Eigen::Ref< StateVarMatrix_surface_stress_us > stateVars_surface_stress_us,
       const Marmot::Vector3d&                        djumpU,
-      const Eigen::Matrix< double, 9, 3 >&           unitH_inv_nF_ijk );
+      const Eigen::Matrix< double, 3, 9 >&           unitH_inv_nF_ijk );
 
     void evaluateWiechert( const double                     dT,
                            Properties                       elasticModuli,

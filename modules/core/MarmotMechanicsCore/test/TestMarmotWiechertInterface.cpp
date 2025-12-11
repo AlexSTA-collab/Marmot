@@ -212,7 +212,7 @@ void evaluateWIandUpdateStateVarsTestFunction()
                                             relaxationTimes,
                                             testStateVars_surface_stress_us,
                                             djumpU_test,
-                                            unitH_inv_nF_ijk_9x3 );
+                                            unitH_inv_nF_ijk_3x9 );
 
     // Reference values from terminal output
     StateVarMatrix_surface_stress_us expectedStateVars_surface_stress_us( 9, nMaxwell );

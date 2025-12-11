@@ -50,7 +50,9 @@ namespace Marmot::Materials {
         const double& tau = relaxationTimes( i );
         const double& D   = elasticModuli( i );
         double        lambda, beta;
+
         computeLambdaAndBeta( dT, tau, lambda, beta );
+
         uniaxialStiffness += lambda * D * factor;
         dforce_uu += ( 1. - beta ) * stateVars_force_uu.col( i ).eval() * factor;
         dforce_us += ( 1. - beta ) * stateVars_force_us.col( i ).eval() * factor;
@@ -144,7 +146,7 @@ namespace Marmot::Materials {
                                                  Properties                              relaxationTimes,
                                                  Ref< StateVarMatrix_surface_stress_us > stateVars_surface_stress_us,
                                                  const Vector3d&                         djumpU,
-                                                 const Matrix< double, 9, 3 >&           unitH_inv_nF_ijk )
+                                                 const Matrix< double, 3, 9 >&           unitH_inv_nF_ijk )
     {
 
       if ( dT <= 1e-14 )
@@ -154,8 +156,11 @@ namespace Marmot::Materials {
         const double& D   = elasticModuli( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
-        stateVars_surface_stress_us.col( i ) = ( lambda * D ) * unitH_inv_nF_ijk * djumpU +
+        auto unit_surface_stress_couple      = djumpU.transpose() * unitH_inv_nF_ijk;
+        stateVars_surface_stress_us.col( i ) = ( lambda * D ) * unit_surface_stress_couple.transpose() +
                                                beta * stateVars_surface_stress_us.col( i );
+        // stateVars_surface_stress_us.col( i ) = ( lambda * D ) * unitH_inv_nF_ijk.transpose() * djumpU +
+        //                                        beta * stateVars_surface_stress_us.col( i );
       }
     }
 

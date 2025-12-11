@@ -61,7 +61,7 @@ namespace Marmot::Materials {
     // Marmot::Materials::WiechertInterface::computeElasticModuli_Rs<powerLawApproximationOrder>(phiRs_,
     // retardationTimes_Rs);
 
-    zerothWiechertStiffness = 1.0; // m_Ru*(1. - n_Ru )*pow( 2., n_Ru )*pow(minTau_Ru/sqrt(10.), n_Ru);
+    zerothWiechertStiffness = 0.0; // m_Ru*(1. - n_Ru )*pow( 2., n_Ru )*pow(minTau_Ru/sqrt(10.), n_Ru);
   }
 
   void LinearViscoElasticInterface::computeStress( double*       force,
@@ -112,11 +112,17 @@ namespace Marmot::Materials {
     Eigen::Matrix< double, 21, 21 > Cel = Eigen::Matrix< double, 21, 21 >::Zero();
 
     // handle zero strain increment
-    if ( Fastor::norm( dUFtensor ) < 1e-14 && Fastor::norm( dSurfaceStrainFtensor ) < 1e-14 && dT == 0 ) {
+    if ( Fastor::norm( dUFtensor ) < 1e-14 && Fastor::norm( dSurfaceStrainFtensor ) < 1e-14 && timeOld == 0 ) {
+      std::cout << "Zero strain increment in LinearViscoElasticInterface material.\n";
       Z_ijkl_Ftensor           = -h * E_0 * unitZ_ijkl;
       Yn_H_inv_Fn_ijkl_Ftensor = h * E_0 * unitYn_H_inv_Fn_ijkl;
       H_inv_ij_Ftensor         = 1. / h * E_0 * unitH_inv_ij;
       H_inv_nF_ijk_Ftensor     = E_0 * unitH_inv_nF_ijk;
+
+      std::copy( H_inv_ij_Ftensor.data(), H_inv_ij_Ftensor.data() + 9, H_inv_ij );
+      std::copy( Z_ijkl_Ftensor.data(), Z_ijkl_Ftensor.data() + 81, Z_ijkl );
+      std::copy( H_inv_nF_ijk_Ftensor.data(), H_inv_nF_ijk_Ftensor.data() + 27, H_inv_nF_ijk );
+      std::copy( Yn_H_inv_Fn_ijkl_Ftensor.data(), Yn_H_inv_Fn_ijkl_Ftensor.data() + 81, Yn_H_inv_Fn_ijkl );
       return;
     }
 
@@ -199,6 +205,12 @@ namespace Marmot::Materials {
     auto creep_surface_stress_Y_IncrementFastor  = Fastor::reshape< 3, 3 >( creep_surface_stress_Y_Increment_tensor );
     auto creep_surface_stress_us_IncrementFastor = Fastor::reshape< 3, 3 >( creep_surface_stress_us_Increment_tensor );
 
+    // std::cout<<"creep_force_uu_IncrementFastor:\n"<<creep_force_uu_IncrementFastor<<'\n';
+    // std::cout<<"creep_force_us_IncrementFastor:\n"<<creep_force_us_IncrementFastor<<'\n';
+    // std::cout<<"creep_surface_stress_Z_IncrementFastor:\n"<<creep_surface_stress_Z_IncrementFastor<<'\n';
+    // std::cout<<"creep_surface_stress_Y_IncrementFastor:\n"<<creep_surface_stress_Y_IncrementFastor<<'\n';
+    // std::cout<<"creep_surface_stress_us_IncrementFastor:\n"<<creep_surface_stress_us_IncrementFastor<<'\n';
+
     // std::cout<<"creep_Ru_increment_fastor:\n"<<creep_Ru_increment_fastor<<'\n';
     Tensor1D
       dForce_uu = Fastor::einsum< Fastor::Index< i, j >, Fastor::Index< j >, Fastor::OIndex< i > >( H_inv_ij_Ftensor,
@@ -224,20 +236,25 @@ namespace Marmot::Materials {
                                                                              averageDsurfaceStrainFtensorReshape ) -
                                    h * creep_surface_stress_Y_IncrementFastor;
 
-    Tensor2D dSurfaceStress_us_ij = Fastor::einsum< Fastor::Index< i, j, k >,
-                                                    Fastor::Index< k >,
-                                                    Fastor::OIndex< i, j > >( H_inv_nF_ijk_Ftensor, jumpUFtensor ) -
+    Tensor2D dSurfaceStress_us_ij = Fastor::einsum< Fastor::Index< i >,
+                                                    Fastor::Index< i, j, k >,
+                                                    Fastor::OIndex< j, k > >( jumpUFtensor, H_inv_nF_ijk_Ftensor ) -
                                     1. / 2 * creep_surface_stress_us_IncrementFastor;
 
     forceFtensor += dForce_uu;
-    forceFtensor -= dForce_us;
+    forceFtensor -= 0. * dForce_us;
 
-    surfaceStressFtensor -= dSurfaceStress_Z_ij;
-    surfaceStressFtensor += dSurfaceStress_Y_ij;
-    surfaceStressFtensor -= dSurfaceStress_us_ij;
+    surfaceStressFtensor -= 0. * dSurfaceStress_Z_ij;
+    surfaceStressFtensor += 0. * dSurfaceStress_Y_ij;
+    surfaceStressFtensor -= 0. * dSurfaceStress_us_ij;
 
     std::copy( forceFtensor.data(), forceFtensor.data() + 3, force );
     std::copy( surfaceStressFtensor.data(), surfaceStressFtensor.data() + 3 * 3, surfaceStress );
+
+    std::copy( H_inv_ij_Ftensor.data(), H_inv_ij_Ftensor.data() + 9, H_inv_ij );
+    std::copy( Z_ijkl_Ftensor.data(), Z_ijkl_Ftensor.data() + 81, Z_ijkl );
+    std::copy( H_inv_nF_ijk_Ftensor.data(), H_inv_nF_ijk_Ftensor.data() + 27, H_inv_nF_ijk );
+    std::copy( Yn_H_inv_Fn_ijkl_Ftensor.data(), Yn_H_inv_Fn_ijkl_Ftensor.data() + 81, Yn_H_inv_Fn_ijkl );
 
     // Use already available functionality convert Fastor tensors to Eigen matricfes/vectors
     // Tranform to Eigen matrices to work with the internal machinery of KelvinChainInterface ...
@@ -278,8 +295,14 @@ namespace Marmot::Materials {
                                                                relaxationTimes,
                                                                creepStateVars_surface_stress_us,
                                                                jumpUVoigtFull,
-                                                               unitH_inv_nF_ijk_full_9_3 );
+                                                               unitH_inv_nF_ijk_full_3_9 );
 
+    // std::cout<<"Updated state variables successfully.\n";
+    // std::cout<<"creepStateVars_force_uu:\n"<<creepStateVars_force_uu<<'\n';
+    // std::cout<<"creepStateVars_force_us:\n"<<creepStateVars_force_us<<'\n';
+    // std::cout<<"creepStateVars_surface_stress_Z:\n"<<creepStateVars_surface_stress_Z<<'\n';
+    // std::cout<<"creepStateVars_surface_stress_Y:\n"<<creepStateVars_surface_stress_Y<<'\n';
+    // std::cout<<"creepStateVars_surface_stress_us:\n"<<creepStateVars_surface_stress_us<<'\n';
     return;
   };
 
