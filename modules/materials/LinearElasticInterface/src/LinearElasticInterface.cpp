@@ -90,7 +90,7 @@ namespace Marmot::Materials {
     Z_ijkl_ftensor           = -h * E_0 * unitZ_ijkl;
     Yn_H_inv_Fn_ijkl_ftensor = h * E_0 * unitYn_H_inv_Fn_ijkl;
     H_inv_ij_ftensor         = 1. / h * E_0 * unitH_inv_ij;
-    H_inv_nF_ijk_ftensor     = 1. / 2. * E_0 * unitH_inv_Fn_ijk;
+    H_inv_nF_ijk_ftensor     = E_0 * unitH_inv_Fn_ijk;
 
     // handle zero strain increment
     if ( Fastor::norm( dU_ftensor ) < 1e-14 && Fastor::norm( dSurface_strain_ftensor ) < 1e-14 ) {

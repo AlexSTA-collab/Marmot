@@ -172,7 +172,7 @@ namespace Marmot::Materials {
     Z_ijkl_Ftensor           = -h * barE * unitZ_ijkl;
     Yn_H_inv_Fn_ijkl_Ftensor = h * barE * unitYn_H_inv_Fn_ijkl;
     H_inv_ij_Ftensor         = 1. / h * barE * unitH_inv_ij;
-    H_inv_nF_ijk_Ftensor     = 1. / 2. * barE * unitH_inv_nF_ijk;
+    H_inv_nF_ijk_Ftensor     = barE * unitH_inv_nF_ijk;
 
     enum { i, j, k, l };
     // Calculate jump increment
@@ -221,13 +221,13 @@ namespace Marmot::Materials {
                                          Fastor::Index< j, k >,
                                          Fastor::OIndex< i > >( H_inv_nF_ijk_Ftensor,
                                                                 averageDsurfaceStrainFtensorReshape ) -
-                         1. / 2 * creep_force_us_IncrementFastor;
+                         creep_force_us_IncrementFastor;
 
     // std::cout<<"creep_Rs_increment_fastor:\n"<<creep_Rs_increment_fastor<<'\n';
     Tensor2D dSurfaceStress_Z_ij = Fastor::einsum< Fastor::Index< i, j, k, l >,
                                                    Fastor::Index< k, l >,
                                                    Fastor::OIndex< i, j > >( Z_ijkl_Ftensor,
-                                                                             averageDsurfaceStrainFtensorReshape ) -
+                                                                             averageDsurfaceStrainFtensorReshape ) +
                                    h * creep_surface_stress_Z_IncrementFastor;
 
     Tensor2D dSurfaceStress_Y_ij = Fastor::einsum< Fastor::Index< i, j, k, l >,
@@ -239,14 +239,14 @@ namespace Marmot::Materials {
     Tensor2D dSurfaceStress_us_ij = Fastor::einsum< Fastor::Index< i >,
                                                     Fastor::Index< i, j, k >,
                                                     Fastor::OIndex< j, k > >( jumpUFtensor, H_inv_nF_ijk_Ftensor ) -
-                                    1. / 2 * creep_surface_stress_us_IncrementFastor;
+                                    creep_surface_stress_us_IncrementFastor;
 
     forceFtensor += dForce_uu;
-    forceFtensor -= 0. * dForce_us;
+    forceFtensor -= dForce_us;
 
-    surfaceStressFtensor -= 0. * dSurfaceStress_Z_ij;
-    surfaceStressFtensor += 0. * dSurfaceStress_Y_ij;
-    surfaceStressFtensor -= 0. * dSurfaceStress_us_ij;
+    surfaceStressFtensor -= dSurfaceStress_Z_ij;
+    surfaceStressFtensor += dSurfaceStress_Y_ij;
+    surfaceStressFtensor -= dSurfaceStress_us_ij;
 
     std::copy( forceFtensor.data(), forceFtensor.data() + 3, force );
     std::copy( surfaceStressFtensor.data(), surfaceStressFtensor.data() + 3 * 3, surfaceStress );
