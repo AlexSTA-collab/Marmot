@@ -39,12 +39,11 @@ namespace Marmot::Materials {
       // elasticity parameters
       E( materialProperties[0] ),
       nu( materialProperties[1] ),
-      h( materialProperties[2] ),
-      m( materialProperties[3] ),
-      n( materialProperties[4] ),
-      nMaxwell( static_cast< size_t >( materialProperties[5] ) ),
-      minTau( materialProperties[6] ),
-      timeToDays( materialProperties[7] )
+      m( materialProperties[2] ),
+      n( materialProperties[3] ),
+      nMaxwell( static_cast< size_t >( materialProperties[4] ) ),
+      minTau( materialProperties[5] ),
+      timeToDays( materialProperties[6] )
   // clang-format on
   {
     relaxationTimes = Marmot::Materials::Wiechert::initializeRelaxationTimes( nMaxwell, m );

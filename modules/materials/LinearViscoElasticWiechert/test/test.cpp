@@ -43,10 +43,10 @@ std::unique_ptr< MarmotMaterialHypoElastic > createMarmotMaterialHypoElastic( co
 void testStressMaterialResponse()
 {
   // Define material parameters matching LinearViscoElasticInterface constructor
-  // Indices: [0]: E_0, [1]: nu_0, [2]: h, [3]: m, [4]: n, [5]: nMaxwell, [6]: minTau, [7]: timeToDays
+  // Indices: [0]: E_0, [1]: nu_0, [2]: m, [3]: n, [4]: nMaxwell, [5]: minTau, [6]: timeToDays
   // Padded to 16 elements for compatibility
-  const double materialProperties[8] = { 1e8, 0.3, 1e-7, 1e-2, 1e-8, 1, 1e-2, 1e0 };
-  const int    nMaterialProperties   = 8;
+  const double materialProperties[7] = { 1e8, 0.3, 1e-2, 1e-8, 1, 1e-2, 1e0 };
+  const int    nMaterialProperties   = 7;
 
   // Create the material object
   auto mat = createMarmotMaterialHypoElastic( "LINEARVISCOELASTICWIECHERT", materialProperties, nMaterialProperties );

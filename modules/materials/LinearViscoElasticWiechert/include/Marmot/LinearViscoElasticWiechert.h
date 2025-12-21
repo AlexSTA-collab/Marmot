@@ -58,9 +58,6 @@ namespace Marmot::Materials {
     /// \brief Poisson's ratio
     const double& nu;
 
-    /// \brief height of the middle layer
-    const double& h;
-
     /// \brief power law compliance parameter for interphase layer
     const double& m;
 
