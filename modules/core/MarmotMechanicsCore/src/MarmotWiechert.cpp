@@ -54,7 +54,7 @@ namespace Marmot::Materials {
                                Properties            elasticModuli,
                                Properties            relaxationTimes,
                                Ref< StateVarMatrix > stateVars,
-                               const Vector6d&       dStress,
+                               const Vector6d&       dStrain,
                                const Matrix6d&       unitD_ijkl )
     {
 
@@ -65,7 +65,7 @@ namespace Marmot::Materials {
         const double& D   = elasticModuli( i );
         double        lambda, beta;
         computeLambdaAndBeta( dT, tau, lambda, beta );
-        stateVars.col( i ) = ( lambda * D ) * unitD_ijkl * dStress + beta * stateVars.col( i );
+        stateVars.col( i ) = ( lambda * D ) * unitD_ijkl * dStrain + beta * stateVars.col( i );
       }
     }
 

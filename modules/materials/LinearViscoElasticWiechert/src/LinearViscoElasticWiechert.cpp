@@ -73,7 +73,7 @@ namespace Marmot::Materials {
     Vector6d  dE( dStrain );
     mMatrix6d D( dStressDDStrain );
 
-    if ( ( dE.array() == 0 ).all() && dT == 0 ) {
+    if ( ( dE.array() == 0 ).all() && timeOld == 0 ) {
       D = ContinuumMechanics::Elasticity::Isotropic::stiffnessTensor( E, nu );
       return;
     }
@@ -101,7 +101,7 @@ namespace Marmot::Materials {
     Vector6d deltaStress      = D * (dE)-creepStressIncrement;
     nomStress                 = nomStress + deltaStress;
 
-    Wiechert::updateStateVarMatrix( dTimeDays, elasticModuli, relaxationTimes, creepStateVars, deltaStress, CelUnit );
+    Wiechert::updateStateVarMatrix( dTimeDays, elasticModuli, relaxationTimes, creepStateVars, dE, CelUnit );
 
     return;
   }
