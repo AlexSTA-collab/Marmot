@@ -103,7 +103,7 @@ namespace Marmot::Materials {
       // compute return mapping direction
       Vector6d n = ContinuumMechanics::VoigtNotation::IDev * trialStress / rhoTrial;
 
-      while ( std::abs( g( dKappa ) ) > VonMisesConstants::innerNewtonTol ) {
+      while ( std::abs( g( dKappa ) ) > VonMisesConstants::innerNewtonTol * ( 1.0 + rhoTrial ) ) {
 
         if ( counter == VonMisesConstants::nMaxInnerNewtonCycles ) {
           pNewDT = 0.5;

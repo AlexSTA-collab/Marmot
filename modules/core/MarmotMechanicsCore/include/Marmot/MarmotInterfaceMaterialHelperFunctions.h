@@ -73,5 +73,9 @@ namespace Marmot::Materials {
 
     std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateInterfaceMaterialParameters( const Tensor1D& normal,
                                                                                                const double&   nu_0 );
+
+    std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateInterfaceMaterialParameters(
+      const Tensor1D&                      normal,
+      const Eigen::Matrix< double, 6, 6 >& C_ep_voigt );
   } // namespace InterfaceMaterialHelperFunctions
 } // namespace Marmot::Materials

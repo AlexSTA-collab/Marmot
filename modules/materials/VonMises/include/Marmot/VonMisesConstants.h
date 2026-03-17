@@ -28,7 +28,7 @@
 namespace Marmot::Materials {
 
   namespace VonMisesConstants {
-    const double innerNewtonTol        = 1e-12;
+    const double innerNewtonTol        = 1e-10;
     const int    nMaxInnerNewtonCycles = 15;
   } // namespace VonMisesConstants
 
