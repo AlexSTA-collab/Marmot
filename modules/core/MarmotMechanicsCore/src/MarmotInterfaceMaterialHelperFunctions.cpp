@@ -157,22 +157,26 @@ namespace Marmot::Materials {
       Tensor3D
         nF = Fastor::einsum< Fastor::Index< a >, Fastor::Index< i, a, b, j >, Fastor::OIndex< i, b, j > >( normal, F );
       Tensor3D
-        Fn = Fastor::einsum< Fastor::Index< a, i, b, j >, Fastor::Index< i >, Fastor::OIndex< a, b, j > >( F, normal );
+        Fn = Fastor::einsum< Fastor::Index< a, i, b, j >, Fastor::Index< j >, Fastor::OIndex< a, i, b > >( F, normal );
       Tensor3D
-        Yn = Fastor::einsum< Fastor::Index< a, i, b, j >, Fastor::Index< i >, Fastor::OIndex< a, b, j > >( Y, normal );
+        nY = Fastor::einsum< Fastor::Index< a, i, b, j >, Fastor::Index< i >, Fastor::OIndex< a, b, j > >( Y, normal );
+
+      Tensor3D nY_H_inv = Fastor::
+        einsum< Fastor::Index< i, j, a >, Fastor::Index< a, b >, Fastor::OIndex< i, j, b > >( nY, H_inv );
       Tensor3D
         H_inv_nF = Fastor::einsum< Fastor::Index< a, b >, Fastor::Index< b, i, j >, Fastor::OIndex< a, i, j > >( H_inv,
-                                                                                                                 Fn );
+                                                                                                                 nF );
 
       // Tensor4D Yn_H_inv_Fn = Fastor::einsum< Fastor::Index< a, i, m >,
       //                                        Fastor::Index< m, n >,
       //                                        Fastor::Index< n, b, j >,
       //                                        Fastor::OIndex< a, i, b, j > >( Yn, H_inv, Fn );
-      Tensor4D Yn_H_inv_Fn = Fastor::einsum< Fastor::Index< m, i, j >,
+      Tensor4D nY_H_inv_Fn = Fastor::einsum< Fastor::Index< m, i, j >,
                                              Fastor::Index< m, n >,
                                              Fastor::Index< n, k, l >,
-                                             Fastor::OIndex< i, j, k, l > >( H_inv_nF, G_nu, H_inv_nF );
-      return std::make_tuple( B_nu, H_inv, H_inv_nF, Yn_H_inv_Fn );
+                                             Fastor::OIndex< i, j, k, l > >( nY_H_inv, G_nu, H_inv_nF );
+
+      return std::make_tuple( B_nu, H_inv, H_inv_nF, nY_H_inv_Fn );
     }
 
     // Convert 4th-order Fastor tensor (3x3x3x3) to Eigen 9x9 matrix
@@ -258,8 +262,8 @@ namespace Marmot::Materials {
           row = toVoigt< 3 >( i, j );
           for ( int k = 0; k < 3; ++k )
             for ( int l = 0; l < 3; ++l ) {
-              col = toVoigt< 3 >( k, l );
-              stiffness( i, j, k, l ) += voigtStiffness( row, col );
+              col                     = toVoigt< 3 >( k, l );
+              stiffness( i, j, k, l ) = voigtStiffness( row, col );
             }
         }
       return stiffness;
@@ -279,9 +283,9 @@ namespace Marmot::Materials {
 
       Tensor4D C_nu_aibj = voigtToStiffness( C_nu_voigt_full );
 
-      auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculateMaterialMatrices( normal, I, N, T, C_nu_aibj );
+      auto [Z, H_inv, H_inv_nF, nY_H_inv_Fn] = calculateMaterialMatrices( normal, I, N, T, C_nu_aibj );
 
-      return { Z, H_inv, H_inv_nF, Yn_H_inv_Fn };
+      return { Z, H_inv, H_inv_nF, nY_H_inv_Fn };
     }
 
     std::tuple< Tensor4D, Tensor2D, Tensor3D, Tensor4D > calculateInterfaceMaterialParameters(
@@ -296,9 +300,25 @@ namespace Marmot::Materials {
 
       Tensor4D C_ep_aibj = voigtToStiffness( C_ep_voigt );
 
-      auto [Z, H_inv, H_inv_nF, Yn_H_inv_Fn] = calculateMaterialMatrices( normal, I, N, T, C_ep_aibj );
+      Tensor2D
+        Q = Fastor::einsum< Fastor::Index< i, j, k, l >, Fastor::Index< j, l >, Fastor::OIndex< i, k > >( C_ep_aibj,
+                                                                                                          N );
+      Tensor2D H_inv = compute_inv( I, Q );
 
-      return { Z, H_inv, H_inv_nF, Yn_H_inv_Fn };
+      // H_inv_nF(i,k,l) = C_ijkl * n_j  (free: i, k, l)
+      Tensor3D H_inv_nF = Fastor::
+        einsum< Fastor::Index< i, j, k, l >, Fastor::Index< j >, Fastor::OIndex< i, k, l > >( C_ep_aibj, normal );
+      // H_inv_Fn(i,j,k) = C_ijkl * n_l  (free: i, j, k)
+      Tensor3D H_inv_Fn = Fastor::
+        einsum< Fastor::Index< i, j, k, l >, Fastor::Index< l >, Fastor::OIndex< i, j, k > >( C_ep_aibj, normal );
+
+      // H_inv_Fn(i,j,m) * H_inv(m,r) * H_inv_nF(r,k,l) -> (i,j,k,l)
+      Tensor4D nY_H_inv_Fn = Fastor::einsum< Fastor::Index< i, j, m >,
+                                             Fastor::Index< m, r >,
+                                             Fastor::Index< r, k, l >,
+                                             Fastor::OIndex< i, j, k, l > >( H_inv_Fn, H_inv, H_inv_nF );
+      Tensor4D Z           = C_ep_aibj - nY_H_inv_Fn;
+      return { Z, Q, H_inv_nF, nY_H_inv_Fn };
     }
 
   } // namespace InterfaceMaterialHelperFunctions

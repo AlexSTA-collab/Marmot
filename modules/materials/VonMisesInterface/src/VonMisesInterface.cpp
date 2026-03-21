@@ -53,12 +53,12 @@ namespace Marmot::Materials {
   // clang-format on
   {
   }
-  void VonMisesInterface::computeStress( double*       force,
-                                         double*       averageStress,
-                                         double*       H_inv_ij,
+  void VonMisesInterface::computeStress( double*       scaled_force,
+                                         double*       scaled_averageStress,
+                                         double*       Q_ij,
                                          double*       Z_ijkl,
-                                         double*       H_inv_nF_ijk,
-                                         double*       Yn_H_inv_Fn_ijkl,
+                                         double*       H_ijk,
+                                         double*       Y_ijkl,
                                          const double* dU,
                                          const double* dSurfaceDispGradient,
                                          const double* normal,
@@ -72,37 +72,15 @@ namespace Marmot::Materials {
     // map to force, surface stress, displacement, surface strain, normal and tangent stiffness
     // use Fastor because we really need to use the einsum
 
-    Fastor::Tensor< double, 3 >          forceFtensor( force );
-    Fastor::Tensor< double, 3, 3 >       averageStressFtensor( averageStress );
-    Fastor::Tensor< double, 3, 3 >       H_inv_ij_Ftensor( H_inv_ij );
+    Fastor::Tensor< double, 3 >          scaled_forceFtensor( scaled_force );
+    Fastor::Tensor< double, 3, 3 >       scaled_averageStressFtensor( scaled_averageStress );
+    Fastor::Tensor< double, 3, 3 >       Q_ij_Ftensor( Q_ij );
     Fastor::Tensor< double, 3, 3, 3, 3 > Z_ijkl_Ftensor( Z_ijkl );
-    Fastor::Tensor< double, 3, 3, 3 >    H_inv_nF_ijk_Ftensor( H_inv_nF_ijk );
-    Fastor::Tensor< double, 3, 3, 3, 3 > Yn_H_inv_Fn_ijkl_Ftensor( Yn_H_inv_Fn_ijkl );
+    Fastor::Tensor< double, 3, 3, 3 >    H_ijk_Ftensor( H_ijk );
+    Fastor::Tensor< double, 3, 3, 3, 3 > Y_ijkl_Ftensor( Y_ijkl );
     Fastor::Tensor< double, 6, 1 >       dUFtensor( dU );
     Fastor::Tensor< double, 18, 1 >      dSurfaceDispGradientFtensor( dSurfaceDispGradient );
     Fastor::Tensor< double, 3 >          normalFtensor( normal );
-
-    // handle zero strain increment: C_ep_voigt is already initialized to Cel in the constructor
-    if ( Fastor::norm( dUFtensor ) < 1e-14 && Fastor::norm( dSurfaceDispGradientFtensor ) < 1e-14 && timeOld == 0 ) {
-
-      pNewDT = 1.0;
-
-      auto [unitZ_ijkl,
-            unitH_inv_ij,
-            unitH_inv_nF_ijk,
-            unitYn_H_inv_Fn_ijkl] = calculateInterfaceMaterialParameters( normalFtensor, nu_0 );
-
-      Z_ijkl_Ftensor           = h * E_0 * unitZ_ijkl;
-      Yn_H_inv_Fn_ijkl_Ftensor = h * E_0 * unitYn_H_inv_Fn_ijkl;
-      H_inv_ij_Ftensor         = 1. / h * E_0 * unitH_inv_ij;
-      H_inv_nF_ijk_Ftensor     = E_0 * unitH_inv_nF_ijk;
-
-      std::copy( H_inv_ij_Ftensor.data(), H_inv_ij_Ftensor.data() + 9, H_inv_ij );
-      std::copy( Z_ijkl_Ftensor.data(), Z_ijkl_Ftensor.data() + 81, Z_ijkl );
-      std::copy( H_inv_nF_ijk_Ftensor.data(), H_inv_nF_ijk_Ftensor.data() + 27, H_inv_nF_ijk );
-      std::copy( Yn_H_inv_Fn_ijkl_Ftensor.data(), Yn_H_inv_Fn_ijkl_Ftensor.data() + 81, Yn_H_inv_Fn_ijkl );
-      return;
-    }
 
     // Evaluate average stress on the layer using Von Mises yield criterion.
     // vonMisesModel.computeStress updates averageStress and writes the new
@@ -135,45 +113,59 @@ namespace Marmot::Materials {
 
     // VonMisesModel updates stress in-place (incremental hypoelastic-plastic);
     // read the current 3x3 averageStress, symmetrize, convert to Voigt 6-vector
-    Eigen::Map< const Eigen::Matrix< double, 3, 3, Eigen::RowMajor > > averageStressCurrent( averageStress );
-    const Eigen::Matrix< double, 3, 3 >                                averageStressSym = 0.5 *
-                                                           ( averageStressCurrent + averageStressCurrent.transpose() );
-    Marmot::Vector6d averageStressVoigt = Marmot::ContinuumMechanics::VoigtNotation::stressToVoigt( averageStressSym );
+    Eigen::Map< const Eigen::Matrix< double, 3, 3, Eigen::RowMajor > > scaled_averageStressCurrent(
+      scaled_averageStress );
+    const Eigen::Matrix< double, 3, 3 > scaled_averageStressSym = 0.5 * ( scaled_averageStressCurrent +
+                                                                          scaled_averageStressCurrent.transpose() );
+    Marmot::Vector6d                    averageStressVoigt      = 1. / h *
+                                          Marmot::ContinuumMechanics::VoigtNotation::stressToVoigt(
+                                            scaled_averageStressSym );
 
     auto& C_ep = managedStateVars->C_ep_voigt;
+
+    // Save the current (potentially plastic) C_ep before calling vonMisesModel.
+    // If vonMisesModel performs an elastic step it will overwrite C_ep with Cel,
+    // losing the plastic tangent that should be used for the consistent tangent K.
+    // By preserving C_ep_saved we can restore the plastic tangent after an elastic substep.
+    // const Eigen::Matrix< double, 6, 6, Eigen::RowMajor > C_ep_saved = C_ep;
+    const double kappa_old = managedStateVars->kappa;
     vonMisesModel.computeStress( averageStressVoigt.data(), C_ep.data(), dStrainAvgVoigt.data(), timeOld, dT, pNewDT );
+
+    // If no plastic flow occurred in this substep (kappa unchanged), restore the previously
+    // computed C_ep so that the consistent tangent K reflects the active plastic state.
+    // This is essential for Newton iterations with tiny dU corrections that stay below yield
+    // but where the material is already on the yield surface from a prior load step.
+    // if ( managedStateVars->kappa == kappa_old ) {
+    //  C_ep = C_ep_saved;
+    //}
+
+    auto [Z_ijkl_ep, Q_ij_ep, H_ijk_ep, Y_ijkl_ep] = calculateInterfaceMaterialParameters( normalFtensor, C_ep );
+
+    Fastor::Tensor< double, 3, 3 >       Q_ij_Ftensor_scaled   = ( 1.0 / h ) * Q_ij_ep;
+    Fastor::Tensor< double, 3, 3, 3, 3 > Z_ijkl_Ftensor_scaled = (h)*Z_ijkl_ep;
+    Fastor::Tensor< double, 3, 3, 3 >    H_ijk_Ftensor_scaled  = H_ijk_ep;
+    Fastor::Tensor< double, 3, 3, 3, 3 > Y_ijkl_Ftensor_scaled = h * Y_ijkl_ep;
 
     // Expand the updated Voigt 6-vector back to full 3x3 and write into averageStress for the FE model
     // voigtToStress returns column-major Eigen matrix; convert to row-major before copying
     // so that Fastor (row-major) reads the layout correctly
     const Eigen::Matrix< double, 3, 3, Eigen::RowMajor >
-      averageStressFull = h * Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( averageStressVoigt );
-    std::copy( averageStressFull.data(), averageStressFull.data() + 9, averageStress );
+      scaled_averageStressFull = h * Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( averageStressVoigt );
 
+    std::copy( scaled_averageStressFull.data(), scaled_averageStressFull.data() + 9, scaled_averageStress );
     // Reload Fastor tensor from the updated 3x3 buffer
-    averageStressFtensor = Fastor::Tensor< double, 3, 3 >( averageStress );
+    scaled_averageStressFtensor = Fastor::Tensor< double, 3, 3 >( scaled_averageStress );
 
-    auto [Z_ijkl_ep,
-          H_inv_ij_ep,
-          H_inv_nF_ijk_ep,
-          Yn_H_inv_Fn_ijkl_ep] = calculateInterfaceMaterialParameters( normalFtensor, C_ep );
+    scaled_forceFtensor = 1. / h *
+                          Fastor::einsum< Fastor::Index< i, j >,
+                                          Fastor::Index< j >,
+                                          Fastor::OIndex< i > >( scaled_averageStressFtensor, normalFtensor );
 
-    Fastor::Tensor< double, 3, 3 >       H_inv_ij_Ftensor_scaled = ( 1.0 / h ) * H_inv_ij_ep;
-    Fastor::Tensor< double, 3, 3, 3, 3 > Z_ijkl_Ftensor_scaled   = (h)*Z_ijkl_ep;
-    Fastor::Tensor< double, 3, 3, 3 >    H_inv_nF_Ftensor_scaled = H_inv_nF_ijk_ep;
-    Fastor::Tensor< double, 3, 3, 3, 3 > Yn_H_Fn_Ftensor_scaled  = h * Yn_H_inv_Fn_ijkl_ep;
-
-    forceFtensor = 1. / h *
-                   Fastor::einsum< Fastor::Index< i, j >,
-                                   Fastor::Index< j >,
-                                   Fastor::OIndex< i > >( averageStressFtensor, normalFtensor );
-
-    std::copy( forceFtensor.data(), forceFtensor.data() + 3, force );
-
-    std::copy( H_inv_ij_Ftensor_scaled.data(), H_inv_ij_Ftensor_scaled.data() + 9, H_inv_ij );
+    std::copy( scaled_forceFtensor.data(), scaled_forceFtensor.data() + 3, scaled_force );
+    std::copy( Q_ij_Ftensor_scaled.data(), Q_ij_Ftensor_scaled.data() + 9, Q_ij );
     std::copy( Z_ijkl_Ftensor_scaled.data(), Z_ijkl_Ftensor_scaled.data() + 81, Z_ijkl );
-    std::copy( H_inv_nF_Ftensor_scaled.data(), H_inv_nF_Ftensor_scaled.data() + 27, H_inv_nF_ijk );
-    std::copy( Yn_H_Fn_Ftensor_scaled.data(), Yn_H_Fn_Ftensor_scaled.data() + 81, Yn_H_inv_Fn_ijkl );
+    std::copy( H_ijk_Ftensor_scaled.data(), H_ijk_Ftensor_scaled.data() + 27, H_ijk );
+    std::copy( Y_ijkl_Ftensor_scaled.data(), Y_ijkl_Ftensor_scaled.data() + 81, Y_ijkl );
 
     return;
   };
