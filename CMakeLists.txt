@@ -113,6 +113,11 @@ find_path(AUTODIFF_INCLUDE_DIR autodiff REQUIRED NO_MODULE)
 include_directories(${AUTODIFF_INCLUDE_DIR})
 message("--> found autodiff: ${AUTODIFF_INCLUDE_DIR}")
 
+## find basix library
+find_package(Basix REQUIRED)
+include_directories(${Basix_INCLUDE_DIRS})
+message("--> found basix: ${Basix_INCLUDE_DIRS}")
+
 set(MODULES_DIR ${CMAKE_SOURCE_DIR}/modules)
 set(SHARED_LIBRARIES "")
 #
@@ -301,6 +306,7 @@ message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 add_library(${PROJECT_NAME} SHARED ${sources})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries (${PROJECT_NAME} Eigen3::Eigen)
+target_link_libraries (${PROJECT_NAME} Basix::basix)
 
 if (SHARED_LIBRARIES)
     message("+------------------------------------------------------------------------------+")

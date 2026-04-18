@@ -115,6 +115,16 @@ public:
   virtual void assignProperty( const MarmotMaterialSection& property );
 
   /**
+   * @brief Assign material by string name.
+   * @param[in] materialName String name of the material.
+   * @param[in] materialProperties Properties array.
+   * @param[in] nMaterialProperties Number of properties.
+   */
+  virtual void assignMaterial( const std::string& materialName,
+                               const double*      materialProperties,
+                               int                nMaterialProperties );
+
+  /**
    * @brief Assign nodal coordinates to element.
    * @param[in] coordinates Pointer to array of nodal coordinates.
    */
