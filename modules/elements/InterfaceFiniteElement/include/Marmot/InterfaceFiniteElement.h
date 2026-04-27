@@ -1,47 +1,22 @@
-/* ---------------------------------------------------------------------
- *                                       _
- *  _ __ ___   __ _ _ __ _ __ ___   ___ | |_
- * | '_ ` _ \ / _` | '__| '_ ` _ \ / _ \| __|
- * | | | | | | (_| | |  | | | | | | (_) | |_
- * |_| |_| |_|\__,_|_|  |_| |_| |_|\___/ \__|
- *
- * Unit of Strength of Materials and Structural Analysis
- * University of Innsbruck,
- * 2020 - today
- *
- * festigkeitslehre@uibk.ac.at
- *
- * Matthias Neuner matthias.neuner@uibk.ac.at
- * Magdalena Schreter magdalena.schreter@uibk.ac.at
- *
- * This file is part of the MAteRialMOdellingToolbox (marmot).
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * The full text of the license can be found in the file LICENSE.md at
- * the top level directory of marmot.
- * ---------------------------------------------------------------------
- */
 #pragma once
+
 #include "Marmot/Marmot.h"
 #include "Marmot/MarmotConstants.h"
 #include "Marmot/MarmotElement.h"
 #include "Marmot/MarmotElementProperty.h"
 #include "Marmot/MarmotFiniteElement.h"
-#include "Marmot/MarmotGeometryElement.h"
+#include "Marmot/MarmotGeometryInterfaceElement.h"
 #include "Marmot/MarmotJournal.h"
-#include "Marmot/MarmotLowerDimensionalStress.h"
 #include "Marmot/MarmotMaterialHypoElasticInterface.h"
 #include "Marmot/MarmotMath.h"
 #include "Marmot/MarmotStateVarVectorManager.h"
 #include "Marmot/MarmotTypedefs.h"
-#include "Marmot/MarmotVoigt.h"
-#include <Fastor/Fastor.h>
+
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 using namespace Marmot;
@@ -50,120 +25,227 @@ using namespace Eigen;
 namespace Marmot::Elements {
 
   template < int nDim, int nNodes >
-  class InterfaceFiniteElement : public MarmotElement {
+  class InterfaceFiniteElement : public MarmotElement, public MarmotGeometryInterfaceElement< nDim, nNodes > {
 
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     enum SectionType {
-      UniaxialStress,
-      PlaneStress,
-      PlaneStrain,
-      Solid,
+      Interface,
     };
 
-  public:
-    typedef Eigen::Matrix< double, nDim * nNodes, 1 > CoordinateVector;
-    Eigen::Map< const CoordinateVector >              coordinates;
-
-    std::string getElementShape() override { return "interface"; }
+    static constexpr int nDofPerNodeU    = nDim;
+    static constexpr int nInterfaceNodes = nNodes / 2;
 
     static constexpr int sizeLoadVector = nNodes * nDim;
+    static constexpr int nCoordinates   = nNodes * nDim;
 
-    const Marmot::FiniteElement::ElementShapes shape = Marmot::FiniteElement::getElementShapeByMetric( nDim == 2 ? 1
-                                                                                                                 : 2,
-                                                                                                       nNodes / 2 );
-    static constexpr int nCoordinates = nNodes * nDim;
+    static constexpr int nSideDofs = nInterfaceNodes * nDim;
+    static constexpr int nTensor   = nDim * nDim;
 
-    using ParentGeometryElement = MarmotGeometryElement< nDim, nNodes / 2 >;
-    using JacobianSized         = typename ParentGeometryElement::JacobianSized;
-    using dNdXiSized            = typename ParentGeometryElement::dNdXiSized;
-    using BSized                = typename ParentGeometryElement::BSized;
-    using XiSized               = typename ParentGeometryElement::XiSized;
-    using RhsSized              = Matrix< double, sizeLoadVector, 1 >;
-    using KeSizedMatrix         = Matrix< double, sizeLoadVector, sizeLoadVector >;
-    using CSized                = Matrix< double, ParentGeometryElement::voigtSize, ParentGeometryElement::voigtSize >;
-    using Voigt                 = Matrix< double, ParentGeometryElement::voigtSize, 1 >;
-    using NMatrixSized          = Matrix< double, nDim, sizeLoadVector >;
-    using BSurfaceSized         = Matrix< double, nDim * nDim, sizeLoadVector >;
+    using ParentGeometryElement = MarmotGeometryInterfaceElement< nDim, nNodes >;
+
+    using XiSized              = typename ParentGeometryElement::XiSized;
+    using NSized               = typename ParentGeometryElement::NSized;
+    using dNdXiSized           = typename ParentGeometryElement::dNdXiSized;
+    using SurfaceJacobianSized = typename ParentGeometryElement::SurfaceJacobianSized;
+    using MetricSized          = typename ParentGeometryElement::MetricSized;
+    using GradSized            = typename ParentGeometryElement::GradSized;
+
+    using VectorDim = typename ParentGeometryElement::VectorDim;
+    using TensorDim = typename ParentGeometryElement::TensorDim;
+
+    using NMatrixSized     = typename ParentGeometryElement::NMatrixSized;
+    using NJumpMatrixSized = typename ParentGeometryElement::NJumpMatrixSized;
+
+    using BSurfaceSized    = typename ParentGeometryElement::BSurfaceSized;
+    using BAvgSurfaceSized = typename ParentGeometryElement::BAvgSurfaceSized;
+
+    using RhsSized      = Matrix< double, sizeLoadVector, 1 >;
+    using KeSizedMatrix = Matrix< double, sizeLoadVector, sizeLoadVector >;
+
+    using ForceSized                = Matrix< double, nDim, 1 >;
+    using SurfaceStressSized        = Matrix< double, nTensor, 1 >;
+    using InterfaceDisplSized       = Matrix< double, 2 * nDim, 1 >;
+    using InterfaceSurfaceGradSized = Matrix< double, 2 * nTensor, 1 >;
+
+    /*
+     * IMPORTANT:
+     *
+     * The material receives these tangents through raw double* pointers:
+     *
+     *   computeStress(...,
+     *                 Q_ij.data(),
+     *                 Z_ijkl.data(),
+     *                 H_ijk.data(),
+     *                 Y_ijkl.data(),
+     *                 ...)
+     *
+     * Python/NumPy stores the corresponding arrays in C-order / row-major:
+     *
+     *   Q_ij   : shape (3, 3)
+     *   Z_ijkl : shape (3, 3, 3, 3), viewed as (9, 9)
+     *   H_ijk  : shape (3, 3, 3),    viewed as (3, 9)
+     *   Y_ijkl : shape (3, 3, 3, 3), viewed as (9, 9)
+     *
+     * Eigen defaults to column-major. If these matrices are left as
+     * column-major, the material and element will disagree about the logical
+     * order of the tangent entries, even if the same raw values are present.
+     */
+    using QMatrixSized = Matrix< double, nDim, nDim, RowMajor >;
+    using ZMatrixSized = Matrix< double, nTensor, nTensor, RowMajor >;
+    using HMatrixSized = Matrix< double, nDim, nTensor, RowMajor >;
+    using YMatrixSized = Matrix< double, nTensor, nTensor, RowMajor >;
+
+    using Material = MarmotMaterialHypoElasticInterface;
 
     Map< const VectorXd > elementProperties;
-    const int             elLabel;
-    const SectionType     sectionType;
+
+    const int         elLabel;
+    const SectionType sectionType;
 
     struct QuadraturePoint {
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-      const Eigen::VectorXd xi;
-      const double          weight;
+      const XiSized xi;
+      const double  weight;
 
-      double                                                 detJ;
-      double                                                 J0xW;
-      NMatrixSized                                           N_jump;
-      BSurfaceSized                                          B_surface;
-      Fastor::Tensor< double, nDim, nNodes / 2 >             N_local;
-      Fastor::Tensor< double, nDim, nDim, nDim, nNodes / 2 > B_local;
-      Matrix< double, nDim, 1 >                              normal;
+      double detJ;
+      double sqrtDetG;
+      double J0xW;
+
+      NSized               N;
+      dNdXiSized           dNdXi;
+      SurfaceJacobianSized J;
+      MetricSized          G;
+      GradSized            gradN;
+
+      VectorDim normal;
+      TensorDim normalProjection;
+      TensorDim tangentProjection;
+
+      /*
+       * One-side operators:
+       *
+       * NmatSide:
+       *   maps one side's nodal displacement vector to u at the interface qp.
+       *
+       * BmatSide:
+       *   maps one side's nodal displacement vector to the surface-gradient
+       *   quantity passed to the material.
+       */
+      NMatrixSized  NmatSide;
+      BSurfaceSized BmatSide;
+
+      /*
+       * Whole-element operators:
+       *
+       * NmatJump:
+       *   jump u = u_top - u_bottom
+       *   NmatJump = [ -Nside , +Nside ]
+       *
+       * BmatAverage:
+       *   grad_s u_avg = 0.5 * (grad_s u_bottom + grad_s u_top)
+       *   BmatAverage = 0.5 * [ Bside , Bside ]
+       */
+      NJumpMatrixSized NmatJump;
+      BAvgSurfaceSized BmatAverage;
 
       class QPStateVarManager : public MarmotStateVarVectorManager {
 
+        /*
+         * Python-compatible persistent state layout:
+         *
+         *   force
+         *   surface stress
+         *   displacement
+         *   surface strain
+         *   material state variables
+         *
+         * The displacement and surface strain entries store the accumulated
+         * top/bottom quantities:
+         *
+         *   displacement   = [u_top, u_bottom]
+         *   surface strain = [grad_s u_top, grad_s u_bottom]
+         */
         inline const static auto layout = makeLayout( {
-          { .name = "stress", .length = nDim },
-          { .name = "strain", .length = nDim },
+          { .name = "force", .length = nDim },
+          { .name = "surface stress", .length = nDim * nDim },
+          { .name = "displacement", .length = 2 * nDim },
+          { .name = "surface strain", .length = 2 * nDim * nDim },
           { .name = "begin of material state", .length = 0 },
         } );
 
       public:
-        Eigen::Map< Eigen::VectorXd > stress;
-        Eigen::Map< Eigen::VectorXd > strain;
+        Eigen::Map< ForceSized >                force;
+        Eigen::Map< SurfaceStressSized >        surfaceStress;
+        Eigen::Map< InterfaceDisplSized >       displacement;
+        Eigen::Map< InterfaceSurfaceGradSized > surfaceStrain;
+
         Eigen::Map< Eigen::VectorXd > materialStateVars;
 
-        static int getNumberOfRequiredStateVarsQuadraturePointOnly() { return layout.nRequiredStateVars; };
+        static int getNumberOfRequiredStateVarsQuadraturePointOnly() { return layout.nRequiredStateVars; }
 
         QPStateVarManager( double* theStateVarVector, int nStateVars )
           : MarmotStateVarVectorManager( theStateVarVector, layout ),
-            stress( &find( "stress" ), nDim ),
-            strain( &find( "strain" ), nDim ),
+            force( &find( "force" ) ),
+            surfaceStress( &find( "surface stress" ) ),
+            displacement( &find( "displacement" ) ),
+            surfaceStrain( &find( "surface strain" ) ),
             materialStateVars( &find( "begin of material state" ),
-                               nStateVars - getNumberOfRequiredStateVarsQuadraturePointOnly() ){};
+                               nStateVars - getNumberOfRequiredStateVarsQuadraturePointOnly() )
+        {
+        }
       };
 
       std::unique_ptr< QPStateVarManager > managedStateVars;
-
-      std::unique_ptr< MarmotMaterialHypoElasticInterface > material;
+      std::unique_ptr< Material >          material;
 
       int getNumberOfRequiredStateVarsQuadraturePointOnly()
       {
         return QPStateVarManager::getNumberOfRequiredStateVarsQuadraturePointOnly();
-      };
+      }
 
       int getNumberOfRequiredStateVars()
       {
         return getNumberOfRequiredStateVarsQuadraturePointOnly() + material->getNumberOfRequiredStateVars();
-      };
+      }
 
       void assignStateVars( double* stateVars, int nStateVars )
       {
         managedStateVars = std::make_unique< QPStateVarManager >( stateVars, nStateVars );
+
         material->assignStateVars( managedStateVars->materialStateVars.data(),
                                    managedStateVars->materialStateVars.size() );
       }
 
-      QuadraturePoint( Eigen::VectorXd xi, double weight )
+      QuadraturePoint( XiSized xi, double weight )
         : xi( xi ),
           weight( weight ),
           detJ( 0.0 ),
+          sqrtDetG( 0.0 ),
           J0xW( 0.0 ),
-          N_jump( NMatrixSized::Zero() ),
-          B_surface( BSurfaceSized::Zero() ),
-          normal( Matrix< double, nDim, 1 >::Zero() ){};
+          N( NSized::Zero() ),
+          dNdXi( dNdXiSized::Zero() ),
+          J( SurfaceJacobianSized::Zero() ),
+          G( MetricSized::Zero() ),
+          gradN( GradSized::Zero() ),
+          normal( VectorDim::Zero() ),
+          normalProjection( TensorDim::Zero() ),
+          tangentProjection( TensorDim::Zero() ),
+          NmatSide( NMatrixSized::Zero() ),
+          BmatSide( BSurfaceSized::Zero() ),
+          NmatJump( NJumpMatrixSized::Zero() ),
+          BmatAverage( BAvgSurfaceSized::Zero() )
+      {
+      }
     };
 
     std::vector< QuadraturePoint, Eigen::aligned_allocator< QuadraturePoint > > qps;
 
     InterfaceFiniteElement( int                                         elementID,
                             FiniteElement::Quadrature::IntegrationTypes integrationType,
-                            SectionType                                 sectionType );
+                            SectionType                                 sectionType = SectionType::Interface );
 
     int getNumberOfRequiredStateVars();
 
@@ -176,6 +258,8 @@ namespace Marmot::Elements {
     int getNSpatialDimensions() { return nDim; }
 
     int getNDofPerElement() { return sizeLoadVector; }
+
+    std::string getElementShape() { return ParentGeometryElement::getElementShape(); }
 
     void assignStateVars( double* stateVars, int nStateVars );
 
@@ -231,13 +315,14 @@ namespace Marmot::Elements {
 
       if ( stateName == "sdv" ) {
         std::cout << __PRETTY_FUNCTION__ << " on 'sdv' is discouraged and deprecated, please use precise state name";
-        return { qp.managedStateVars->materialStateVars.data(),
-                 static_cast< int >( qp.managedStateVars->materialStateVars.size() ) };
+
+        return {
+          qp.managedStateVars->materialStateVars.data(),
+          static_cast< int >( qp.managedStateVars->materialStateVars.size() ),
+        };
       }
 
-      else {
-        return qp.material->getStateView( stateName );
-      }
+      return qp.material->getStateView( stateName );
     }
 
     std::vector< double > getCoordinatesAtCenter();
