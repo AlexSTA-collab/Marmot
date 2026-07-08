@@ -289,8 +289,8 @@ namespace Marmot::Elements {
 
         qp.managedStateVars->force         = force;
         qp.managedStateVars->surfaceStress = surface_stress;
-        qp.managedStateVars->displacement += dU_GPs;
-        qp.managedStateVars->surfaceStrain += dSurface_strain_GPs;
+        qp.managedStateVars->displacement  = totalU_GPs;
+        qp.managedStateVars->surfaceStrain = totalSurfaceGradient_GPs;
 
         Pe -= Njump.transpose() * force * qp.J0xW;
         Pe -= Bavg.transpose() * surface_stress * qp.J0xW;
