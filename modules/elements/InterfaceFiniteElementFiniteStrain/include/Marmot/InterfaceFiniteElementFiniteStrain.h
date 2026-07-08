@@ -115,8 +115,7 @@ namespace Marmot::Elements {
                           double        dT,
                           double&       pNewDT )
     {
-      (void)QTotal_;
-
+      Eigen::Map< const RhsSized > QTotal( QTotal_ );
       Eigen::Map< const RhsSized > dQ( dQ_ );
       Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
       Eigen::Map< RhsSized >       Pe( Pe_ );
@@ -131,8 +130,18 @@ namespace Marmot::Elements {
         const auto& Njump = qp.NmatJump;
         const auto& Bavg  = qp.BmatAverage;
 
-        const auto dQBottom = dQ.template segment< halfSize >( 0 );
-        const auto dQTop    = dQ.template segment< halfSize >( halfSize );
+        const auto QTotalBottom = QTotal.template segment< halfSize >( 0 );
+        const auto QTotalTop    = QTotal.template segment< halfSize >( halfSize );
+        const auto dQBottom     = dQ.template segment< halfSize >( 0 );
+        const auto dQTop        = dQ.template segment< halfSize >( halfSize );
+
+        InterfaceDisplSized totalU_GPs;
+        totalU_GPs.template segment< nDim >( 0 )    = Nside * QTotalTop;
+        totalU_GPs.template segment< nDim >( nDim ) = Nside * QTotalBottom;
+
+        InterfaceSurfaceGradSized totalSurfaceGradient_GPs;
+        totalSurfaceGradient_GPs.template segment< nTensor >( 0 )       = Bside * QTotalTop;
+        totalSurfaceGradient_GPs.template segment< nTensor >( nTensor ) = Bside * QTotalBottom;
 
         InterfaceDisplSized dU_GPs;
         dU_GPs.template segment< nDim >( 0 )    = Nside * dQTop;
@@ -163,8 +172,8 @@ namespace Marmot::Elements {
                                                         HJumpAverage.data(),
                                                         HAverageJump.data(),
                                                         AAverage.data() };
-          typename Material::Deformation   materialDeformation{ dU_GPs.data(),
-                                                              dSurface_strain_GPs.data(),
+          typename Material::Deformation   materialDeformation{ totalU_GPs.data(),
+                                                              totalSurfaceGradient_GPs.data(),
                                                               qp.normal.data() };
           typename Material::TimeIncrement materialTimeIncrement{ time[0], dT };
 
@@ -205,11 +214,11 @@ namespace Marmot::Elements {
 
           const Tensor< double, nDim >       forceTensor( force.data() );
           const Tensor< double, nDim >       normalTensor( qp.normal.data() );
-          const Tensor< double, nDim >       topDisplacementTensor( dU_GPs.data() );
-          const Tensor< double, nDim >       bottomDisplacementTensor( dU_GPs.data() + nDim );
+          const Tensor< double, nDim >       topDisplacementTensor( totalU_GPs.data() );
+          const Tensor< double, nDim >       bottomDisplacementTensor( totalU_GPs.data() + nDim );
           const Tensor< double, nDim, nDim > surfaceStressTensor( surface_stress.data() );
-          const Tensor< double, nDim, nDim > topSurfaceGradientTensor( dSurface_strain_GPs.data() );
-          const Tensor< double, nDim, nDim > bottomSurfaceGradientTensor( dSurface_strain_GPs.data() + nTensor );
+          const Tensor< double, nDim, nDim > topSurfaceGradientTensor( totalSurfaceGradient_GPs.data() );
+          const Tensor< double, nDim, nDim > bottomSurfaceGradientTensor( totalSurfaceGradient_GPs.data() + nTensor );
 
           const Tensor3d  forceEmbedded3dTensor              = einsum< Ii, i, to_I >( E, forceTensor );
           const Tensor3d  normalEmbedded3dTensor             = einsum< Ii, i, to_I >( E, normalTensor );

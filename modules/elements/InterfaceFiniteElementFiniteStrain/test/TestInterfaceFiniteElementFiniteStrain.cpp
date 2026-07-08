@@ -92,7 +92,7 @@ void TestTwoDimensionalFiniteStrainInterfaceElementComputesConsistentTangent()
   Eigen::Matrix< double, totalNDof, 1 > dUEigen;
   dUEigen << 0.000, 0.000, 0.006, 0.001, 0.001, 0.003, 0.009, 0.006;
 
-  std::vector< double > U( totalNDof, 0.0 );
+  std::vector< double > U( dUEigen.data(), dUEigen.data() + dUEigen.size() );
   std::vector< double > dU( dUEigen.data(), dUEigen.data() + dUEigen.size() );
   std::vector< double > Pe( totalNDof, 0.0 );
   std::vector< double > Ke( totalNDof * totalNDof, 0.0 );
@@ -114,14 +114,14 @@ void TestTwoDimensionalFiniteStrainInterfaceElementComputesConsistentTangent()
   throwExceptionOnFailure( KeActual.template lpNorm< Eigen::Infinity >() > 0.0,
                            "Finite-strain 2D interface tangent should be nonzero." );
 
-  auto computePeForIncrement = [&]( const Eigen::Matrix< double, totalNDof, 1 >& dUIncrement ) {
+  auto computePeForTotalDisplacement = [&]( const Eigen::Matrix< double, totalNDof, 1 >& UTotal ) {
     auto fdElement = makeTwoDimensionalFiniteStrainInterfaceElement();
 
     std::vector< double > fdStateVars;
     initializeStateAndMaterial( *fdElement, fdStateVars );
 
-    std::vector< double > Ulocal( totalNDof, 0.0 );
-    std::vector< double > dUlocal( dUIncrement.data(), dUIncrement.data() + dUIncrement.size() );
+    std::vector< double > Ulocal( UTotal.data(), UTotal.data() + UTotal.size() );
+    std::vector< double > dUlocal( UTotal.data(), UTotal.data() + UTotal.size() );
     std::vector< double > Pelocal( totalNDof, 0.0 );
     std::vector< double > Kelocal( totalNDof * totalNDof, 0.0 );
 
@@ -150,8 +150,8 @@ void TestTwoDimensionalFiniteStrainInterfaceElementComputesConsistentTangent()
     dUPlus( j ) += eps;
     dUMinus( j ) -= eps;
 
-    KeFiniteDifference.col( j ) = ( computePeForIncrement( dUPlus ) - computePeForIncrement( dUMinus ) ) /
-                                  ( 2.0 * eps );
+    KeFiniteDifference.col(
+      j ) = ( computePeForTotalDisplacement( dUPlus ) - computePeForTotalDisplacement( dUMinus ) ) / ( 2.0 * eps );
   }
 
   const double fdNorm = KeFiniteDifference.template lpNorm< Eigen::Infinity >();
