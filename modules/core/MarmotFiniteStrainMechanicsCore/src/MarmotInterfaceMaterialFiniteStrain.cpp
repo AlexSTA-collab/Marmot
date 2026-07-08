@@ -48,19 +48,14 @@ void MarmotInterfaceMaterialFiniteStrain::computeStress( State&               st
 {
   using namespace Fastor;
 
-  Tensor33d averageSurfaceGradient( 0.0 );
-  Tensor3d  jumpU( 0.0 );
-  Tensor3d  normal( deformation.normal );
+  const Tensor3d  topDisplacement( deformation.dU );
+  const Tensor3d  bottomDisplacement( deformation.dU + 3 );
+  const Tensor33d topSurfaceGradient( deformation.dSurfaceGradient );
+  const Tensor33d bottomSurfaceGradient( deformation.dSurfaceGradient + 9 );
+  const Tensor3d  normal( deformation.normal );
 
-  for ( int i = 0; i < 3; ++i ) {
-    jumpU( i ) = deformation.dU[i] - deformation.dU[3 + i];
-
-    for ( int J = 0; J < 3; ++J ) {
-      const int index                = i * 3 + J;
-      averageSurfaceGradient( i, J ) = 0.5 * ( deformation.dSurfaceGradient[index] +
-                                               deformation.dSurfaceGradient[9 + index] );
-    }
-  }
+  const Tensor3d  jumpU                  = topDisplacement - bottomDisplacement;
+  const Tensor33d averageSurfaceGradient = 0.5 * ( topSurfaceGradient + bottomSurfaceGradient );
 
   Tensor33d F( 0.0 );
   F.eye();
@@ -77,33 +72,14 @@ void MarmotInterfaceMaterialFiniteStrain::computeStress( State&               st
   baseMaterial->computeStress( response, materialTangents, materialDeformation, materialTimeIncrement );
 
   const Tensor33d FInvT = transpose( inverse( F ) );
-  Tensor33d       P( 0.0 );
-  for ( int i = 0; i < 3; ++i )
-    for ( int J = 0; J < 3; ++J )
-      for ( int j = 0; j < 3; ++j )
-        P( i, J ) += response.tau( i, j ) * FInvT( j, J );
+  const Tensor33d P     = einsum< ij, jk, to_ik >( response.tau, FInvT );
 
   Tensor33d T( 0.0 );
   T.eye();
   T -= einsum< i, j, to_ij >( normal, normal );
 
-  Tensor3333d A( 0.0 );
-  for ( int i = 0; i < 3; ++i ) {
-    for ( int J = 0; J < 3; ++J ) {
-      for ( int k = 0; k < 3; ++k ) {
-        for ( int L = 0; L < 3; ++L ) {
-          double value = 0.0;
-
-          for ( int j = 0; j < 3; ++j ) {
-            value += materialTangents.dTau_dF( i, j, k, L ) * FInvT( j, J );
-            value -= response.tau( i, j ) * FInvT( k, J ) * FInvT( j, L );
-          }
-
-          A( i, J, k, L ) = value;
-        }
-      }
-    }
-  }
+  const Tensor3333d A = einsum< imkl, mj, to_ijkl >( materialTangents.dTau_dF, FInvT ) -
+                        einsum< im, kj, ml, to_ijkl >( response.tau, FInvT, FInvT );
 
   Eigen::Map< Eigen::Matrix< double, 3, 1 > >                  force( state.force );
   Eigen::Map< Eigen::Matrix< double, 9, 1 > >                  surfaceStress( state.surfaceStress );
@@ -119,29 +95,19 @@ void MarmotInterfaceMaterialFiniteStrain::computeStress( State&               st
   HAverageJump.setZero();
   AAverage.setZero();
 
-  for ( int i = 0; i < 3; ++i ) {
-    for ( int J = 0; J < 3; ++J ) {
-      force( i ) += P( i, J ) * normal( J );
+  const Tensor3d    forceTensor         = einsum< ij, j, to_i >( P, normal );
+  const Tensor33d   surfaceStressTensor = h * einsum< ij, kj, to_ik >( P, T );
+  const Tensor33d   QTensor             = ( 1.0 / h ) * einsum< ijkl, j, l, to_ik >( A, normal, normal );
+  const Tensor333d  HJumpAverageTensor  = einsum< ijkl, j, ml, to_ikm >( A, normal, T );
+  const Tensor333d  HAverageJumpTensor  = einsum< ijkl, mj, l, to_imk >( A, T, normal );
+  const Tensor3333d AAverageTensor      = h * einsum< ijkl, mj, nl, to_imkn >( A, T, T );
 
-      for ( int R = 0; R < 3; ++R )
-        surfaceStress( i * 3 + R ) += h * P( i, J ) * T( R, J );
-
-      for ( int k = 0; k < 3; ++k ) {
-        for ( int L = 0; L < 3; ++L ) {
-          Q( i, k ) += ( 1.0 / h ) * A( i, J, k, L ) * normal( J ) * normal( L );
-
-          for ( int R = 0; R < 3; ++R ) {
-            HJumpAverage( i, k * 3 + R ) += A( i, J, k, L ) * normal( J ) * T( R, L );
-            HAverageJump( i * 3 + R, k ) += A( i, J, k, L ) * T( R, J ) * normal( L );
-
-            for ( int Pdir = 0; Pdir < 3; ++Pdir ) {
-              AAverage( i * 3 + R, k * 3 + Pdir ) += h * A( i, J, k, L ) * T( R, J ) * T( Pdir, L );
-            }
-          }
-        }
-      }
-    }
-  }
+  force         = Eigen::Map< const Eigen::Matrix< double, 3, 1 > >( forceTensor.data() );
+  surfaceStress = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( surfaceStressTensor.data() );
+  Q             = Eigen::Map< const Eigen::Matrix< double, 3, 3, Eigen::RowMajor > >( QTensor.data() );
+  HJumpAverage  = Eigen::Map< const Eigen::Matrix< double, 3, 9, Eigen::RowMajor > >( HJumpAverageTensor.data() );
+  HAverageJump  = Eigen::Map< const Eigen::Matrix< double, 9, 3, Eigen::RowMajor > >( HAverageJumpTensor.data() );
+  AAverage      = Eigen::Map< const Eigen::Matrix< double, 9, 9, Eigen::RowMajor > >( AAverageTensor.data() );
 }
 
 void MarmotInterfaceMaterialFiniteStrain::initializeYourself( double* stateVars, int nStateVars )
