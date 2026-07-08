@@ -195,21 +195,44 @@ namespace Marmot::Elements {
           HAverageJump3d.setZero();
           AAverage3d.setZero();
 
-          for ( int i = 0; i < nDim; ++i ) {
-            force3d( i )  = force( i );
-            normal3d( i ) = qp.normal( i );
-            dU3d( i )     = dU_GPs( i );
-            dU3d( 3 + i ) = dU_GPs( nDim + i );
+          using namespace Fastor;
+          using namespace Marmot::FastorIndices;
+          using namespace Marmot::FastorStandardTensors;
 
-            for ( int j = 0; j < nDim; ++j ) {
-              const int index2d = i * nDim + j;
-              const int index3d = i * 3 + j;
+          Tensor< double, 3, nDim > E( 0.0 );
+          E( 0, 0 ) = 1.0;
+          E( 1, 1 ) = 1.0;
 
-              surfaceStress3d( index3d )      = surface_stress( index2d );
-              dSurfaceStrain3d( index3d )     = dSurface_strain_GPs( index2d );
-              dSurfaceStrain3d( 9 + index3d ) = dSurface_strain_GPs( nTensor + index2d );
-            }
-          }
+          const Tensor< double, nDim >       forceTensor( force.data() );
+          const Tensor< double, nDim >       normalTensor( qp.normal.data() );
+          const Tensor< double, nDim >       topDisplacementTensor( dU_GPs.data() );
+          const Tensor< double, nDim >       bottomDisplacementTensor( dU_GPs.data() + nDim );
+          const Tensor< double, nDim, nDim > surfaceStressTensor( surface_stress.data() );
+          const Tensor< double, nDim, nDim > topSurfaceGradientTensor( dSurface_strain_GPs.data() );
+          const Tensor< double, nDim, nDim > bottomSurfaceGradientTensor( dSurface_strain_GPs.data() + nTensor );
+
+          const Tensor3d  forceEmbedded3dTensor              = einsum< Ii, i, to_I >( E, forceTensor );
+          const Tensor3d  normalEmbedded3dTensor             = einsum< Ii, i, to_I >( E, normalTensor );
+          const Tensor3d  topDisplacementEmbedded3dTensor    = einsum< Ii, i, to_I >( E, topDisplacementTensor );
+          const Tensor3d  bottomDisplacementEmbedded3dTensor = einsum< Ii, i, to_I >( E, bottomDisplacementTensor );
+          const Tensor33d surfaceStressEmbedded3dTensor      = einsum< Ii, Jj, ij, to_IJ >( E, E, surfaceStressTensor );
+          const Tensor33d topSurfaceGradientEmbedded3dTensor = einsum< Ii, Jj, ij, to_IJ >( E,
+                                                                                            E,
+                                                                                            topSurfaceGradientTensor );
+          const Tensor33d
+            bottomSurfaceGradientEmbedded3dTensor = einsum< Ii, Jj, ij, to_IJ >( E, E, bottomSurfaceGradientTensor );
+
+          force3d         = Marmot::mapEigenToFastor( forceEmbedded3dTensor );
+          normal3d        = Marmot::mapEigenToFastor( normalEmbedded3dTensor );
+          surfaceStress3d = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( surfaceStressEmbedded3dTensor.data() );
+          Eigen::Map< Eigen::Vector3d >( dU3d.data() ) = Marmot::mapEigenToFastor( topDisplacementEmbedded3dTensor );
+          Eigen::Map< Eigen::Vector3d >( dU3d.data() +
+                                         3 )           = Marmot::mapEigenToFastor( bottomDisplacementEmbedded3dTensor );
+          Eigen::Map< Eigen::Matrix< double, 9, 1 > >( dSurfaceStrain3d.data() ) = Eigen::Map<
+            const Eigen::Matrix< double, 9, 1 > >( topSurfaceGradientEmbedded3dTensor.data() );
+          Eigen::Map< Eigen::Matrix< double, 9, 1 > >(
+            dSurfaceStrain3d.data() +
+            9 ) = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( bottomSurfaceGradientEmbedded3dTensor.data() );
 
           typename Material::State         materialState{ force3d.data(),
                                                   surfaceStress3d.data(),
@@ -229,34 +252,30 @@ namespace Marmot::Elements {
             return;
           }
 
-          for ( int i = 0; i < nDim; ++i ) {
-            force( i ) = force3d( i );
+          const TensorMap3d    force3dTensor( force3d.data() );
+          const TensorMap33d   surfaceStress3dTensor( surfaceStress3d.data() );
+          const TensorMap33d   Q3dTensor( Q3d.data() );
+          const TensorMap333d  HJumpAverage3dTensor( HJumpAverage3d.data() );
+          const TensorMap333d  HAverageJump3dTensor( HAverageJump3d.data() );
+          const TensorMap3333d AAverage3dTensor( AAverage3d.data() );
 
-            for ( int j = 0; j < nDim; ++j ) {
-              const int index2d = i * nDim + j;
-              const int index3d = i * 3 + j;
+          const Tensor< double, nDim > forceReducedTensor = einsum< Ii, I, to_i >( E, force3dTensor );
+          const Tensor< double, nDim, nDim >
+            surfaceStressReducedTensor               = einsum< Ii, Jj, IJ, to_ij >( E, E, surfaceStress3dTensor );
+          const Tensor< double, nDim, nDim > QTensor = einsum< Ii, Jj, IJ, to_ij >( E, E, Q3dTensor );
+          const Tensor< double, nDim, nDim, nDim >
+            HJumpAverageTensor = einsum< Ii, Jj, Kk, IJK, to_ijk >( E, E, E, HJumpAverage3dTensor );
+          const Tensor< double, nDim, nDim, nDim >
+            HAverageJumpTensor = einsum< Ii, Jj, Kk, IJK, to_ijk >( E, E, E, HAverageJump3dTensor );
+          const Tensor< double, nDim, nDim, nDim, nDim >
+            AAverageTensor = einsum< Ii, Jj, Kk, Ll, IJKL, to_ijkl >( E, E, E, E, AAverage3dTensor );
 
-              surface_stress( index2d ) = surfaceStress3d( index3d );
-              Q_ik( i, j )              = Q3d( i, j );
-
-              for ( int k = 0; k < nDim; ++k ) {
-                const int tensorCol2d = j * nDim + k;
-                const int tensorCol3d = j * 3 + k;
-
-                HJumpAverage( i, tensorCol2d ) = HJumpAverage3d( i, tensorCol3d );
-                HAverageJump( index2d, k )     = HAverageJump3d( index3d, k );
-
-                for ( int l = 0; l < nDim; ++l ) {
-                  const int tensorRow2d  = i * nDim + j;
-                  const int tensorRow3d  = i * 3 + j;
-                  const int tensorCol2d4 = k * nDim + l;
-                  const int tensorCol3d4 = k * 3 + l;
-
-                  AAverage( tensorRow2d, tensorCol2d4 ) = AAverage3d( tensorRow3d, tensorCol3d4 );
-                }
-              }
-            }
-          }
+          force          = Marmot::mapEigenToFastor( forceReducedTensor );
+          surface_stress = Eigen::Map< const SurfaceStressSized >( surfaceStressReducedTensor.data() );
+          Q_ik           = Marmot::mapEigenToFastor( QTensor );
+          HJumpAverage   = Eigen::Map< const HMatrixSized >( HJumpAverageTensor.data() );
+          HAverageJump   = Eigen::Map< const HAverageJumpMatrixSized >( HAverageJumpTensor.data() );
+          AAverage       = Eigen::Map< const ZMatrixSized >( AAverageTensor.data() );
         }
 
         qp.managedStateVars->force         = force;
