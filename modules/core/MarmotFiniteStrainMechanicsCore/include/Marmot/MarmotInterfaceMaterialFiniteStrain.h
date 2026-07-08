@@ -28,8 +28,11 @@
 #include "Marmot/MarmotMaterialFiniteStrain.h"
 #include "Marmot/MarmotStateHelpers.h"
 
+#include <cassert>
+#include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class MarmotInterfaceMaterialFiniteStrain {
@@ -87,3 +90,50 @@ public:
 
   virtual double getDensity() const;
 };
+
+namespace MarmotLibrary {
+
+  /**
+   * @class MarmotInterfaceMaterialFiniteStrainFactory
+   * @brief Factory class for creating finite-strain interface-material instances by name.
+   */
+  class MarmotInterfaceMaterialFiniteStrainFactory {
+  public:
+    using materialFactoryFunction = std::function<
+      MarmotInterfaceMaterialFiniteStrain*( const double* materialProperties,
+                                            int           nMaterialProperties,
+                                            int           materialNumber ) >;
+
+    MarmotInterfaceMaterialFiniteStrainFactory() = delete;
+    static MarmotInterfaceMaterialFiniteStrain* createMaterial( const std::string& materialName,
+                                                                const double*      materialProperties,
+                                                                int                nMaterialProperties,
+                                                                int                materialNumber );
+
+    template < class T >
+    static bool registerMaterial( const std::string& materialName )
+    {
+      auto& map = materialFactoryFunctionByName();
+
+      assert( map.find( materialName ) == map.end() && "Interface material already registered!" );
+
+      map[materialName] = []( const double* materialProperties,
+                              int           nMaterialProperties,
+                              int           materialNumber ) -> MarmotInterfaceMaterialFiniteStrain* {
+        return new T( materialProperties, nMaterialProperties, materialNumber );
+      };
+
+      return true;
+    }
+
+  private:
+    using MaterialFactoryMap = std::unordered_map< std::string, materialFactoryFunction >;
+
+    static MaterialFactoryMap& materialFactoryFunctionByName()
+    {
+      static MaterialFactoryMap map;
+      return map;
+    }
+  };
+
+} // namespace MarmotLibrary

@@ -58,7 +58,11 @@ namespace Marmot::Elements {
     void assignMaterial( const std::string& materialName, const double* materialProperties, int nMaterialProperties )
     {
       for ( auto& material : materials ) {
-        material = std::make_unique< Material >( materialName, materialProperties, nMaterialProperties, this->elLabel );
+        material = std::unique_ptr< Material >(
+          MarmotLibrary::MarmotInterfaceMaterialFiniteStrainFactory::createMaterial( materialName,
+                                                                                     materialProperties,
+                                                                                     nMaterialProperties,
+                                                                                     this->elLabel ) );
       }
     }
 

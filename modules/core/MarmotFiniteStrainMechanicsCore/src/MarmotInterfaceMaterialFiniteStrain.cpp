@@ -120,3 +120,24 @@ double MarmotInterfaceMaterialFiniteStrain::getDensity() const
 {
   return baseMaterial->getDensity( nullptr );
 }
+
+MarmotInterfaceMaterialFiniteStrain* MarmotLibrary::MarmotInterfaceMaterialFiniteStrainFactory::createMaterial(
+  const std::string& materialName,
+  const double*      materialProperties,
+  int                nMaterialProperties,
+  int                materialNumber )
+{
+  auto& map = materialFactoryFunctionByName();
+  auto  it  = map.find( materialName );
+
+  if ( it != map.end() ) {
+    return it->second( materialProperties, nMaterialProperties, materialNumber );
+  }
+
+  std::string baseMaterialName = materialName;
+
+  return new MarmotInterfaceMaterialFiniteStrain( baseMaterialName,
+                                                  materialProperties,
+                                                  nMaterialProperties,
+                                                  materialNumber );
+}
