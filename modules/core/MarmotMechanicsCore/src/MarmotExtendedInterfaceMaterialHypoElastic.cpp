@@ -256,14 +256,9 @@ namespace {
     return trial;
   }
 
-  Eigen::Vector3d computeNormalGradientJumpResidual( const MaterialTrial&   trial,
-                                                     const Eigen::Vector3d& normalGradientJump,
-                                                     const Eigen::Vector3d& averageNormalGradient,
-                                                     const Vector9d&        averageSurfaceGradient,
-                                                     const Vector9d&        surfaceGradientJump )
+  Eigen::Vector3d computeTractionJumpResidual( const MaterialTrial& trial, const Eigen::Vector3d& normal )
   {
-    return trial.averageQ * normalGradientJump + trial.jumpH * averageSurfaceGradient +
-           trial.averageH * surfaceGradientJump + trial.jumpQ * averageNormalGradient;
+    return ( trial.topStressTensor - trial.bottomStressTensor ) * normal;
   }
 
   Eigen::Vector3d solveNormalGradientJump( MarmotExtendedInterfaceMaterialHypoElastic& material,
@@ -289,11 +284,7 @@ namespace {
                                                timeInfo,
                                                false );
 
-      const Eigen::Vector3d residual = computeNormalGradientJumpResidual( trial,
-                                                                          normalGradientJump,
-                                                                          averageNormalGradient,
-                                                                          averageSurfaceGradient,
-                                                                          surfaceGradientJump );
+      const Eigen::Vector3d residual = computeTractionJumpResidual( trial, normal );
 
       if ( residual.norm() < 1e-11 * std::max( 1.0, normalGradientJump.norm() ) ) {
         return normalGradientJump;

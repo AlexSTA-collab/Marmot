@@ -1,11 +1,14 @@
 #include "Marmot/MarmotExtendedInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotTesting.h"
+#include "Marmot/MarmotTypedefs.h"
+#include "Marmot/MarmotVoigt.h"
 
 #include <Eigen/Dense>
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace Marmot::Testing;
@@ -55,12 +58,14 @@ namespace {
     return tangent;
   }
 
-  ExtendedEvaluation evaluateExtendedLinearElastic( const double*                         extendedProperties,
-                                                    const Eigen::Matrix< double, 21, 1 >& generalizedIncrement )
+  ExtendedEvaluation evaluateExtendedMaterial( const std::string&                    materialName,
+                                               const double*                         extendedProperties,
+                                               int                                   nExtendedProperties,
+                                               const Eigen::Matrix< double, 21, 1 >& generalizedIncrement )
   {
     const double normal[3] = { 0., 0., 1. };
 
-    MarmotExtendedInterfaceMaterialHypoElastic material( "LINEARELASTIC", extendedProperties, 7, 1 );
+    MarmotExtendedInterfaceMaterialHypoElastic material( materialName, extendedProperties, nExtendedProperties, 1 );
     Eigen::VectorXd                            stateVars( material.getNumberOfRequiredStateVars() );
     material.initializeYourself( stateVars.data(), stateVars.size() );
 
@@ -99,6 +104,12 @@ namespace {
     evaluation.response.segment< 9 >( 12 ) = jumpSurfaceStress;
     evaluation.tangent                     = packExtendedTangent( tangentBlocks );
     return evaluation;
+  }
+
+  ExtendedEvaluation evaluateExtendedLinearElastic( const double*                         extendedProperties,
+                                                    const Eigen::Matrix< double, 21, 1 >& generalizedIncrement )
+  {
+    return evaluateExtendedMaterial( "LINEARELASTIC", extendedProperties, 7, generalizedIncrement );
   }
 
   void testExtendedMaterialReducesToStandardInterfaceForEqualSides()
@@ -199,6 +210,160 @@ namespace {
                              "Implicit extended tangent does not match finite-difference tangent." );
   }
 
+  void testSolvedNormalGradientJumpEnforcesTractionEquilibrium()
+  {
+    const double extendedProperties[7] = { 0.03, 2., 7.5e4, 0.18, 2., 1.9e5, 0.34 };
+    const double normal[3]             = { 0., 0., 1. };
+
+    MarmotExtendedInterfaceMaterialHypoElastic material( "LINEARELASTIC", extendedProperties, 7, 1 );
+
+    Eigen::VectorXd stateVars( material.getNumberOfRequiredStateVars() );
+    material.initializeYourself( stateVars.data(), stateVars.size() );
+
+    Eigen::Matrix< double, 21, 1 > generalizedIncrement;
+    generalizedIncrement.setZero();
+    generalizedIncrement.segment< 3 >( 0 ) << 2.5e-5, -1.5e-5, 1.0e-5;
+    generalizedIncrement.segment< 9 >( 3 ) << 1.5e-4, 7.0e-5, 0.0, -4.0e-5, 9.0e-5, 0.0, 0.0, 0.0, 0.0;
+    generalizedIncrement.segment< 9 >( 12 ) << -9.0e-5, 5.0e-5, 0.0, 6.0e-5, -3.0e-5, 0.0, 0.0, 0.0, 0.0;
+
+    double dU[6]              = { 0. };
+    double dSurfaceStrain[18] = { 0. };
+    makeExtendedKinematics( generalizedIncrement, dU, dSurfaceStrain );
+
+    Eigen::Vector3d force                = Eigen::Vector3d::Zero();
+    Vector9d        averageSurfaceStress = Vector9d::Zero();
+    Vector9d        jumpSurfaceStress    = Vector9d::Zero();
+    double          tangentBlocks[9][81] = {};
+
+    MarmotExtendedInterfaceMaterialHypoElastic::State    state{ force.data(),
+                                                             averageSurfaceStress.data(),
+                                                             jumpSurfaceStress.data(),
+                                                             stateVars.data() };
+    MarmotExtendedInterfaceMaterialHypoElastic::Tangents tangentBlockViews{
+      tangentBlocks[0],
+      tangentBlocks[1],
+      tangentBlocks[2],
+      tangentBlocks[3],
+      tangentBlocks[4],
+      tangentBlocks[5],
+      tangentBlocks[6],
+      tangentBlocks[7],
+      tangentBlocks[8],
+    };
+    MarmotExtendedInterfaceMaterialHypoElastic::Deformation   deformation{ dU, dSurfaceStrain, normal };
+    MarmotExtendedInterfaceMaterialHypoElastic::TimeIncrement time{ 0., 1. };
+
+    material.computeStress( state, tangentBlockViews, deformation, time );
+
+    const auto             topStressView    = material.getStateView( "topStress", stateVars.data() );
+    const auto             bottomStressView = material.getStateView( "bottomStress", stateVars.data() );
+    const Marmot::Vector6d topStress        = Eigen::Map< const Marmot::Vector6d >( topStressView.stateLocation );
+    const Marmot::Vector6d bottomStress     = Eigen::Map< const Marmot::Vector6d >( bottomStressView.stateLocation );
+
+    const Eigen::Matrix3d topStressTensor    = Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( topStress );
+    const Eigen::Matrix3d bottomStressTensor = Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( bottomStress );
+    const Eigen::Vector3d normalVector( normal[0], normal[1], normal[2] );
+
+    const Eigen::Vector3d tractionJump = ( topStressTensor - bottomStressTensor ) * normalVector;
+    throwExceptionOnFailure( tractionJump.norm() < 1e-8,
+                             "Solved normal-gradient jump does not enforce top/bottom traction equilibrium." );
+  }
+
+  void testSolvedNormalGradientJumpEnforcesNonlinearTractionEquilibrium()
+  {
+    const double singleMaterialProperties[8] = { 210000., 0.3, 0.02, 120., 2100., 20., 20., 2400. };
+    const double normal[3]                   = { 0., 0., 1. };
+
+    MarmotExtendedInterfaceMaterialHypoElastic material( "VONMISES", singleMaterialProperties, 8, 1 );
+
+    Eigen::VectorXd stateVars( material.getNumberOfRequiredStateVars() );
+    material.initializeYourself( stateVars.data(), stateVars.size() );
+
+    Eigen::Matrix< double, 21, 1 > generalizedIncrement;
+    generalizedIncrement.setZero();
+    generalizedIncrement.segment< 3 >( 0 ) << 1.0e-4, -2.0e-4, 1.5e-4;
+    generalizedIncrement.segment< 9 >( 3 ) << 4.0e-3, 1.5e-3, 0.0, 1.0e-3, -2.0e-3, 0.0, 0.0, 0.0, -2.0e-3;
+    generalizedIncrement.segment< 9 >( 12 ) << 5.0e-3, -1.0e-3, 0.0, 2.0e-3, -3.0e-3, 0.0, 0.0, 0.0, 1.0e-3;
+
+    double dU[6]              = { 0. };
+    double dSurfaceStrain[18] = { 0. };
+    makeExtendedKinematics( generalizedIncrement, dU, dSurfaceStrain );
+
+    Eigen::Vector3d force                = Eigen::Vector3d::Zero();
+    Vector9d        averageSurfaceStress = Vector9d::Zero();
+    Vector9d        jumpSurfaceStress    = Vector9d::Zero();
+    double          tangentBlocks[9][81] = {};
+
+    MarmotExtendedInterfaceMaterialHypoElastic::State    state{ force.data(),
+                                                             averageSurfaceStress.data(),
+                                                             jumpSurfaceStress.data(),
+                                                             stateVars.data() };
+    MarmotExtendedInterfaceMaterialHypoElastic::Tangents tangentBlockViews{
+      tangentBlocks[0],
+      tangentBlocks[1],
+      tangentBlocks[2],
+      tangentBlocks[3],
+      tangentBlocks[4],
+      tangentBlocks[5],
+      tangentBlocks[6],
+      tangentBlocks[7],
+      tangentBlocks[8],
+    };
+    MarmotExtendedInterfaceMaterialHypoElastic::Deformation   deformation{ dU, dSurfaceStrain, normal };
+    MarmotExtendedInterfaceMaterialHypoElastic::TimeIncrement time{ 0., 1. };
+
+    material.computeStress( state, tangentBlockViews, deformation, time );
+
+    const auto             topStressView    = material.getStateView( "topStress", stateVars.data() );
+    const auto             bottomStressView = material.getStateView( "bottomStress", stateVars.data() );
+    const Marmot::Vector6d topStress        = Eigen::Map< const Marmot::Vector6d >( topStressView.stateLocation );
+    const Marmot::Vector6d bottomStress     = Eigen::Map< const Marmot::Vector6d >( bottomStressView.stateLocation );
+
+    const Eigen::Matrix3d topStressTensor    = Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( topStress );
+    const Eigen::Matrix3d bottomStressTensor = Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( bottomStress );
+    const Eigen::Vector3d normalVector( normal[0], normal[1], normal[2] );
+
+    const Eigen::Vector3d tractionJump = ( topStressTensor - bottomStressTensor ) * normalVector;
+    throwExceptionOnFailure( tractionJump.norm() < 1e-7,
+                             "Solved normal-gradient jump does not enforce nonlinear top/bottom traction "
+                             "equilibrium." );
+  }
+
+  void testImplicitExtendedTangentMatchesFiniteDifferenceForPlasticMaterial()
+  {
+    const double singleMaterialProperties[8] = { 210000., 0.3, 0.02, 120., 2100., 20., 20., 2400. };
+
+    Eigen::Matrix< double, 21, 1 > generalizedIncrement;
+    generalizedIncrement.setZero();
+    generalizedIncrement.segment< 3 >( 0 ) << 1.0e-4, -2.0e-4, 1.5e-4;
+    generalizedIncrement.segment< 9 >( 3 ) << 4.0e-3, 1.5e-3, 0.0, 1.0e-3, -2.0e-3, 0.0, 0.0, 0.0, -2.0e-3;
+    generalizedIncrement.segment< 9 >( 12 ) << 5.0e-3, -1.0e-3, 0.0, 2.0e-3, -3.0e-3, 0.0, 0.0, 0.0, 1.0e-3;
+
+    const auto baseEvaluation = evaluateExtendedMaterial( "VONMISES",
+                                                          singleMaterialProperties,
+                                                          8,
+                                                          generalizedIncrement );
+
+    Matrix21d finiteDifferenceTangent;
+    finiteDifferenceTangent.setZero();
+    for ( int i = 0; i < 21; ++i ) {
+      Eigen::Matrix< double, 21, 1 > perturbedIncrement = generalizedIncrement;
+      const double                   perturbation       = 1e-8 * std::max( 1.0, std::abs( generalizedIncrement[i] ) );
+      perturbedIncrement[i] += perturbation;
+
+      const auto perturbedEvaluation   = evaluateExtendedMaterial( "VONMISES",
+                                                                 singleMaterialProperties,
+                                                                 8,
+                                                                 perturbedIncrement );
+      finiteDifferenceTangent.col( i ) = ( perturbedEvaluation.response - baseEvaluation.response ) / perturbation;
+    }
+
+    const double error = ( baseEvaluation.tangent - finiteDifferenceTangent ).norm();
+    const double scale = std::max( 1.0, finiteDifferenceTangent.norm() );
+    throwExceptionOnFailure( error / scale < 5e-4,
+                             "Plastic implicit extended tangent does not match finite-difference tangent." );
+  }
+
   void testSingleMaterialInputKeepsIndependentTopAndBottomState()
   {
     const double singleMaterialProperties[8] = { 210000., 0.3, 0.01, 200., 2100., 20., 20., 2400. };
@@ -256,6 +421,9 @@ int main()
   std::vector< std::function< void() > > tests = {
     testExtendedMaterialReducesToStandardInterfaceForEqualSides,
     testImplicitExtendedTangentMatchesFiniteDifference,
+    testSolvedNormalGradientJumpEnforcesTractionEquilibrium,
+    testSolvedNormalGradientJumpEnforcesNonlinearTractionEquilibrium,
+    testImplicitExtendedTangentMatchesFiniteDifferenceForPlasticMaterial,
     testSingleMaterialInputKeepsIndependentTopAndBottomState,
   };
   executeTestsAndCollectExceptions( tests );

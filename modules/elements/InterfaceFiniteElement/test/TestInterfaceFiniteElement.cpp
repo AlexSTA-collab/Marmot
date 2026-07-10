@@ -1,3 +1,4 @@
+#include "Marmot/ExtendedInterfaceFiniteElement.h"
 #include "Marmot/InterfaceFiniteElement.h"
 #include "Marmot/MarmotElementProperty.h"
 #include "Marmot/MarmotTesting.h"
@@ -73,6 +74,32 @@ namespace {
     return element;
   }
 
+  std::unique_ptr< ExtendedInterfaceFiniteElement< 3, 8 > > makeExtendedInterfaceElement()
+  {
+    constexpr int nDim   = 3;
+    constexpr int nNodes = 8;
+
+    const int  elId    = 4;
+    const auto intType = FiniteElement::Quadrature::IntegrationTypes::FullIntegration;
+    const auto secType = ExtendedInterfaceFiniteElement< nDim, nNodes >::SectionType::Interface;
+
+    auto element = std::make_unique< ExtendedInterfaceFiniteElement< nDim, nNodes > >( elId, intType, secType );
+
+    static std::array< double, nDim* nNodes > coordinates = {
+      -0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.5, 0.5, 0.0, -0.5, 0.5, 0.0,
+      -0.5, -0.5, 0.1, 0.5, -0.5, 0.1, 0.5, 0.5, 0.1, -0.5, 0.5, 0.1,
+    };
+    element->assignNodeCoordinates( coordinates.data() );
+
+    static std::array< double, 1 > elPropsVec = { 1.0 };
+    ElementProperties              elProps( elPropsVec.data(), static_cast< int >( elPropsVec.size() ) );
+    element->assignProperty( elProps );
+
+    static std::array< double, 7 > materialProperties = { 0.02, 2., 8.0e4, 0.22, 2., 1.5e5, 0.31 };
+    element->assignMaterial( "LINEARELASTIC", materialProperties.data(), materialProperties.size() );
+    return element;
+  }
+
   std::unique_ptr< InterfaceFiniteElement< 2, 4 > > makeTwoDimensionalInterfaceElement()
   {
     constexpr int nDim   = 2;
@@ -113,6 +140,45 @@ namespace {
     element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
     element.initializeYourself();
     element.setInitialConditions( MarmotElement::MarmotMaterialInitialization, nullptr );
+  }
+
+  template < int nDim, int nNodes >
+  void initializeStateAndMaterial( ExtendedInterfaceFiniteElement< nDim, nNodes >& element,
+                                   std::vector< double >&                          stateVars )
+  {
+    stateVars.assign( element.getNumberOfRequiredStateVars(), 0.0 );
+    element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
+    element.initializeYourself();
+    element.setInitialConditions( MarmotElement::MarmotMaterialInitialization, nullptr );
+  }
+
+  struct ExtendedElementEvaluation {
+    Eigen::Matrix< double, 24, 1 >                   residual;
+    Eigen::Matrix< double, 24, 24, Eigen::RowMajor > tangent;
+  };
+
+  ExtendedElementEvaluation evaluateExtendedElementResponse( const Eigen::Matrix< double, 24, 1 >& dU )
+  {
+    constexpr int nElementDofs = 24;
+
+    auto element = makeExtendedInterfaceElement();
+
+    std::vector< double > stateVars;
+    initializeStateAndMaterial( *element, stateVars );
+
+    std::array< double, nElementDofs >                U{};
+    std::array< double, nElementDofs >                dQ{};
+    std::array< double, nElementDofs >                Pe{};
+    std::array< double, nElementDofs * nElementDofs > Ke{};
+    std::copy( dU.data(), dU.data() + dU.size(), dQ.begin() );
+
+    element->computeKernels( U.data(), dQ.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+
+    ExtendedElementEvaluation evaluation;
+    evaluation.residual = Eigen::Map< Eigen::Matrix< double, nElementDofs, 1 > >( Pe.data() );
+    evaluation.tangent  = Eigen::Map< Eigen::Matrix< double, nElementDofs, nElementDofs, Eigen::RowMajor > >(
+      Ke.data() );
+    return evaluation;
   }
 
   void TestMaterialInitializationResetsMaterialState()
@@ -867,19 +933,65 @@ void TestAngledInterfaceKinematics()
   }
 }
 
+void TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference()
+{
+  std::cout << "\n--- TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference ---\n";
+
+  constexpr int nElementDofs = 24;
+
+  Eigen::Matrix< double, nElementDofs, 1 > dU;
+  dU.setZero();
+  dU( 0 )  = -1.0e-5;
+  dU( 1 )  = 2.0e-5;
+  dU( 3 )  = 1.5e-5;
+  dU( 7 )  = -1.0e-5;
+  dU( 12 ) = 2.5e-5;
+  dU( 13 ) = -1.5e-5;
+  dU( 16 ) = 1.0e-5;
+  dU( 20 ) = 2.0e-5;
+
+  const auto baseEvaluation = evaluateExtendedElementResponse( dU );
+
+  Eigen::Matrix< double, nElementDofs, nElementDofs, Eigen::RowMajor > finiteDifferenceResidualTangent;
+  finiteDifferenceResidualTangent.setZero();
+
+  for ( int i = 0; i < nElementDofs; ++i ) {
+    Eigen::Matrix< double, nElementDofs, 1 > perturbedDU  = dU;
+    const double                             perturbation = 1e-8 * std::max( 1.0, std::abs( dU( i ) ) );
+    perturbedDU( i ) += perturbation;
+
+    const auto perturbedEvaluation           = evaluateExtendedElementResponse( perturbedDU );
+    finiteDifferenceResidualTangent.col( i ) = ( perturbedEvaluation.residual - baseEvaluation.residual ) /
+                                               perturbation;
+  }
+
+  const auto   expectedResidualTangent = -baseEvaluation.tangent;
+  const double error                   = ( finiteDifferenceResidualTangent - expectedResidualTangent ).norm();
+  const double scale                   = std::max( 1.0, expectedResidualTangent.norm() );
+
+  throwExceptionOnFailure( baseEvaluation.residual.allFinite(), "Extended interface residual contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.tangent.allFinite(), "Extended interface tangent contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.residual.norm() > 0.0,
+                           "Chosen extended interface increment should produce a nonzero residual." );
+  throwExceptionOnFailure( error / scale < 1e-6,
+                           "Extended interface element tangent does not match residual finite difference." );
+}
+
 int main()
 {
-  auto tests = std::vector< std::function< void() > >{ TestMaterialInitializationResetsMaterialState,
-                                                       TestUnsupportedInertiaThrows,
-                                                       TestStressUpdateFailureRequestsSmallerTimeStep,
-                                                       TestSingleInputFileElementGeometryMatrices,
-                                                       TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling,
-                                                       TestSingleInputFileElementMaterialResponseIsFinite,
-                                                       TestSingleInputFileElementGaussPointStiffnessAndResidual,
-                                                       TestSingleInputFileElementRigidTranslationGivesZeroResidual,
-                                                       TestAssignStateVarsPreservesHistoryAcrossIncrements,
-                                                       TestTwoDimensionalInterfaceElementComputesWithEmbeddedMaterial,
-                                                       TestAngledInterfaceKinematics };
+  auto tests = std::vector<
+    std::function< void() > >{ TestMaterialInitializationResetsMaterialState,
+                               TestUnsupportedInertiaThrows,
+                               TestStressUpdateFailureRequestsSmallerTimeStep,
+                               TestSingleInputFileElementGeometryMatrices,
+                               TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling,
+                               TestSingleInputFileElementMaterialResponseIsFinite,
+                               TestSingleInputFileElementGaussPointStiffnessAndResidual,
+                               TestSingleInputFileElementRigidTranslationGivesZeroResidual,
+                               TestAssignStateVarsPreservesHistoryAcrossIncrements,
+                               TestTwoDimensionalInterfaceElementComputesWithEmbeddedMaterial,
+                               TestAngledInterfaceKinematics,
+                               TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference };
 
   executeTestsAndCollectExceptions( tests );
 
