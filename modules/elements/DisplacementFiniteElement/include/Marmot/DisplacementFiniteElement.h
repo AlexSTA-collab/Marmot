@@ -606,7 +606,7 @@ namespace Marmot::Elements {
       qp.managedStateVars->strain += make3DVoigt< ParentGeometryElement::voigtSize >( dE );
 
       Ke += B.transpose() * C * B * qp.J0xW;
-      Pe += B.transpose() * S * qp.J0xW;
+      Pe -= B.transpose() * S * qp.J0xW;
     }
   }
 
@@ -718,7 +718,7 @@ namespace Marmot::Elements {
       qp.managedStateVars->totalStrainEnergy   = ( elasticEnergyDensity + dissipation ) * qp.J0xW;
       qp.managedStateVars->strain += make3DVoigt< ParentGeometryElement::voigtSize >( dE );
 
-      Pe += B.transpose() * S * qp.J0xW;
+      Pe -= B.transpose() * S * qp.J0xW;
     }
   }
   template < int nDim, int nNodes >

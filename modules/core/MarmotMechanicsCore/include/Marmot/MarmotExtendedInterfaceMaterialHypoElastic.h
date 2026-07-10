@@ -67,6 +67,8 @@ public:
 
   const int materialNumber;
 
+  bool debugOutputForNextCall = false;
+
   MarmotExtendedInterfaceMaterialHypoElastic( const std::string& materialName,
                                               const double*      matProperties_,
                                               int                nMaterialProperties_,
@@ -79,6 +81,10 @@ public:
   double characteristicElementLength;
 
   void setCharacteristicElementLength( double length );
+
+  void setDebugOutputForNextCall( bool enabled ) { debugOutputForNextCall = enabled; }
+
+  bool isDebugOutputEnabledForNextCall() const { return debugOutputForNextCall; }
 
   struct State {
     TensorMap3d  force;

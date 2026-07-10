@@ -8,7 +8,13 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -24,6 +30,77 @@ namespace {
   bool isIntegerProperty( double value )
   {
     return std::abs( value - std::round( value ) ) < 1e-12;
+  }
+
+  bool debugEnabled()
+  {
+    return std::getenv( "MARMOT_EI_DEBUG" ) != nullptr || std::getenv( "MARMOT_EI_DEBUG_MATERIAL" ) != nullptr;
+  }
+
+  bool debugCoordinateFilterRequested()
+  {
+    return std::getenv( "MARMOT_EI_DEBUG_X" ) != nullptr || std::getenv( "MARMOT_EI_DEBUG_Y" ) != nullptr ||
+           std::getenv( "MARMOT_EI_DEBUG_Z" ) != nullptr || std::getenv( "MARMOT_EI_DEBUG_X_MIN" ) != nullptr ||
+           std::getenv( "MARMOT_EI_DEBUG_X_MAX" ) != nullptr || std::getenv( "MARMOT_EI_DEBUG_Y_MIN" ) != nullptr ||
+           std::getenv( "MARMOT_EI_DEBUG_Y_MAX" ) != nullptr || std::getenv( "MARMOT_EI_DEBUG_Z_MIN" ) != nullptr ||
+           std::getenv( "MARMOT_EI_DEBUG_Z_MAX" ) != nullptr;
+  }
+
+  bool debugStateFilterRequested()
+  {
+    return std::getenv( "MARMOT_EI_DEBUG_STATE_MIN" ) != nullptr;
+  }
+
+  int debugEnvInt( const char* name, int defaultValue )
+  {
+    const char* value = std::getenv( name );
+    return value == nullptr ? defaultValue : std::atoi( value );
+  }
+
+  double debugEnvDouble( const char* name, double defaultValue )
+  {
+    const char* value = std::getenv( name );
+    return value == nullptr ? defaultValue : std::atof( value );
+  }
+
+  std::mutex& debugStreamMutex()
+  {
+    static std::mutex mutex;
+    return mutex;
+  }
+
+  void writeDebugLine( const std::string& line )
+  {
+    std::lock_guard< std::mutex > lock( debugStreamMutex() );
+    std::cerr << line << '\n';
+  }
+
+  bool debugMaterialAllowed( int materialNumber )
+  {
+    if ( !debugEnabled() )
+      return false;
+
+    const char* elementFilter = std::getenv( "MARMOT_EI_DEBUG_ELEMENT" );
+    if ( elementFilter != nullptr && std::atoi( elementFilter ) != materialNumber )
+      return false;
+
+    static std::atomic< int > nPrinted{ 0 };
+    const int                 maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+    return nPrinted.fetch_add( 1 ) < maxPrints;
+  }
+
+  bool debugLocalNewtonAllowed( int materialNumber )
+  {
+    if ( std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) == nullptr )
+      return false;
+
+    const char* elementFilter = std::getenv( "MARMOT_EI_DEBUG_ELEMENT" );
+    if ( elementFilter != nullptr && std::atoi( elementFilter ) != materialNumber )
+      return false;
+
+    static std::atomic< int > nPrinted{ 0 };
+    const int                 maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+    return nPrinted.fetch_add( 1 ) < maxPrints;
   }
 
   Matrix3dRowMajor vectorToTensor( const Vector9d& vector )
@@ -287,13 +364,44 @@ namespace {
       const Eigen::Vector3d residual = computeTractionJumpResidual( trial, normal );
 
       if ( residual.norm() < 1e-11 * std::max( 1.0, normalGradientJump.norm() ) ) {
+        if ( ( material.isDebugOutputEnabledForNextCall() &&
+               std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
+             debugLocalNewtonAllowed( material.materialNumber ) ) {
+          std::ostringstream line;
+          line << std::scientific << std::setprecision( 6 )
+               << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
+               << " converged_by_residual residualNorm=" << residual.norm()
+               << " normalGradientJump=" << normalGradientJump.transpose();
+          writeDebugLine( line.str() );
+        }
         return normalGradientJump;
       }
 
       const Eigen::Vector3d correction = trial.averageQ.fullPivLu().solve( residual );
       normalGradientJump -= correction;
 
+      if ( ( material.isDebugOutputEnabledForNextCall() && std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
+           debugLocalNewtonAllowed( material.materialNumber ) ) {
+        std::ostringstream line;
+        line << std::scientific << std::setprecision( 6 )
+             << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
+             << " residual=" << residual.transpose() << " residualNorm=" << residual.norm()
+             << " correction=" << correction.transpose() << " correctionNorm=" << correction.norm()
+             << " normalGradientJump=" << normalGradientJump.transpose() << " averageQNorm=" << trial.averageQ.norm();
+        writeDebugLine( line.str() );
+      }
+
       if ( correction.norm() < 1e-11 * std::max( 1.0, normalGradientJump.norm() ) ) {
+        if ( ( material.isDebugOutputEnabledForNextCall() &&
+               std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
+             debugLocalNewtonAllowed( material.materialNumber ) ) {
+          std::ostringstream line;
+          line << std::scientific << std::setprecision( 6 )
+               << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
+               << " converged_by_correction correctionNorm=" << correction.norm()
+               << " normalGradientJump=" << normalGradientJump.transpose();
+          writeDebugLine( line.str() );
+        }
         return normalGradientJump;
       }
     }
@@ -515,6 +623,38 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
   Eigen::Map< Matrix9x3RowMajor >( tangents.jumpSurfaceStressJumpU )                 = tangent.block< 9, 3 >( 12, 0 );
   Eigen::Map< Matrix9dRowMajor >( tangents.jumpSurfaceStressAverageSurfaceGradient ) = tangent.block< 9, 9 >( 12, 3 );
   Eigen::Map< Matrix9dRowMajor >( tangents.jumpSurfaceStressJumpSurfaceGradient )    = tangent.block< 9, 9 >( 12, 12 );
+
+  const bool forceDebugOutputForThisCall = debugOutputForNextCall;
+  debugOutputForNextCall                 = false;
+
+  const auto topMaterialState    = getStateView( "topMaterialStateVars", state.stateVars );
+  const auto bottomMaterialState = getStateView( "bottomMaterialStateVars", state.stateVars );
+  const auto topState0           = topMaterialState.stateSize > 0 ? topMaterialState.stateLocation[0] : 0.0;
+  const auto bottomState0        = bottomMaterialState.stateSize > 0 ? bottomMaterialState.stateLocation[0] : 0.0;
+  const bool stateFilterHit      = debugStateFilterRequested() &&
+                              ( std::abs( topState0 ) >= debugEnvDouble( "MARMOT_EI_DEBUG_STATE_MIN", 0.0 ) ||
+                                std::abs( bottomState0 ) >= debugEnvDouble( "MARMOT_EI_DEBUG_STATE_MIN", 0.0 ) );
+  const bool stateFilterAllowed = stateFilterHit && debugMaterialAllowed( materialNumber );
+
+  if ( forceDebugOutputForThisCall || stateFilterAllowed ||
+       ( !debugCoordinateFilterRequested() && !debugStateFilterRequested() &&
+         debugMaterialAllowed( materialNumber ) ) ) {
+    const auto         tractionJump = computeTractionJumpResidual( trial, normal );
+    std::ostringstream line;
+    line << std::scientific << std::setprecision( 6 ) << "[Marmot EI material] material/el=" << materialNumber
+         << " timeOld=" << timeIncrement.timeOld << " dT=" << timeIncrement.dT << " h=" << h
+         << " normal=" << normal.transpose() << " displacementJump=" << displacementJump.transpose()
+         << " averageNormalGradient=" << averageNormalGradient.transpose()
+         << " normalGradientJump=" << normalGradientJump.transpose()
+         << " averageSurfaceGradientNorm=" << averageSurfaceGradient.norm()
+         << " surfaceGradientJumpNorm=" << surfaceGradientJump.norm() << " tractionJump=" << tractionJump.transpose()
+         << " tractionJumpNorm=" << tractionJump.norm() << " force=" << committedResponse.force.transpose()
+         << " averageSurfaceStressNorm=" << committedResponse.averageSurfaceStress.norm()
+         << " jumpSurfaceStressNorm=" << committedResponse.jumpSurfaceStress.norm()
+         << " topStress=" << trial.topStress.transpose() << " bottomStress=" << trial.bottomStress.transpose()
+         << " tangentNorm=" << tangent.norm() << " topState0=" << topState0 << " bottomState0=" << bottomState0;
+    writeDebugLine( line.str() );
+  }
 }
 
 void MarmotExtendedInterfaceMaterialHypoElastic::initializeYourself( double* stateVars, int )

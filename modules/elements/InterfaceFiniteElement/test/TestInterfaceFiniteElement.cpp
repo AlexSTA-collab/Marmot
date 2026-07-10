@@ -74,7 +74,11 @@ namespace {
     return element;
   }
 
-  std::unique_ptr< ExtendedInterfaceFiniteElement< 3, 8 > > makeExtendedInterfaceElement()
+  std::unique_ptr< ExtendedInterfaceFiniteElement< 3, 8 > > makeExtendedInterfaceElementWithMaterial(
+    const std::string& materialName,
+    const double*      materialProperties,
+    int                nMaterialProperties,
+    bool               skewedGeometry = false )
   {
     constexpr int nDim   = 3;
     constexpr int nNodes = 8;
@@ -85,18 +89,26 @@ namespace {
 
     auto element = std::make_unique< ExtendedInterfaceFiniteElement< nDim, nNodes > >( elId, intType, secType );
 
-    static std::array< double, nDim* nNodes > coordinates = {
+    static std::array< double, nDim* nNodes > flatCoordinates = {
       -0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.5, 0.5, 0.0, -0.5, 0.5, 0.0,
       -0.5, -0.5, 0.1, 0.5, -0.5, 0.1, 0.5, 0.5, 0.1, -0.5, 0.5, 0.1,
     };
-    element->assignNodeCoordinates( coordinates.data() );
+
+    static std::array< double, nDim* nNodes > skewedCoordinates = {
+      -0.500000, -0.500000, 0.088163,  0.500000,  -0.500000, -0.088163,
+      0.500000,  0.500000,  -0.088163, -0.500000, 0.500000,  0.088163,
+
+      -0.500000, -0.500000, 0.188163,  0.500000,  -0.500000, 0.011837,
+      0.500000,  0.500000,  0.011837,  -0.500000, 0.500000,  0.188163,
+    };
+
+    element->assignNodeCoordinates( skewedGeometry ? skewedCoordinates.data() : flatCoordinates.data() );
 
     static std::array< double, 1 > elPropsVec = { 1.0 };
     ElementProperties              elProps( elPropsVec.data(), static_cast< int >( elPropsVec.size() ) );
     element->assignProperty( elProps );
 
-    static std::array< double, 7 > materialProperties = { 0.02, 2., 8.0e4, 0.22, 2., 1.5e5, 0.31 };
-    element->assignMaterial( "LINEARELASTIC", materialProperties.data(), materialProperties.size() );
+    element->assignMaterial( materialName, materialProperties, nMaterialProperties );
     return element;
   }
 
@@ -157,14 +169,28 @@ namespace {
     Eigen::Matrix< double, 24, 24, Eigen::RowMajor > tangent;
   };
 
-  ExtendedElementEvaluation evaluateExtendedElementResponse( const Eigen::Matrix< double, 24, 1 >& dU )
+  ExtendedElementEvaluation evaluateExtendedElementResponse( const std::string&                    materialName,
+                                                             const std::vector< double >&          materialProperties,
+                                                             const Eigen::Matrix< double, 24, 1 >& dU,
+                                                             const std::vector< double >* initialStateVars = nullptr,
+                                                             bool                         skewedGeometry   = false )
   {
     constexpr int nElementDofs = 24;
 
-    auto element = makeExtendedInterfaceElement();
+    auto element = makeExtendedInterfaceElementWithMaterial( materialName,
+                                                             materialProperties.data(),
+                                                             static_cast< int >( materialProperties.size() ),
+                                                             skewedGeometry );
 
     std::vector< double > stateVars;
-    initializeStateAndMaterial( *element, stateVars );
+    if ( initialStateVars ) {
+      stateVars = *initialStateVars;
+      element->assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
+      element->initializeYourself();
+    }
+    else {
+      initializeStateAndMaterial( *element, stateVars );
+    }
 
     std::array< double, nElementDofs >                U{};
     std::array< double, nElementDofs >                dQ{};
@@ -179,6 +205,98 @@ namespace {
     evaluation.tangent  = Eigen::Map< Eigen::Matrix< double, nElementDofs, nElementDofs, Eigen::RowMajor > >(
       Ke.data() );
     return evaluation;
+  }
+
+  ExtendedElementEvaluation evaluateExtendedElementResponse( const Eigen::Matrix< double, 24, 1 >& dU )
+  {
+    const std::vector< double > materialProperties = { 0.02, 2., 8.0e4, 0.22, 2., 1.5e5, 0.31 };
+    return evaluateExtendedElementResponse( "LINEARELASTIC", materialProperties, dU );
+  }
+
+  std::vector< double > makeExtendedElementStateAfterIncrement( const std::string&           materialName,
+                                                                const std::vector< double >& materialProperties,
+                                                                const Eigen::Matrix< double, 24, 1 >& dU,
+                                                                bool skewedGeometry = false )
+  {
+    constexpr int nElementDofs = 24;
+
+    auto element = makeExtendedInterfaceElementWithMaterial( materialName,
+                                                             materialProperties.data(),
+                                                             static_cast< int >( materialProperties.size() ),
+                                                             skewedGeometry );
+
+    std::vector< double > stateVars;
+    initializeStateAndMaterial( *element, stateVars );
+
+    std::array< double, nElementDofs >                U{};
+    std::array< double, nElementDofs >                dQ{};
+    std::array< double, nElementDofs >                Pe{};
+    std::array< double, nElementDofs * nElementDofs > Ke{};
+    std::copy( dU.data(), dU.data() + dU.size(), dQ.begin() );
+
+    element->computeKernels( U.data(), dQ.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+    return stateVars;
+  }
+
+  Eigen::Matrix< double, 24, 1 > makeExtendedHistoryIncrement( double scale )
+  {
+    Eigen::Matrix< double, 24, 1 > dU;
+    dU.setZero();
+
+    dU( 0 )  = scale * 0.0e-3;
+    dU( 1 )  = scale * 0.0e-3;
+    dU( 2 )  = scale * 0.0e-3;
+    dU( 3 )  = scale * -2.0e-3;
+    dU( 4 )  = scale * 0.4e-3;
+    dU( 5 )  = scale * 0.2e-3;
+    dU( 6 )  = scale * -1.0e-3;
+    dU( 7 )  = scale * -1.7e-3;
+    dU( 8 )  = scale * 0.4e-3;
+    dU( 9 )  = scale * 0.8e-3;
+    dU( 10 ) = scale * -0.3e-3;
+    dU( 11 ) = scale * -0.1e-3;
+
+    dU( 12 ) = scale * 0.3e-3;
+    dU( 13 ) = scale * -0.2e-3;
+    dU( 14 ) = scale * 0.6e-3;
+    dU( 15 ) = scale * 2.2e-3;
+    dU( 16 ) = scale * -0.7e-3;
+    dU( 17 ) = scale * -0.3e-3;
+    dU( 18 ) = scale * 1.2e-3;
+    dU( 19 ) = scale * 1.9e-3;
+    dU( 20 ) = scale * -0.6e-3;
+    dU( 21 ) = scale * -0.9e-3;
+    dU( 22 ) = scale * 0.5e-3;
+    dU( 23 ) = scale * 0.2e-3;
+
+    return dU;
+  }
+
+  Eigen::Matrix< double, 24, 24, Eigen::RowMajor > computeCentralDifferenceElementResidualJacobian(
+    const std::function< ExtendedElementEvaluation( const Eigen::Matrix< double, 24, 1 >& ) >& evaluator,
+    const Eigen::Matrix< double, 24, 1 >&                                                      dU,
+    double                                                                                     relativePerturbation )
+  {
+    constexpr int nElementDofs = 24;
+
+    Eigen::Matrix< double, nElementDofs, nElementDofs, Eigen::RowMajor > perturbationJacobian;
+    perturbationJacobian.setZero();
+
+    for ( int i = 0; i < nElementDofs; ++i ) {
+      Eigen::Matrix< double, nElementDofs, 1 > plusDU  = dU;
+      Eigen::Matrix< double, nElementDofs, 1 > minusDU = dU;
+      const double perturbation                        = relativePerturbation * std::max( 1.0, std::abs( dU( i ) ) );
+
+      plusDU( i ) += perturbation;
+      minusDU( i ) -= perturbation;
+
+      const auto plusEvaluation  = evaluator( plusDU );
+      const auto minusEvaluation = evaluator( minusDU );
+
+      perturbationJacobian.col( i ) = ( plusEvaluation.residual - minusEvaluation.residual ) / ( 2.0 * perturbation );
+    }
+
+    return perturbationJacobian;
   }
 
   void TestMaterialInitializationResetsMaterialState()
@@ -952,21 +1070,15 @@ void TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference()
 
   const auto baseEvaluation = evaluateExtendedElementResponse( dU );
 
-  Eigen::Matrix< double, nElementDofs, nElementDofs, Eigen::RowMajor > finiteDifferenceResidualTangent;
-  finiteDifferenceResidualTangent.setZero();
-
-  for ( int i = 0; i < nElementDofs; ++i ) {
-    Eigen::Matrix< double, nElementDofs, 1 > perturbedDU  = dU;
-    const double                             perturbation = 1e-8 * std::max( 1.0, std::abs( dU( i ) ) );
-    perturbedDU( i ) += perturbation;
-
-    const auto perturbedEvaluation           = evaluateExtendedElementResponse( perturbedDU );
-    finiteDifferenceResidualTangent.col( i ) = ( perturbedEvaluation.residual - baseEvaluation.residual ) /
-                                               perturbation;
-  }
+  const auto perturbationResidualJacobian = computeCentralDifferenceElementResidualJacobian(
+    []( const Eigen::Matrix< double, nElementDofs, 1 >& perturbedDU ) {
+      return evaluateExtendedElementResponse( perturbedDU );
+    },
+    dU,
+    1e-7 );
 
   const auto   expectedResidualTangent = -baseEvaluation.tangent;
-  const double error                   = ( finiteDifferenceResidualTangent - expectedResidualTangent ).norm();
+  const double error                   = ( perturbationResidualJacobian - expectedResidualTangent ).norm();
   const double scale                   = std::max( 1.0, expectedResidualTangent.norm() );
 
   throwExceptionOnFailure( baseEvaluation.residual.allFinite(), "Extended interface residual contains nan or inf." );
@@ -977,21 +1089,160 @@ void TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference()
                            "Extended interface element tangent does not match residual finite difference." );
 }
 
+void TestExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory()
+{
+  std::cout << "\n--- TestExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory ---\n";
+
+  constexpr int nElementDofs = 24;
+
+  const std::vector< double > materialProperties = { 210000., 0.3, 0.2, 120., 2100., 20., 20., 2400. };
+
+  const Eigen::Matrix< double, nElementDofs, 1 > historyDU        = makeExtendedHistoryIncrement( 1.0 );
+  const std::vector< double >                    historyStateVars = makeExtendedElementStateAfterIncrement( "VONMISES",
+                                                                                         materialProperties,
+                                                                                         historyDU );
+
+  const Eigen::Matrix< double, nElementDofs, 1 > dU = makeExtendedHistoryIncrement( 0.25 );
+
+  const auto baseEvaluation = evaluateExtendedElementResponse( "VONMISES", materialProperties, dU, &historyStateVars );
+
+  const auto perturbationResidualJacobian = computeCentralDifferenceElementResidualJacobian(
+    [&]( const Eigen::Matrix< double, nElementDofs, 1 >& perturbedDU ) {
+      return evaluateExtendedElementResponse( "VONMISES", materialProperties, perturbedDU, &historyStateVars );
+    },
+    dU,
+    1e-7 );
+
+  const auto   expectedResidualTangent = -baseEvaluation.tangent;
+  const double error                   = ( perturbationResidualJacobian - expectedResidualTangent ).norm();
+  const double scale                   = std::max( 1.0, expectedResidualTangent.norm() );
+  std::cout << "plastic flat EIQUAD relative tangent error = " << error / scale << "\n";
+
+  throwExceptionOnFailure( baseEvaluation.residual.allFinite(),
+                           "Plastic extended interface residual contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.tangent.allFinite(),
+                           "Plastic extended interface tangent contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.residual.norm() > 0.0,
+                           "Chosen plastic extended interface increment should produce a nonzero residual." );
+  throwExceptionOnFailure( error / scale < 2e-3,
+                           "Plastic extended interface element tangent does not match residual finite difference after "
+                           "committed history." );
+}
+
+void TestSkewedExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory()
+{
+  std::cout << "\n--- TestSkewedExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory "
+               "---\n";
+
+  constexpr int nElementDofs = 24;
+
+  const std::vector< double > materialProperties = { 210000., 0.3, 0.2, 120., 2100., 20., 20., 2400. };
+
+  const Eigen::Matrix< double, nElementDofs, 1 > historyDU        = makeExtendedHistoryIncrement( 1.0 );
+  const std::vector< double >                    historyStateVars = makeExtendedElementStateAfterIncrement( "VONMISES",
+                                                                                         materialProperties,
+                                                                                         historyDU,
+                                                                                         true );
+
+  const Eigen::Matrix< double, nElementDofs, 1 > dU = makeExtendedHistoryIncrement( 0.25 );
+
+  const auto baseEvaluation = evaluateExtendedElementResponse( "VONMISES",
+                                                               materialProperties,
+                                                               dU,
+                                                               &historyStateVars,
+                                                               true );
+
+  const auto perturbationResidualJacobian = computeCentralDifferenceElementResidualJacobian(
+    [&]( const Eigen::Matrix< double, nElementDofs, 1 >& perturbedDU ) {
+      return evaluateExtendedElementResponse( "VONMISES", materialProperties, perturbedDU, &historyStateVars, true );
+    },
+    dU,
+    1e-7 );
+
+  const auto   expectedResidualTangent = -baseEvaluation.tangent;
+  const double error                   = ( perturbationResidualJacobian - expectedResidualTangent ).norm();
+  const double scale                   = std::max( 1.0, expectedResidualTangent.norm() );
+  std::cout << "plastic skewed EIQUAD relative tangent error = " << error / scale << "\n";
+
+  throwExceptionOnFailure( baseEvaluation.residual.allFinite(),
+                           "Skewed plastic extended interface residual contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.tangent.allFinite(),
+                           "Skewed plastic extended interface tangent contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.residual.norm() > 0.0,
+                           "Chosen skewed plastic extended interface increment should produce a nonzero residual." );
+  throwExceptionOnFailure( error / scale < 2e-3,
+                           "Skewed plastic extended interface element tangent does not match residual finite "
+                           "difference after committed history." );
+}
+
+void TestSkewedExtendedInterfaceElementWiechertTangentMatchesResidualFiniteDifferenceAfterHistory()
+{
+  std::cout << "\n--- TestSkewedExtendedInterfaceElementWiechertTangentMatchesResidualFiniteDifferenceAfterHistory "
+               "---\n";
+
+  constexpr int nElementDofs = 24;
+
+  const std::vector< double > materialProperties = { 2e5, 0.2, 0.2, 0.5, 0.1, 10., 1e-4, 1., 2400. };
+
+  const Eigen::Matrix< double, nElementDofs, 1 > historyDU = makeExtendedHistoryIncrement( 0.6 );
+  const std::vector< double > historyStateVars = makeExtendedElementStateAfterIncrement( "LINEARVISCOELASTICWIECHERT",
+                                                                                         materialProperties,
+                                                                                         historyDU,
+                                                                                         true );
+
+  const Eigen::Matrix< double, nElementDofs, 1 > dU = makeExtendedHistoryIncrement( 0.15 );
+
+  const auto baseEvaluation = evaluateExtendedElementResponse( "LINEARVISCOELASTICWIECHERT",
+                                                               materialProperties,
+                                                               dU,
+                                                               &historyStateVars,
+                                                               true );
+
+  const auto perturbationResidualJacobian = computeCentralDifferenceElementResidualJacobian(
+    [&]( const Eigen::Matrix< double, nElementDofs, 1 >& perturbedDU ) {
+      return evaluateExtendedElementResponse( "LINEARVISCOELASTICWIECHERT",
+                                              materialProperties,
+                                              perturbedDU,
+                                              &historyStateVars,
+                                              true );
+    },
+    dU,
+    1e-7 );
+
+  const auto   expectedResidualTangent = -baseEvaluation.tangent;
+  const double error                   = ( perturbationResidualJacobian - expectedResidualTangent ).norm();
+  const double scale                   = std::max( 1.0, expectedResidualTangent.norm() );
+  std::cout << "Wiechert skewed EIQUAD relative tangent error = " << error / scale << "\n";
+
+  throwExceptionOnFailure( baseEvaluation.residual.allFinite(),
+                           "Skewed Wiechert extended interface residual contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.tangent.allFinite(),
+                           "Skewed Wiechert extended interface tangent contains nan or inf." );
+  throwExceptionOnFailure( baseEvaluation.residual.norm() > 0.0,
+                           "Chosen skewed Wiechert extended interface increment should produce a nonzero residual." );
+  throwExceptionOnFailure( error / scale < 1e-6,
+                           "Skewed Wiechert extended interface element tangent does not match residual finite "
+                           "difference after committed history." );
+}
+
 int main()
 {
-  auto tests = std::vector<
-    std::function< void() > >{ TestMaterialInitializationResetsMaterialState,
-                               TestUnsupportedInertiaThrows,
-                               TestStressUpdateFailureRequestsSmallerTimeStep,
-                               TestSingleInputFileElementGeometryMatrices,
-                               TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling,
-                               TestSingleInputFileElementMaterialResponseIsFinite,
-                               TestSingleInputFileElementGaussPointStiffnessAndResidual,
-                               TestSingleInputFileElementRigidTranslationGivesZeroResidual,
-                               TestAssignStateVarsPreservesHistoryAcrossIncrements,
-                               TestTwoDimensionalInterfaceElementComputesWithEmbeddedMaterial,
-                               TestAngledInterfaceKinematics,
-                               TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference };
+  auto tests = std::vector< std::function<
+    void() > >{ TestMaterialInitializationResetsMaterialState,
+                TestUnsupportedInertiaThrows,
+                TestStressUpdateFailureRequestsSmallerTimeStep,
+                TestSingleInputFileElementGeometryMatrices,
+                TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling,
+                TestSingleInputFileElementMaterialResponseIsFinite,
+                TestSingleInputFileElementGaussPointStiffnessAndResidual,
+                TestSingleInputFileElementRigidTranslationGivesZeroResidual,
+                TestAssignStateVarsPreservesHistoryAcrossIncrements,
+                TestTwoDimensionalInterfaceElementComputesWithEmbeddedMaterial,
+                TestAngledInterfaceKinematics,
+                TestExtendedInterfaceElementTangentMatchesResidualFiniteDifference,
+                TestExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory,
+                TestSkewedExtendedInterfaceElementPlasticTangentMatchesResidualFiniteDifferenceAfterHistory,
+                TestSkewedExtendedInterfaceElementWiechertTangentMatchesResidualFiniteDifferenceAfterHistory };
 
   executeTestsAndCollectExceptions( tests );
 

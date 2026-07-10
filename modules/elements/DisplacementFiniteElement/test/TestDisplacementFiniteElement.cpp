@@ -144,6 +144,50 @@ void testStiffnessMatrixCalculationPlaneStress()
                            "Stiffness matrix does not match expected values." );
 }
 
+void testResidualSignMatchesSolverConventionPlaneStress()
+{
+  constexpr int nDim    = 2;
+  constexpr int nNodes  = 4;
+  const int     elId    = 1;
+  const auto    intType = FiniteElement::Quadrature::IntegrationTypes::FullIntegration;
+  const auto    secType = DisplacementFiniteElement< nDim, nNodes >::SectionType::PlaneStress;
+
+  const std::vector< double > nodeCoordsVec = { 0.0, 0.0, 6.0, 0.0, 8.0, 6.0, 2.0, 6.0 };
+  auto element = std::make_unique< DisplacementFiniteElement< nDim, nNodes > >( elId, intType, secType );
+  element->assignNodeCoordinates( nodeCoordsVec.data() );
+
+  const static std::vector< double > matProps = { 10000.0, 0.2, 1.0 };
+  MarmotMaterialSection              materialSection( "LINEARELASTIC", matProps.data(), matProps.size() );
+
+  const static std::vector< double > elPropsVec = { 1.0 };
+  ElementProperties                  elProps( elPropsVec.data(), elPropsVec.size() );
+
+  element->assignProperty( elProps );
+  element->assignProperty( materialSection );
+
+  const int             nStateVarsTotal = element->getNumberOfRequiredStateVars();
+  std::vector< double > stateVars( nStateVarsTotal, 0.0 );
+  element->assignStateVars( stateVars.data(), nStateVarsTotal );
+  element->initializeYourself();
+
+  const int       nDof = element->getNDofPerElement();
+  Eigen::VectorXd u    = Eigen::VectorXd::Zero( nDof );
+  Eigen::VectorXd dQ( nDof );
+  dQ << 1.0e-4, -2.0e-4, 0.5e-4, 1.5e-4, -1.2e-4, 0.7e-4, 2.1e-4, -0.9e-4;
+
+  Eigen::VectorXd P = Eigen::VectorXd::Zero( nDof );
+  Eigen::MatrixXd K = Eigen::MatrixXd::Zero( nDof, nDof );
+
+  element->computeKernels( u.data(), dQ.data(), P.data(), K.data(), 0.0, 1.0 );
+
+  const Eigen::VectorXd expectedResidual = -K * dQ;
+  const double          error            = ( P - expectedResidual ).norm();
+  const double          scale            = std::max( 1.0, expectedResidual.norm() );
+
+  throwExceptionOnFailure( error / scale < 1e-12,
+                           "Displacement element residual must satisfy Pe = -K*dQ for linear elasticity." );
+}
+
 void testInitializeYourselfAndShapeFunctions()
 {
   constexpr int nDim    = 2;
@@ -229,6 +273,7 @@ int main()
 {
   auto tests = std::vector< std::function< void() > >{ testInstantiationAndBasicProperties,
                                                        testStiffnessMatrixCalculationPlaneStress,
+                                                       testResidualSignMatchesSolverConventionPlaneStress,
                                                        testInitializeYourselfAndShapeFunctions };
 
   executeTestsAndCollectExceptions( tests );
