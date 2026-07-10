@@ -116,7 +116,6 @@ namespace Marmot::Elements {
                           double&       pNewDT )
     {
       Eigen::Map< const RhsSized > QTotal( QTotal_ );
-      Eigen::Map< const RhsSized > dQ( dQ_ );
       Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
       Eigen::Map< RhsSized >       Pe( Pe_ );
 
@@ -132,8 +131,6 @@ namespace Marmot::Elements {
 
         const auto QTotalBottom = QTotal.template segment< halfSize >( 0 );
         const auto QTotalTop    = QTotal.template segment< halfSize >( halfSize );
-        const auto dQBottom     = dQ.template segment< halfSize >( 0 );
-        const auto dQTop        = dQ.template segment< halfSize >( halfSize );
 
         InterfaceDisplSized totalU_GPs;
         totalU_GPs.template segment< nDim >( 0 )    = Nside * QTotalTop;
@@ -142,14 +139,6 @@ namespace Marmot::Elements {
         InterfaceSurfaceGradSized totalSurfaceGradient_GPs;
         totalSurfaceGradient_GPs.template segment< nTensor >( 0 )       = Bside * QTotalTop;
         totalSurfaceGradient_GPs.template segment< nTensor >( nTensor ) = Bside * QTotalBottom;
-
-        InterfaceDisplSized dU_GPs;
-        dU_GPs.template segment< nDim >( 0 )    = Nside * dQTop;
-        dU_GPs.template segment< nDim >( nDim ) = Nside * dQBottom;
-
-        InterfaceSurfaceGradSized dSurface_strain_GPs;
-        dSurface_strain_GPs.template segment< nTensor >( 0 )       = Bside * dQTop;
-        dSurface_strain_GPs.template segment< nTensor >( nTensor ) = Bside * dQBottom;
 
         ForceSized         force          = qp.managedStateVars->force;
         SurfaceStressSized surface_stress = qp.managedStateVars->surfaceStress;
