@@ -396,6 +396,20 @@ namespace {
     }
 
     throwExceptionOnFailure( stressUpdateFailed, "InterfaceFiniteElement did not propagate StressUpdateFailed." );
+
+    double pNewDT               = 1e36;
+    bool   computeYourselfThrew = false;
+    try {
+      element->computeYourself( QTotal.data(), dQ.data(), Pe.data(), Ke.data(), time.data(), 1.0, pNewDT );
+    }
+    catch ( const std::exception& ) {
+      computeYourselfThrew = true;
+    }
+
+    throwExceptionOnFailure( !computeYourselfThrew,
+                             "MarmotElement::computeYourself should translate StressUpdateFailed into pNewDT." );
+    throwExceptionOnFailure( pNewDT < 1.0,
+                             "MarmotElement::computeYourself did not request a cutback after StressUpdateFailed." );
   }
 
   template < typename QuadraturePointType >

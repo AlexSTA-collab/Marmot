@@ -128,6 +128,27 @@ public:
   virtual void setInitialConditions( StateTypes state, const double* values ) = 0;
 
   /**
+   * @brief Compatibility wrapper used by external FE drivers.
+   * @param[in] QTotal Total dof vector.
+   * @param[in] dQ Incremental dof vector.
+   * @param[out] Pint Internal force vector.
+   * @param[out] K Stiffness matrix.
+   * @param[in] time Two-entry time array, conventionally {old time, current time}.
+   * @param[in] dT Time step size.
+   * @param[in,out] pNewDT Suggested time-step factor. Values below one request a cutback.
+   *
+   * @note Material update failures are translated into a time-step cutback request.
+   *       Other exceptions still propagate as hard errors.
+   */
+  void computeYourself( const double* QTotal,
+                        const double* dQ,
+                        double*       Pint,
+                        double*       K,
+                        const double* time,
+                        double        dT,
+                        double&       pNewDT );
+
+  /**
    * @brief Perform element computations (stiffness, residual, etc.).
    * @param[in] QTotal Total dof vector.
    * @param[in] dQ Incremental dof vector.

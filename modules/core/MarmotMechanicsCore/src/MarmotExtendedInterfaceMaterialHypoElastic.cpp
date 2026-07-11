@@ -1,5 +1,6 @@
 #include "Marmot/MarmotExtendedInterfaceMaterialHypoElastic.h"
 
+#include "Marmot/MarmotExceptions.h"
 #include "Marmot/MarmotInterfaceMaterialHelperFunctions.h"
 #include "Marmot/MarmotMaterialHypoElasticFactory.h"
 #include "Marmot/MarmotTypedefs.h"
@@ -263,12 +264,13 @@ namespace {
     std::vector< double > bottomStateVarsCopy;
     std::vector< double > topStateVarsCopy;
 
-    if ( !commit ) {
-      bottomStateVarsCopy.assign( bottomStatePtr, bottomStatePtr + nBottomStateVars );
-      topStateVarsCopy.assign( topStatePtr, topStatePtr + nTopStateVars );
-      bottomStatePtr = bottomStateVarsCopy.data();
-      topStatePtr    = topStateVarsCopy.data();
-    }
+    double* bottomStatePtrCommitted = bottomStatePtr;
+    double* topStatePtrCommitted    = topStatePtr;
+
+    bottomStateVarsCopy.assign( bottomStatePtr, bottomStatePtr + nBottomStateVars );
+    topStateVarsCopy.assign( topStatePtr, topStatePtr + nTopStateVars );
+    bottomStatePtr = bottomStateVarsCopy.data();
+    topStatePtr    = topStateVarsCopy.data();
 
     const Matrix3dRowMajor averageSurfaceGradientTensor = vectorToTensor( averageSurfaceGradient );
     const Matrix3dRowMajor surfaceGradientJumpTensor    = vectorToTensor( surfaceGradientJump );
@@ -299,6 +301,8 @@ namespace {
       Eigen::Map< Marmot::Vector6d > bottomStressMap( bottomStressPtr );
       topStressMap    = topState.stress;
       bottomStressMap = bottomState.stress;
+      std::copy( bottomStateVarsCopy.begin(), bottomStateVarsCopy.end(), bottomStatePtrCommitted );
+      std::copy( topStateVarsCopy.begin(), topStateVarsCopy.end(), topStatePtrCommitted );
     }
 
     const auto normalTensor                         = Marmot::FastorStandardTensors::Tensor3d( normal.data() );
@@ -406,7 +410,7 @@ namespace {
       }
     }
 
-    throw std::runtime_error( "MarmotExtendedInterfaceMaterialHypoElastic local Newton iteration failed." );
+    throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic local Newton iteration failed." );
   }
 
   NormalGradientJumpTangents computeNormalGradientJumpTangents( const MaterialTrial& trial, double h )
