@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
@@ -82,11 +83,14 @@ namespace {
       return false;
 
     const char* elementFilter = std::getenv( "MARMOT_EI_DEBUG_ELEMENT" );
+
     if ( elementFilter != nullptr && std::atoi( elementFilter ) != materialNumber )
       return false;
 
     static std::atomic< int > nPrinted{ 0 };
-    const int                 maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+
+    const int maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+
     return nPrinted.fetch_add( 1 ) < maxPrints;
   }
 
@@ -96,11 +100,14 @@ namespace {
       return false;
 
     const char* elementFilter = std::getenv( "MARMOT_EI_DEBUG_ELEMENT" );
+
     if ( elementFilter != nullptr && std::atoi( elementFilter ) != materialNumber )
       return false;
 
     static std::atomic< int > nPrinted{ 0 };
-    const int                 maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+
+    const int maxPrints = debugEnvInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
+
     return nPrinted.fetch_add( 1 ) < maxPrints;
   }
 
@@ -117,13 +124,16 @@ namespace {
   Marmot::Vector6d strainToVoigt( const Matrix3dRowMajor& displacementGradient )
   {
     const Eigen::Matrix3d strain = 0.5 * ( displacementGradient + displacementGradient.transpose() );
+
     return Marmot::ContinuumMechanics::VoigtNotation::strainToVoigt( strain );
   }
 
   Matrix3dRowMajor stressToTensor( const Marmot::Vector6d& stress )
   {
     Matrix3dRowMajor stressTensor;
+
     stressTensor = Marmot::ContinuumMechanics::VoigtNotation::voigtToStress( stress );
+
     return stressTensor;
   }
 
@@ -155,7 +165,8 @@ namespace {
   };
 
   using Matrix9x21RowMajor = Eigen::Matrix< double, 9, 21, Eigen::RowMajor >;
-  using Matrix21dRowMajor  = Eigen::Matrix< double, 21, 21, Eigen::RowMajor >;
+
+  using Matrix21dRowMajor = Eigen::Matrix< double, 21, 21, Eigen::RowMajor >;
 
 } // namespace
 
@@ -166,48 +177,66 @@ MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoE
   : materialProperties( matProperties_ ), nMaterialProperties( nMaterialProperties_ ), materialNumber( materialNumber_ )
 {
   if ( nMaterialProperties < 3 ) {
-    throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic requires material properties." );
+    throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic requires "
+                                 "material properties." );
   }
 
   const bool hasExplicitTopBottomLayout = nMaterialProperties >= 5 && isIntegerProperty( materialProperties[1] );
 
   if ( hasExplicitTopBottomLayout ) {
-    h                         = materialProperties[0];
-    const int nBottom         = static_cast< int >( std::round( materialProperties[1] ) );
+    h = materialProperties[0];
+
+    const int nBottom = static_cast< int >( std::round( materialProperties[1] ) );
+
     const int topSizePosition = 2 + nBottom;
 
     if ( nBottom <= 0 || topSizePosition >= nMaterialProperties ||
          !isIntegerProperty( materialProperties[topSizePosition] ) ) {
-      throw std::invalid_argument( "Invalid extended interface material layout. Expected [h, nBottom, "
-                                   "bottomProperties..., nTop, topProperties...]." );
+      throw std::invalid_argument( "Invalid extended interface material layout. "
+                                   "Expected [h, nBottom, bottomProperties..., "
+                                   "nTop, topProperties...]." );
     }
 
     const int nTop = static_cast< int >( std::round( materialProperties[topSizePosition] ) );
 
     if ( nTop <= 0 || topSizePosition + 1 + nTop != nMaterialProperties ) {
-      throw std::invalid_argument( "Invalid extended interface material layout. Expected [h, nBottom, "
-                                   "bottomProperties..., nTop, topProperties...]." );
+      throw std::invalid_argument( "Invalid extended interface material layout. "
+                                   "Expected [h, nBottom, bottomProperties..., "
+                                   "nTop, topProperties...]." );
     }
 
     bottomMaterialProperties.assign( materialProperties + 2, materialProperties + 2 + nBottom );
+
     topMaterialProperties.assign( materialProperties + topSizePosition + 1,
                                   materialProperties + topSizePosition + 1 + nTop );
   }
   else {
     if ( nMaterialProperties < 3 ) {
-      throw std::invalid_argument(
-        "Legacy MarmotExtendedInterfaceMaterialHypoElastic layout requires at least E, nu, and h." );
+      throw std::invalid_argument( "Legacy MarmotExtendedInterfaceMaterialHypoElastic "
+                                   "layout requires at least E, nu, and h." );
     }
 
     h = materialProperties[2];
+
     bottomMaterialProperties.reserve( nMaterialProperties - 1 );
+
     bottomMaterialProperties.push_back( materialProperties[0] );
+
     bottomMaterialProperties.push_back( materialProperties[1] );
+
     bottomMaterialProperties.insert( bottomMaterialProperties.end(),
                                      materialProperties + 3,
                                      materialProperties + nMaterialProperties );
+
     topMaterialProperties = bottomMaterialProperties;
   }
+
+  if ( h <= 0.0 ) {
+    throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic "
+                                 "requires h > 0." );
+  }
+
+  characteristicElementLength = 0.0;
 
   bottomMaterial = std::unique_ptr< MarmotMaterialHypoElastic >(
     MarmotLibrary::MarmotMaterialHypoElasticFactory::createMaterial( materialName,
@@ -215,6 +244,7 @@ MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoE
                                                                      static_cast< int >(
                                                                        bottomMaterialProperties.size() ),
                                                                      materialNumber ) );
+
   topMaterial = std::unique_ptr< MarmotMaterialHypoElastic >(
     MarmotLibrary::MarmotMaterialHypoElasticFactory::createMaterial( materialName,
                                                                      topMaterialProperties.data(),
@@ -222,21 +252,27 @@ MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoE
                                                                      materialNumber ) );
 
   if ( !bottomMaterial || !topMaterial ) {
-    throw std::invalid_argument( "Unknown base material for MarmotExtendedInterfaceMaterialHypoElastic: " +
+    throw std::invalid_argument( "Unknown base material for "
+                                 "MarmotExtendedInterfaceMaterialHypoElastic: " +
                                  materialName );
   }
 
   stateLayout.add( "bottomStress", 6 );
   stateLayout.add( "topStress", 6 );
+
   stateLayout.add( "bottomMaterialStateVars", bottomMaterial->getNumberOfRequiredStateVars() );
+
   stateLayout.add( "topMaterialStateVars", topMaterial->getNumberOfRequiredStateVars() );
+
   stateLayout.finalize();
 }
 
 void MarmotExtendedInterfaceMaterialHypoElastic::setCharacteristicElementLength( double length )
 {
   characteristicElementLength = length;
+
   bottomMaterial->setCharacteristicElementLength( length );
+
   topMaterial->setCharacteristicElementLength( length );
 }
 
@@ -254,43 +290,58 @@ namespace {
                                       bool                                        commit )
   {
     auto* bottomStressPtr = stateLayout.getPtr( stateVars, "bottomStress" );
-    auto* topStressPtr    = stateLayout.getPtr( stateVars, "topStress" );
-    auto* bottomStatePtr  = stateLayout.getPtr( stateVars, "bottomMaterialStateVars" );
-    auto* topStatePtr     = stateLayout.getPtr( stateVars, "topMaterialStateVars" );
+
+    auto* topStressPtr = stateLayout.getPtr( stateVars, "topStress" );
+
+    auto* bottomStatePtr = stateLayout.getPtr( stateVars, "bottomMaterialStateVars" );
+
+    auto* topStatePtr = stateLayout.getPtr( stateVars, "topMaterialStateVars" );
 
     const int nBottomStateVars = material.getStateView( "bottomMaterialStateVars", stateVars ).stateSize;
-    const int nTopStateVars    = material.getStateView( "topMaterialStateVars", stateVars ).stateSize;
+
+    const int nTopStateVars = material.getStateView( "topMaterialStateVars", stateVars ).stateSize;
 
     std::vector< double > bottomStateVarsCopy;
     std::vector< double > topStateVarsCopy;
 
     double* bottomStatePtrCommitted = bottomStatePtr;
-    double* topStatePtrCommitted    = topStatePtr;
+
+    double* topStatePtrCommitted = topStatePtr;
 
     bottomStateVarsCopy.assign( bottomStatePtr, bottomStatePtr + nBottomStateVars );
+
     topStateVarsCopy.assign( topStatePtr, topStatePtr + nTopStateVars );
+
     bottomStatePtr = bottomStateVarsCopy.data();
-    topStatePtr    = topStateVarsCopy.data();
+
+    topStatePtr = topStateVarsCopy.data();
 
     const Matrix3dRowMajor averageSurfaceGradientTensor = vectorToTensor( averageSurfaceGradient );
-    const Matrix3dRowMajor surfaceGradientJumpTensor    = vectorToTensor( surfaceGradientJump );
 
-    Matrix3dRowMajor topDisplacementGradient    = averageSurfaceGradientTensor + 0.5 * surfaceGradientJumpTensor;
+    const Matrix3dRowMajor surfaceGradientJumpTensor = vectorToTensor( surfaceGradientJump );
+
+    Matrix3dRowMajor topDisplacementGradient = averageSurfaceGradientTensor + 0.5 * surfaceGradientJumpTensor;
+
     Matrix3dRowMajor bottomDisplacementGradient = averageSurfaceGradientTensor - 0.5 * surfaceGradientJumpTensor;
 
     topDisplacementGradient += ( averageNormalGradient + 0.5 * normalGradientJump ) * normal.transpose();
+
     bottomDisplacementGradient += ( averageNormalGradient - 0.5 * normalGradientJump ) * normal.transpose();
 
-    Marmot::Vector6d topStress    = Eigen::Map< const Marmot::Vector6d >( topStressPtr );
+    Marmot::Vector6d topStress = Eigen::Map< const Marmot::Vector6d >( topStressPtr );
+
     Marmot::Vector6d bottomStress = Eigen::Map< const Marmot::Vector6d >( bottomStressPtr );
 
-    Marmot::Matrix6d topTangent    = Marmot::Matrix6d::Zero();
+    Marmot::Matrix6d topTangent = Marmot::Matrix6d::Zero();
+
     Marmot::Matrix6d bottomTangent = Marmot::Matrix6d::Zero();
 
     MarmotMaterialHypoElastic::state3D topState{ topStress, 0.0, 0.0, topStatePtr };
+
     MarmotMaterialHypoElastic::state3D bottomState{ bottomStress, 0.0, 0.0, bottomStatePtr };
 
     material.getTopMaterial().computeStress( topState, topTangent, strainToVoigt( topDisplacementGradient ), timeInfo );
+
     material.getBottomMaterial().computeStress( bottomState,
                                                 bottomTangent,
                                                 strainToVoigt( bottomDisplacementGradient ),
@@ -298,35 +349,54 @@ namespace {
 
     if ( commit ) {
       Eigen::Map< Marmot::Vector6d > topStressMap( topStressPtr );
+
       Eigen::Map< Marmot::Vector6d > bottomStressMap( bottomStressPtr );
-      topStressMap    = topState.stress;
+
+      topStressMap = topState.stress;
+
       bottomStressMap = bottomState.stress;
+
       std::copy( bottomStateVarsCopy.begin(), bottomStateVarsCopy.end(), bottomStatePtrCommitted );
+
       std::copy( topStateVarsCopy.begin(), topStateVarsCopy.end(), topStatePtrCommitted );
     }
 
-    const auto normalTensor                         = Marmot::FastorStandardTensors::Tensor3d( normal.data() );
+    const auto normalTensor = Marmot::FastorStandardTensors::Tensor3d( normal.data() );
+
     const auto [topZ, topQTensor, topHTensor, topY] = Marmot::Materials::InterfaceMaterialHelperFunctions::
       calculateInterfaceMaterialParameters( normalTensor, topTangent );
+
     const auto [bottomZ, bottomQTensor, bottomHTensor, bottomY] = Marmot::Materials::InterfaceMaterialHelperFunctions::
       calculateInterfaceMaterialParameters( normalTensor, bottomTangent );
 
     MaterialTrial trial;
-    trial.topStress           = topState.stress;
-    trial.bottomStress        = bottomState.stress;
-    trial.topTangent          = topTangent;
-    trial.bottomTangent       = bottomTangent;
-    trial.topStressTensor     = stressToTensor( topState.stress );
-    trial.bottomStressTensor  = stressToTensor( bottomState.stress );
+
+    trial.topStress = topState.stress;
+
+    trial.bottomStress = bottomState.stress;
+
+    trial.topTangent = topTangent;
+
+    trial.bottomTangent = bottomTangent;
+
+    trial.topStressTensor = stressToTensor( topState.stress );
+
+    trial.bottomStressTensor = stressToTensor( bottomState.stress );
+
     trial.averageStressTensor = 0.5 * ( trial.topStressTensor + trial.bottomStressTensor );
-    trial.jumpStressTensor    = trial.topStressTensor - trial.bottomStressTensor;
-    trial.averageQ            = 0.5 * ( Eigen::Map< const Matrix3dRowMajor >( topQTensor.data() ) +
+
+    trial.jumpStressTensor = trial.topStressTensor - trial.bottomStressTensor;
+
+    trial.averageQ = 0.5 * ( Eigen::Map< const Matrix3dRowMajor >( topQTensor.data() ) +
                              Eigen::Map< const Matrix3dRowMajor >( bottomQTensor.data() ) );
-    trial.jumpQ               = Eigen::Map< const Matrix3dRowMajor >( topQTensor.data() ) -
+
+    trial.jumpQ = Eigen::Map< const Matrix3dRowMajor >( topQTensor.data() ) -
                   Eigen::Map< const Matrix3dRowMajor >( bottomQTensor.data() );
+
     trial.averageH = 0.5 * ( Eigen::Map< const Matrix3x9RowMajor >( topHTensor.data() ) +
                              Eigen::Map< const Matrix3x9RowMajor >( bottomHTensor.data() ) );
-    trial.jumpH    = Eigen::Map< const Matrix3x9RowMajor >( topHTensor.data() ) -
+
+    trial.jumpH = Eigen::Map< const Matrix3x9RowMajor >( topHTensor.data() ) -
                   Eigen::Map< const Matrix3x9RowMajor >( bottomHTensor.data() );
 
     (void)topZ;
@@ -351,9 +421,115 @@ namespace {
                                            const Eigen::Vector3d&                      normal,
                                            const MarmotMaterialHypoElastic::timeInfo&  timeInfo )
   {
+    constexpr int maxNewtonIterations = 50;
+
+    constexpr int maxLineSearchIterations = 30;
+
+    constexpr double relativeResidualTolerance = 1e-10;
+
+    constexpr double absoluteResidualTolerance = 1e-12;
+
+    constexpr double armijoParameter = 1e-4;
+
     Eigen::Vector3d normalGradientJump = Eigen::Vector3d::Zero();
 
-    for ( int iteration = 0; iteration < 12; ++iteration ) {
+    auto residualTolerance = [&]( const MaterialTrial& trial ) {
+      const double tractionScale = std::max(
+        { 1.0, ( trial.topStressTensor * normal ).norm(), ( trial.bottomStressTensor * normal ).norm() } );
+
+      return absoluteResidualTolerance + relativeResidualTolerance * tractionScale;
+    };
+
+    auto writeFailureDiagnostics = [&]( const std::string&     reason,
+                                        const Eigen::Vector3d& currentNormalGradientJump,
+                                        const MaterialTrial&   trial,
+                                        const Eigen::Vector3d& residual ) {
+      const Eigen::Matrix3d topQ = trial.averageQ + 0.5 * trial.jumpQ;
+
+      const Eigen::Matrix3d bottomQ = trial.averageQ - 0.5 * trial.jumpQ;
+
+      const Eigen::JacobiSVD< Eigen::Matrix3d > topSVD( topQ );
+
+      const Eigen::JacobiSVD< Eigen::Matrix3d > bottomSVD( bottomQ );
+
+      const Eigen::JacobiSVD< Eigen::Matrix3d > averageSVD( trial.averageQ );
+
+      const auto averageSingularValues = averageSVD.singularValues();
+
+      const double averageConditionNumber = averageSingularValues[2] > 0.0
+                                              ? averageSingularValues[0] / averageSingularValues[2]
+                                              : std::numeric_limits< double >::infinity();
+
+      std::ostringstream line;
+
+      line << std::scientific << std::setprecision( 6 ) << "[EI failure] material=" << material.materialNumber
+           << " reason=" << reason << "\n"
+           << "  NGJ=" << currentNormalGradientJump.transpose() << "\n"
+           << "  residual=" << residual.transpose() << " residualNorm=" << residual.norm() << "\n"
+           << "  topQ singular values=" << topSVD.singularValues().transpose() << " det=" << topQ.determinant() << "\n"
+           << "  botQ singular values=" << bottomSVD.singularValues().transpose() << " det=" << bottomQ.determinant()
+           << "\n"
+           << "  avgQ singular values=" << averageSingularValues.transpose() << " condition=" << averageConditionNumber
+           << " det=" << trial.averageQ.determinant() << "\n"
+           << "  jumpQ norm=" << trial.jumpQ.norm() << " avgQ norm=" << trial.averageQ.norm()
+           << " ratio=" << ( trial.averageQ.norm() > 0.0 ? trial.jumpQ.norm() / trial.averageQ.norm() : 0.0 );
+
+      if ( std::getenv( "MARMOT_EI_DEBUG_JACOBIAN" ) != nullptr ) {
+        Eigen::Matrix3d numericalJacobian = Eigen::Matrix3d::Zero();
+
+        const double perturbation = 1e-7 * std::max( 1.0, currentNormalGradientJump.norm() );
+
+        for ( int column = 0; column < 3; ++column ) {
+          Eigen::Vector3d plusNormalGradientJump = currentNormalGradientJump;
+
+          Eigen::Vector3d minusNormalGradientJump = currentNormalGradientJump;
+
+          plusNormalGradientJump[column] += perturbation;
+
+          minusNormalGradientJump[column] -= perturbation;
+
+          const auto plusTrial = computeMaterialTrial( material,
+                                                       stateLayout,
+                                                       stateVars,
+                                                       averageNormalGradient,
+                                                       plusNormalGradientJump,
+                                                       averageSurfaceGradient,
+                                                       surfaceGradientJump,
+                                                       normal,
+                                                       timeInfo,
+                                                       false );
+
+          const auto minusTrial = computeMaterialTrial( material,
+                                                        stateLayout,
+                                                        stateVars,
+                                                        averageNormalGradient,
+                                                        minusNormalGradientJump,
+                                                        averageSurfaceGradient,
+                                                        surfaceGradientJump,
+                                                        normal,
+                                                        timeInfo,
+                                                        false );
+
+          numericalJacobian.col( column ) = ( computeTractionJumpResidual( plusTrial, normal ) -
+                                              computeTractionJumpResidual( minusTrial, normal ) ) /
+                                            ( 2.0 * perturbation );
+        }
+
+        const double relativeJacobianError = ( numericalJacobian - trial.averageQ ).norm() /
+                                             std::max( 1.0, numericalJacobian.norm() );
+
+        line << "\n"
+             << "  analytical dR/dNGJ=<Q>:\n"
+             << trial.averageQ << "\n"
+             << "  numerical dR/dNGJ:\n"
+             << numericalJacobian << "\n"
+             << "  relative Jacobian error=" << relativeJacobianError;
+      }
+
+      writeDebugLine( line.str() );
+    };
+
+    for ( int iteration = 0; iteration < maxNewtonIterations; ++iteration ) {
       const auto trial = computeMaterialTrial( material,
                                                stateLayout,
                                                stateVars,
@@ -367,58 +543,165 @@ namespace {
 
       const Eigen::Vector3d residual = computeTractionJumpResidual( trial, normal );
 
-      if ( residual.norm() < 1e-11 * std::max( 1.0, normalGradientJump.norm() ) ) {
-        if ( ( material.isDebugOutputEnabledForNextCall() &&
-               std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
-             debugLocalNewtonAllowed( material.materialNumber ) ) {
+      const double residualNorm = residual.norm();
+
+      const double tolerance = residualTolerance( trial );
+
+      const bool debugThisIteration = ( material.isDebugOutputEnabledForNextCall() &&
+                                        std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
+                                      debugLocalNewtonAllowed( material.materialNumber );
+
+      if ( residualNorm <= tolerance ) {
+        if ( debugThisIteration ) {
           std::ostringstream line;
-          line << std::scientific << std::setprecision( 6 )
-               << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
-               << " converged_by_residual residualNorm=" << residual.norm()
+
+          line << std::scientific << std::setprecision( 6 ) << "[Marmot EI local Newton] "
+               << "material/el=" << material.materialNumber << " iter=" << iteration << " converged_by_residual "
+               << "residualNorm=" << residualNorm << " tolerance=" << tolerance
                << " normalGradientJump=" << normalGradientJump.transpose();
+
           writeDebugLine( line.str() );
         }
+
         return normalGradientJump;
       }
 
-      const Eigen::Vector3d correction = trial.averageQ.fullPivLu().solve( residual );
-      normalGradientJump -= correction;
+      Eigen::FullPivLU< Eigen::Matrix3d > averageQLU( trial.averageQ );
 
-      if ( ( material.isDebugOutputEnabledForNextCall() && std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
-           debugLocalNewtonAllowed( material.materialNumber ) ) {
+      if ( !averageQLU.isInvertible() ) {
+        writeFailureDiagnostics( "average acoustic tensor is not invertible", normalGradientJump, trial, residual );
+
+        throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic: "
+                                          "average acoustic tensor is singular." );
+      }
+
+      const Eigen::Vector3d direction = averageQLU.solve( residual );
+
+      if ( !direction.allFinite() ) {
+        writeFailureDiagnostics( "non-finite Newton direction", normalGradientJump, trial, residual );
+
+        throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic: "
+                                          "non-finite local Newton direction." );
+      }
+
+      const double phi0 = 0.5 * residual.squaredNorm();
+
+      double alpha = 1.0;
+
+      bool accepted = false;
+
+      Eigen::Vector3d candidateNormalGradientJump = normalGradientJump;
+
+      Eigen::Vector3d candidateResidual = residual;
+
+      double candidateResidualNorm = residualNorm;
+
+      double candidateTolerance = tolerance;
+
+      for ( int lineSearchIteration = 0; lineSearchIteration < maxLineSearchIterations; ++lineSearchIteration ) {
+        candidateNormalGradientJump = normalGradientJump - alpha * direction;
+
+        const auto candidateTrial = computeMaterialTrial( material,
+                                                          stateLayout,
+                                                          stateVars,
+                                                          averageNormalGradient,
+                                                          candidateNormalGradientJump,
+                                                          averageSurfaceGradient,
+                                                          surfaceGradientJump,
+                                                          normal,
+                                                          timeInfo,
+                                                          false );
+
+        candidateResidual = computeTractionJumpResidual( candidateTrial, normal );
+
+        candidateResidualNorm = candidateResidual.norm();
+
+        candidateTolerance = residualTolerance( candidateTrial );
+
+        const double candidatePhi = 0.5 * candidateResidual.squaredNorm();
+
+        const double armijoBound = phi0 - armijoParameter * alpha * residual.squaredNorm();
+
+        if ( candidateResidualNorm <= candidateTolerance || candidatePhi <= armijoBound ) {
+          accepted = true;
+
+          break;
+        }
+
+        alpha *= 0.5;
+      }
+
+      if ( !accepted ) {
+        writeFailureDiagnostics( "line search failed to find a "
+                                 "residual-decreasing step",
+                                 normalGradientJump,
+                                 trial,
+                                 residual );
+
+        throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic "
+                                          "local Newton line search failed." );
+      }
+
+      const Eigen::Vector3d step = candidateNormalGradientJump - normalGradientJump;
+
+      normalGradientJump = candidateNormalGradientJump;
+
+      if ( debugThisIteration ) {
         std::ostringstream line;
-        line << std::scientific << std::setprecision( 6 )
-             << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
-             << " residual=" << residual.transpose() << " residualNorm=" << residual.norm()
-             << " correction=" << correction.transpose() << " correctionNorm=" << correction.norm()
-             << " normalGradientJump=" << normalGradientJump.transpose() << " averageQNorm=" << trial.averageQ.norm();
+
+        line << std::scientific << std::setprecision( 6 ) << "[Marmot EI local Newton] "
+             << "material/el=" << material.materialNumber << " iter=" << iteration
+             << " residual=" << residual.transpose() << " residualNorm=" << residualNorm << " tolerance=" << tolerance
+             << " alpha=" << alpha << " stepNorm=" << step.norm() << " candidateResidualNorm=" << candidateResidualNorm
+             << " candidateTolerance=" << candidateTolerance << " normalGradientJump=" << normalGradientJump.transpose()
+             << " averageQNorm=" << trial.averageQ.norm();
+
         writeDebugLine( line.str() );
       }
 
-      if ( correction.norm() < 1e-11 * std::max( 1.0, normalGradientJump.norm() ) ) {
-        if ( ( material.isDebugOutputEnabledForNextCall() &&
-               std::getenv( "MARMOT_EI_DEBUG_LOCAL_NEWTON" ) != nullptr ) ||
-             debugLocalNewtonAllowed( material.materialNumber ) ) {
-          std::ostringstream line;
-          line << std::scientific << std::setprecision( 6 )
-               << "[Marmot EI local Newton] material/el=" << material.materialNumber << " iter=" << iteration
-               << " converged_by_correction correctionNorm=" << correction.norm()
-               << " normalGradientJump=" << normalGradientJump.transpose();
-          writeDebugLine( line.str() );
-        }
+      if ( candidateResidualNorm <= candidateTolerance ) {
         return normalGradientJump;
       }
+
+      /*
+       * Do not treat a small Newton correction as failure.
+       *
+       * For a stiff material, a non-negligible traction residual
+       * may correspond to a correction below 1e-10. Residual
+       * convergence and the line search are the appropriate
+       * safeguards.
+       */
     }
 
-    throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic local Newton iteration failed." );
+    const auto lastTrial = computeMaterialTrial( material,
+                                                 stateLayout,
+                                                 stateVars,
+                                                 averageNormalGradient,
+                                                 normalGradientJump,
+                                                 averageSurfaceGradient,
+                                                 surfaceGradientJump,
+                                                 normal,
+                                                 timeInfo,
+                                                 false );
+
+    const Eigen::Vector3d lastResidual = computeTractionJumpResidual( lastTrial, normal );
+
+    writeFailureDiagnostics( "maximum local Newton iterations reached", normalGradientJump, lastTrial, lastResidual );
+
+    throw Marmot::StressUpdateFailed( "MarmotExtendedInterfaceMaterialHypoElastic "
+                                      "local Newton iteration failed." );
   }
 
   NormalGradientJumpTangents computeNormalGradientJumpTangents( const MaterialTrial& trial, double h )
   {
     NormalGradientJumpTangents tangents;
-    tangents.dNormalGradientJumpDJumpU                  = -( 1. / h ) * trial.averageQ.fullPivLu().solve( trial.jumpQ );
+
+    tangents.dNormalGradientJumpDJumpU = -( 1.0 / h ) * trial.averageQ.fullPivLu().solve( trial.jumpQ );
+
     tangents.dNormalGradientJumpDAverageSurfaceGradient = -trial.averageQ.fullPivLu().solve( trial.jumpH );
-    tangents.dNormalGradientJumpDJumpSurfaceGradient    = -trial.averageQ.fullPivLu().solve( trial.averageH );
+
+    tangents.dNormalGradientJumpDJumpSurfaceGradient = -trial.averageQ.fullPivLu().solve( trial.averageH );
+
     return tangents;
   }
 
@@ -444,21 +727,29 @@ namespace {
 
     for ( int column = 0; column < 3; ++column ) {
       Matrix3dRowMajor dDisplacementGradient = Matrix3dRowMajor::Zero();
+
       dDisplacementGradient += dNormalGradientDJumpU.col( column ) * normal.transpose();
+
       derivative.col( column ) = stressGradientColumn( tangent, dDisplacementGradient );
     }
 
     for ( int column = 0; column < 9; ++column ) {
       Matrix3dRowMajor dDisplacementGradient = Matrix3dRowMajor::Zero();
+
       dDisplacementGradient( column / 3, column % 3 ) += averageSurfaceGradientSign;
+
       dDisplacementGradient += dNormalGradientDAverageSurfaceGradient.col( column ) * normal.transpose();
+
       derivative.col( 3 + column ) = stressGradientColumn( tangent, dDisplacementGradient );
     }
 
     for ( int column = 0; column < 9; ++column ) {
       Matrix3dRowMajor dDisplacementGradient = Matrix3dRowMajor::Zero();
+
       dDisplacementGradient( column / 3, column % 3 ) += jumpSurfaceGradientSign;
+
       dDisplacementGradient += dNormalGradientDJumpSurfaceGradient.col( column ) * normal.transpose();
+
       derivative.col( 12 + column ) = stressGradientColumn( tangent, dDisplacementGradient );
     }
 
@@ -470,19 +761,24 @@ namespace {
                                             const Eigen::Vector3d&            normal,
                                             double                            h )
   {
-    Eigen::Matrix3d dTopNormalGradientDJumpU = ( 1. / h ) * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d dTopNormalGradientDJumpU = ( 1.0 / h ) * Eigen::Matrix3d::Identity();
+
     dTopNormalGradientDJumpU += 0.5 * normalGradientJumpTangents.dNormalGradientJumpDJumpU;
 
-    Eigen::Matrix3d dBottomNormalGradientDJumpU = ( 1. / h ) * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d dBottomNormalGradientDJumpU = ( 1.0 / h ) * Eigen::Matrix3d::Identity();
+
     dBottomNormalGradientDJumpU -= 0.5 * normalGradientJumpTangents.dNormalGradientJumpDJumpU;
 
     Matrix3x9RowMajor dTopNormalGradientDAverageSurfaceGradient = 0.5 * normalGradientJumpTangents
                                                                           .dNormalGradientJumpDAverageSurfaceGradient;
+
     Matrix3x9RowMajor dBottomNormalGradientDAverageSurfaceGradient = -0.5 *
                                                                      normalGradientJumpTangents
                                                                        .dNormalGradientJumpDAverageSurfaceGradient;
+
     Matrix3x9RowMajor dTopNormalGradientDJumpSurfaceGradient = 0.5 * normalGradientJumpTangents
                                                                        .dNormalGradientJumpDJumpSurfaceGradient;
+
     Matrix3x9RowMajor dBottomNormalGradientDJumpSurfaceGradient = -0.5 * normalGradientJumpTangents
                                                                            .dNormalGradientJumpDJumpSurfaceGradient;
 
@@ -493,6 +789,7 @@ namespace {
                                                                          normal,
                                                                          1.0,
                                                                          0.5 );
+
     const Matrix9x21RowMajor
       dBottomStress = computeStressTensorDerivative( trial.bottomTangent,
                                                      dBottomNormalGradientDJumpU,
@@ -503,60 +800,40 @@ namespace {
                                                      -0.5 );
 
     const Matrix9x21RowMajor dAverageStress = 0.5 * ( dTopStress + dBottomStress );
-    const Matrix9x21RowMajor dJumpStress    = dTopStress - dBottomStress;
+
+    const Matrix9x21RowMajor dJumpStress = dTopStress - dBottomStress;
 
     Eigen::Matrix< double, 3, 9, Eigen::RowMajor > dForceDAverageStress;
+
     dForceDAverageStress.setZero();
+
     for ( int i = 0; i < 3; ++i ) {
       for ( int j = 0; j < 3; ++j ) {
         dForceDAverageStress( i, i * 3 + j ) = normal[j];
       }
     }
 
-    Matrix21dRowMajor tangent       = Matrix21dRowMajor::Zero();
-    tangent.block< 3, 21 >( 0, 0 )  = dForceDAverageStress * dAverageStress;
-    tangent.block< 9, 21 >( 3, 0 )  = h * dAverageStress;
+    Matrix21dRowMajor tangent = Matrix21dRowMajor::Zero();
+
+    tangent.block< 3, 21 >( 0, 0 ) = dForceDAverageStress * dAverageStress;
+
+    tangent.block< 9, 21 >( 3, 0 ) = h * dAverageStress;
+
     tangent.block< 9, 21 >( 12, 0 ) = 0.25 * h * dJumpStress;
 
     return tangent;
   }
 
-  ExtendedResponse evaluateExtendedResponse( MarmotExtendedInterfaceMaterialHypoElastic& material,
-                                             MarmotStateLayoutDynamic&                   stateLayout,
-                                             double*                                     stateVars,
-                                             double                                      h,
-                                             const Eigen::Vector3d&                      displacementJump,
-                                             const Vector9d&                             averageSurfaceGradient,
-                                             const Vector9d&                             surfaceGradientJump,
-                                             const Eigen::Vector3d&                      normal,
-                                             const MarmotMaterialHypoElastic::timeInfo&  timeInfo,
-                                             bool                                        commit )
+  ExtendedResponse makeExtendedResponse( const MaterialTrial& trial, const Eigen::Vector3d& normal, double h )
   {
-    const Eigen::Vector3d averageNormalGradient = ( 1. / h ) * displacementJump;
-    const Eigen::Vector3d normalGradientJump    = solveNormalGradientJump( material,
-                                                                        stateLayout,
-                                                                        stateVars,
-                                                                        averageNormalGradient,
-                                                                        averageSurfaceGradient,
-                                                                        surfaceGradientJump,
-                                                                        normal,
-                                                                        timeInfo );
-
-    const auto trial = computeMaterialTrial( material,
-                                             stateLayout,
-                                             stateVars,
-                                             averageNormalGradient,
-                                             normalGradientJump,
-                                             averageSurfaceGradient,
-                                             surfaceGradientJump,
-                                             normal,
-                                             timeInfo,
-                                             commit );
-
     ExtendedResponse response;
-    response.force                = trial.averageStressTensor * normal;
+
+    response.force = trial.averageStressTensor * normal;
+
     response.averageSurfaceStress = h * tensorToVector( trial.averageStressTensor );
-    response.jumpSurfaceStress    = 0.25 * h * tensorToVector( trial.jumpStressTensor );
+
+    response.jumpSurfaceStress = 0.25 * h * tensorToVector( trial.jumpStressTensor );
+
     return response;
   }
 
@@ -567,18 +844,23 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
                                                                 const Deformation&   deformation,
                                                                 const TimeIncrement& timeIncrement )
 {
-  const Eigen::Map< const Eigen::Vector3d >                normal( deformation.normal.data() );
-  const Eigen::Map< const Eigen::Matrix< double, 6, 1 > >  dU( deformation.dU.data() );
+  const Eigen::Map< const Eigen::Vector3d > normal( deformation.normal.data() );
+
+  const Eigen::Map< const Eigen::Matrix< double, 6, 1 > > dU( deformation.dU.data() );
+
   const Eigen::Map< const Eigen::Matrix< double, 18, 1 > > dSurfaceStrain( deformation.dSurfaceStrain.data() );
 
   const Eigen::Vector3d displacementJump = dU.segment< 3 >( 0 ) - dU.segment< 3 >( 3 );
+
   const Vector9d averageSurfaceGradient = 0.5 * ( dSurfaceStrain.segment< 9 >( 0 ) + dSurfaceStrain.segment< 9 >( 9 ) );
-  const Vector9d surfaceGradientJump    = dSurfaceStrain.segment< 9 >( 0 ) - dSurfaceStrain.segment< 9 >( 9 );
+
+  const Vector9d surfaceGradientJump = dSurfaceStrain.segment< 9 >( 0 ) - dSurfaceStrain.segment< 9 >( 9 );
 
   const MarmotMaterialHypoElastic::timeInfo timeInfo{ timeIncrement.timeOld + timeIncrement.dT, timeIncrement.dT };
 
-  const Eigen::Vector3d averageNormalGradient      = ( 1. / h ) * displacementJump;
-  const Eigen::Vector3d normalGradientJump         = solveNormalGradientJump( *this,
+  const Eigen::Vector3d averageNormalGradient = ( 1.0 / h ) * displacementJump;
+
+  const Eigen::Vector3d normalGradientJump = solveNormalGradientJump( *this,
                                                                       stateLayout,
                                                                       state.stateVars,
                                                                       averageNormalGradient,
@@ -586,65 +868,81 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
                                                                       surfaceGradientJump,
                                                                       normal,
                                                                       timeInfo );
-  const auto            trial                      = computeMaterialTrial( *this,
-                                           stateLayout,
-                                           state.stateVars,
-                                           averageNormalGradient,
-                                           normalGradientJump,
-                                           averageSurfaceGradient,
-                                           surfaceGradientJump,
-                                           normal,
-                                           timeInfo,
-                                           false );
-  const auto            normalGradientJumpTangents = computeNormalGradientJumpTangents( trial, h );
-  const auto            tangent = computeImplicitTangent( trial, normalGradientJumpTangents, normal, h );
 
-  const auto committedResponse = evaluateExtendedResponse( *this,
-                                                           stateLayout,
-                                                           state.stateVars,
-                                                           h,
-                                                           displacementJump,
-                                                           averageSurfaceGradient,
-                                                           surfaceGradientJump,
-                                                           normal,
-                                                           timeInfo,
-                                                           true );
+  /*
+   * Commit exactly the state corresponding to the normal-gradient
+   * jump returned by the local traction-equilibrium solve.
+   *
+   * The same constitutive trial supplies the response and tangent.
+   */
+  const auto committedTrial = computeMaterialTrial( *this,
+                                                    stateLayout,
+                                                    state.stateVars,
+                                                    averageNormalGradient,
+                                                    normalGradientJump,
+                                                    averageSurfaceGradient,
+                                                    surfaceGradientJump,
+                                                    normal,
+                                                    timeInfo,
+                                                    true );
 
-  state.force                = Marmot::FastorStandardTensors::Tensor3d( committedResponse.force.data() );
+  const auto normalGradientJumpTangents = computeNormalGradientJumpTangents( committedTrial, h );
+
+  const auto tangent = computeImplicitTangent( committedTrial, normalGradientJumpTangents, normal, h );
+
+  const auto committedResponse = makeExtendedResponse( committedTrial, normal, h );
+
+  state.force = Marmot::FastorStandardTensors::Tensor3d( committedResponse.force.data() );
+
   state.averageSurfaceStress = Marmot::FastorStandardTensors::Tensor33d(
     vectorToTensor( committedResponse.averageSurfaceStress ).data() );
+
   state.jumpSurfaceStress = Marmot::FastorStandardTensors::Tensor33d(
     vectorToTensor( committedResponse.jumpSurfaceStress ).data() );
 
-  Eigen::Map< Matrix3dRowMajor >( tangents.forceJumpU )                   = tangent.block< 3, 3 >( 0, 0 );
-  Eigen::Map< Matrix3x9RowMajor >( tangents.forceAverageSurfaceGradient ) = tangent.block< 3, 9 >( 0, 3 );
-  Eigen::Map< Matrix3x9RowMajor >( tangents.forceJumpSurfaceGradient )    = tangent.block< 3, 9 >( 0, 12 );
+  Eigen::Map< Matrix3dRowMajor >( tangents.forceJumpU ) = tangent.block< 3, 3 >( 0, 0 );
 
-  Eigen::Map< Matrix9x3RowMajor >( tangents.averageSurfaceStressJumpU )                 = tangent.block< 9, 3 >( 3, 0 );
+  Eigen::Map< Matrix3x9RowMajor >( tangents.forceAverageSurfaceGradient ) = tangent.block< 3, 9 >( 0, 3 );
+
+  Eigen::Map< Matrix3x9RowMajor >( tangents.forceJumpSurfaceGradient ) = tangent.block< 3, 9 >( 0, 12 );
+
+  Eigen::Map< Matrix9x3RowMajor >( tangents.averageSurfaceStressJumpU ) = tangent.block< 9, 3 >( 3, 0 );
+
   Eigen::Map< Matrix9dRowMajor >( tangents.averageSurfaceStressAverageSurfaceGradient ) = tangent.block< 9, 9 >( 3, 3 );
+
   Eigen::Map< Matrix9dRowMajor >( tangents.averageSurfaceStressJumpSurfaceGradient ) = tangent.block< 9, 9 >( 3, 12 );
 
-  Eigen::Map< Matrix9x3RowMajor >( tangents.jumpSurfaceStressJumpU )                 = tangent.block< 9, 3 >( 12, 0 );
+  Eigen::Map< Matrix9x3RowMajor >( tangents.jumpSurfaceStressJumpU ) = tangent.block< 9, 3 >( 12, 0 );
+
   Eigen::Map< Matrix9dRowMajor >( tangents.jumpSurfaceStressAverageSurfaceGradient ) = tangent.block< 9, 9 >( 12, 3 );
-  Eigen::Map< Matrix9dRowMajor >( tangents.jumpSurfaceStressJumpSurfaceGradient )    = tangent.block< 9, 9 >( 12, 12 );
+
+  Eigen::Map< Matrix9dRowMajor >( tangents.jumpSurfaceStressJumpSurfaceGradient ) = tangent.block< 9, 9 >( 12, 12 );
 
   const bool forceDebugOutputForThisCall = debugOutputForNextCall;
-  debugOutputForNextCall                 = false;
 
-  const auto topMaterialState    = getStateView( "topMaterialStateVars", state.stateVars );
+  debugOutputForNextCall = false;
+
+  const auto topMaterialState = getStateView( "topMaterialStateVars", state.stateVars );
+
   const auto bottomMaterialState = getStateView( "bottomMaterialStateVars", state.stateVars );
-  const auto topState0           = topMaterialState.stateSize > 0 ? topMaterialState.stateLocation[0] : 0.0;
-  const auto bottomState0        = bottomMaterialState.stateSize > 0 ? bottomMaterialState.stateLocation[0] : 0.0;
-  const bool stateFilterHit      = debugStateFilterRequested() &&
+
+  const auto topState0 = topMaterialState.stateSize > 0 ? topMaterialState.stateLocation[0] : 0.0;
+
+  const auto bottomState0 = bottomMaterialState.stateSize > 0 ? bottomMaterialState.stateLocation[0] : 0.0;
+
+  const bool stateFilterHit = debugStateFilterRequested() &&
                               ( std::abs( topState0 ) >= debugEnvDouble( "MARMOT_EI_DEBUG_STATE_MIN", 0.0 ) ||
                                 std::abs( bottomState0 ) >= debugEnvDouble( "MARMOT_EI_DEBUG_STATE_MIN", 0.0 ) );
+
   const bool stateFilterAllowed = stateFilterHit && debugMaterialAllowed( materialNumber );
 
   if ( forceDebugOutputForThisCall || stateFilterAllowed ||
        ( !debugCoordinateFilterRequested() && !debugStateFilterRequested() &&
          debugMaterialAllowed( materialNumber ) ) ) {
-    const auto         tractionJump = computeTractionJumpResidual( trial, normal );
+    const auto tractionJump = computeTractionJumpResidual( committedTrial, normal );
+
     std::ostringstream line;
+
     line << std::scientific << std::setprecision( 6 ) << "[Marmot EI material] material/el=" << materialNumber
          << " timeOld=" << timeIncrement.timeOld << " dT=" << timeIncrement.dT << " h=" << h
          << " normal=" << normal.transpose() << " displacementJump=" << displacementJump.transpose()
@@ -655,8 +953,10 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
          << " tractionJumpNorm=" << tractionJump.norm() << " force=" << committedResponse.force.transpose()
          << " averageSurfaceStressNorm=" << committedResponse.averageSurfaceStress.norm()
          << " jumpSurfaceStressNorm=" << committedResponse.jumpSurfaceStress.norm()
-         << " topStress=" << trial.topStress.transpose() << " bottomStress=" << trial.bottomStress.transpose()
-         << " tangentNorm=" << tangent.norm() << " topState0=" << topState0 << " bottomState0=" << bottomState0;
+         << " topStress=" << committedTrial.topStress.transpose()
+         << " bottomStress=" << committedTrial.bottomStress.transpose() << " tangentNorm=" << tangent.norm()
+         << " topState0=" << topState0 << " bottomState0=" << bottomState0;
+
     writeDebugLine( line.str() );
   }
 }
@@ -664,10 +964,12 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
 void MarmotExtendedInterfaceMaterialHypoElastic::initializeYourself( double* stateVars, int )
 {
   Eigen::Map< Marmot::Vector6d >( stateLayout.getPtr( stateVars, "bottomStress" ) ).setZero();
+
   Eigen::Map< Marmot::Vector6d >( stateLayout.getPtr( stateVars, "topStress" ) ).setZero();
 
   bottomMaterial->initializeYourself( stateLayout.getPtr( stateVars, "bottomMaterialStateVars" ),
                                       bottomMaterial->getNumberOfRequiredStateVars() );
+
   topMaterial->initializeYourself( stateLayout.getPtr( stateVars, "topMaterialStateVars" ),
                                    topMaterial->getNumberOfRequiredStateVars() );
 }

@@ -2,6 +2,7 @@
 #include "Marmot/MarmotExceptions.h"
 
 #include <algorithm>
+#include <iostream>
 
 MarmotElement::~MarmotElement() {}
 
@@ -20,7 +21,8 @@ void MarmotElement::computeYourself( const double* QTotal,
   try {
     computeKernels( QTotal, dQ, Pint, K, time[1], dT );
   }
-  catch ( const Marmot::StressUpdateFailed& ) {
+  catch ( const Marmot::StressUpdateFailed& e ) {
+    std::cerr << "[MarmotElement::computeYourself] StressUpdateFailed: " << e.what() << std::endl;
     pNewDT = std::min( pNewDT, 0.25 );
   }
 }
