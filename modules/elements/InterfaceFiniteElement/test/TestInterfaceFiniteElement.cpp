@@ -1239,10 +1239,87 @@ void TestSkewedExtendedInterfaceElementWiechertTangentMatchesResidualFiniteDiffe
                            "difference after committed history." );
 }
 
+// End-to-end natural-failure cutback test for the *real* extended-interface
+// material (as opposed to TestStressUpdateFailureRequestsSmallerTimeStep's
+// FailingInterfaceMaterial test double above). A single-material Von Mises
+// sublayer with essentially zero yield stress and no hardening/softening
+// makes the elastic-branch acoustic Jacobian singular for the very first
+// nonzero trial evaluated in MarmotExtendedInterfaceMaterialHypoElastic's
+// coupled local Newton solve (see solveNormalGradientJumpForAlpha), so
+// ExtendedInterfaceFiniteElement::computeKernels genuinely raises
+// Marmot::StressUpdateFailed here rather than being told to by a test
+// double. This verifies (a) the exception really propagates out of
+// computeKernels, (b) the persisted quadrature-point state is left
+// byte-identical by the failed attempt (the commit=false trial evaluations
+// inside the local Newton solve never touch the real state pointers), and
+// (c) MarmotElement::computeYourself still translates it into a
+// pNewDT<1 cutback request instead of rethrowing.
+void TestExtendedInterfaceElementNaturalStressUpdateFailurePreservesStateAndRequestsCutback()
+{
+  std::cout << "\n--- TestExtendedInterfaceElementNaturalStressUpdateFailurePreservesStateAndRequestsCutback ---\n";
+
+  constexpr int               nElementDofs       = 24;
+  const std::vector< double > materialProperties = { 210000., 0.3, 1e-8, 0., 0., 0., 0., 2400. };
+
+  auto                  element = makeExtendedInterfaceElementWithMaterial( "VONMISES",
+                                                           materialProperties.data(),
+                                                           static_cast< int >( materialProperties.size() ) );
+  std::vector< double > stateVars;
+  initializeStateAndMaterial( *element, stateVars );
+  const std::vector< double > stateBeforeFailedAttempt = stateVars;
+
+  const Eigen::Matrix< double, nElementDofs, 1 > dU = makeExtendedHistoryIncrement( 1.0 );
+
+  std::array< double, nElementDofs >                U{};
+  std::array< double, nElementDofs >                dQ{};
+  std::array< double, nElementDofs >                Pe{};
+  std::array< double, nElementDofs * nElementDofs > Ke{};
+  std::copy( dU.data(), dU.data() + dU.size(), dQ.begin() );
+
+  bool stressUpdateFailed = false;
+  try {
+    element->computeKernels( U.data(), dQ.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+  }
+  catch ( const Marmot::StressUpdateFailed& ) {
+    stressUpdateFailed = true;
+  }
+
+  throwExceptionOnFailure( stressUpdateFailed,
+                           "Perfectly-plastic single-material extended interface element did not raise "
+                           "StressUpdateFailed for a nonzero increment as expected." );
+
+  double stateMaxAbsDiff = 0.0;
+  for ( size_t i = 0; i < stateVars.size(); ++i )
+    stateMaxAbsDiff = std::max( stateMaxAbsDiff, std::abs( stateVars[i] - stateBeforeFailedAttempt[i] ) );
+
+  throwExceptionOnFailure( stateMaxAbsDiff == 0.0,
+                           "Extended interface element's persisted quadrature-point state was mutated by a "
+                           "failed (StressUpdateFailed) increment attempt; a rejected trial must leave the "
+                           "committed state untouched so a time-step cutback can safely retry." );
+
+  double                  pNewDT               = 1e36;
+  std::array< double, 2 > time                 = { 0.0, 0.0 };
+  bool                    computeYourselfThrew = false;
+  try {
+    element->computeYourself( U.data(), dQ.data(), Pe.data(), Ke.data(), time.data(), 1.0, pNewDT );
+  }
+  catch ( const std::exception& ) {
+    computeYourselfThrew = true;
+  }
+
+  throwExceptionOnFailure( !computeYourselfThrew,
+                           "MarmotElement::computeYourself should translate the extended-interface material's "
+                           "StressUpdateFailed into pNewDT rather than rethrowing." );
+  throwExceptionOnFailure( pNewDT < 1.0,
+                           "MarmotElement::computeYourself did not request a cutback after the extended-interface "
+                           "material's StressUpdateFailed." );
+}
+
 int main()
 {
   auto tests = std::vector< std::function<
-    void() > >{ TestMaterialInitializationResetsMaterialState,
+    void() > >{ TestExtendedInterfaceElementNaturalStressUpdateFailurePreservesStateAndRequestsCutback,
+                TestMaterialInitializationResetsMaterialState,
                 TestUnsupportedInertiaThrows,
                 TestStressUpdateFailureRequestsSmallerTimeStep,
                 TestSingleInputFileElementGeometryMatrices,

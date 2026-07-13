@@ -169,6 +169,25 @@ public:
                               const timeInfo&         timeInfo ) const = 0;
 
   /**
+   * Optionally compute an algorithmically consistent incremental potential
+   * together with stress and tangent.  The returned potential must have the
+   * updated stress as its derivative with respect to @p dStrain.
+   *
+   * The default implementation performs the stress update and returns false,
+   * allowing callers to use a model-independent fallback potential.
+   */
+  virtual bool computeStressAndIncrementalPotential( state3D&                state,
+                                                     Marmot::Matrix6d&       dStress_dStrain,
+                                                     const Marmot::Vector6d& dStrain,
+                                                     const timeInfo&         timeInfo,
+                                                     double&                 incrementalPotential ) const
+  {
+    computeStress( state, dStress_dStrain, dStrain, timeInfo );
+    (void)incrementalPotential;
+    return false;
+  }
+
+  /**
    * Explicit version of @ref computeStress for use in explicit time integration schemes.
    * The algorithmic tangent is not needed in explicit schemes and will therefore not be computed.
    * @param[in,out] state  A state3D instance carrying stress, strain energy, and state variables

@@ -34,6 +34,26 @@ namespace Marmot::Materials {
                                      const timeInfo& timeInfo ) const
 
   {
+    computeStressImpl( state, dStress_dStrain, dStrain, timeInfo, nullptr );
+  }
+
+  bool VonMisesModel::computeStressAndIncrementalPotential( state3D&        state,
+                                                            Matrix6d&       dStress_dStrain,
+                                                            const Vector6d& dStrain,
+                                                            const timeInfo& timeInfo,
+                                                            double&         incrementalPotential ) const
+  {
+    computeStressImpl( state, dStress_dStrain, dStrain, timeInfo, &incrementalPotential );
+    return true;
+  }
+
+  void VonMisesModel::computeStressImpl( state3D&        state,
+                                         Matrix6d&       dStress_dStrain,
+                                         const Vector6d& dStrain,
+                                         const timeInfo& timeInfo,
+                                         double*         incrementalPotential ) const
+
+  {
     // elasticity parameters
     const double& E  = this->materialProperties[0];
     const double& nu = this->materialProperties[1];
@@ -44,9 +64,10 @@ namespace Marmot::Materials {
     const double& delta            = this->materialProperties[5];
 
     // map to stress, strain and tangent
-    mVector6d  S( state.stress.data() );
-    mMatrix6d  dS_dE( dStress_dStrain.data() );
-    const auto dE = Map< const Vector6d >( dStrain.data() );
+    mVector6d      S( state.stress.data() );
+    mMatrix6d      dS_dE( dStress_dStrain.data() );
+    const auto     dE        = Map< const Vector6d >( dStrain.data() );
+    const Vector6d oldStress = S;
 
     // compute elastic stiffness
     const auto Cel = ContinuumMechanics::Elasticity::Isotropic::stiffnessTensor( E, nu );
@@ -54,6 +75,8 @@ namespace Marmot::Materials {
     // handle zero strain increment
     if ( dE.isZero( 1e-14 ) ) {
       dS_dE = Cel;
+      if ( incrementalPotential != nullptr )
+        *incrementalPotential = 0.0;
       return;
     }
 
@@ -124,12 +147,28 @@ namespace Marmot::Materials {
               4. * G * G * dLambda / rhoTrial * IDevHalfShear;
       state.elasticEnergyDensity += 0.5 * dE.dot( Cel * dE ) - 2. * G * dLambda * n.dot( dE );
       state.dissipation += 2. * G * dLambda * n.dot( dE );
+
+      if ( incrementalPotential != nullptr ) {
+        const double kappaOld                    = kappa - dKappa;
+        const double hardeningPotentialIncrement = yieldStress * dKappa +
+                                                   0.5 * HLin * ( kappa * kappa - kappaOld * kappaOld ) +
+                                                   ( delta > 0.0 ? deltaYieldStress *
+                                                                     ( dKappa + ( std::exp( -delta * kappa ) -
+                                                                                  std::exp( -delta * kappaOld ) ) /
+                                                                                  delta )
+                                                                 : 0.0 );
+        const double returnMappingCorrection = 1.5 * G * dKappa * dKappa + dKappa * fy( kappa ) -
+                                               hardeningPotentialIncrement;
+        *incrementalPotential = oldStress.dot( dE ) + 0.5 * dE.dot( Cel * dE ) - returnMappingCorrection;
+      }
     }
     else {
       // elastic step
       S     = trialStress;
       dS_dE = Cel;
       state.elasticEnergyDensity += 0.5 * dE.dot( Cel * dE );
+      if ( incrementalPotential != nullptr )
+        *incrementalPotential = oldStress.dot( dE ) + 0.5 * dE.dot( Cel * dE );
     }
   }
 

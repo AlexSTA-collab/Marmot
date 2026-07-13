@@ -31,6 +31,13 @@ namespace Marmot::Materials {
   /// @brief An implementation of classical J2 plasticity with isotropic hardening.
   class VonMisesModel : public MarmotMaterialHypoElastic {
 
+  private:
+    void computeStressImpl( state3D&                state,
+                            Marmot::Matrix6d&       dStressDDStrain,
+                            const Marmot::Vector6d& dStrain,
+                            const timeInfo&         timeInfo,
+                            double*                 incrementalPotential ) const;
+
   public:
     VonMisesModel( const double* materialProperties, const int nMaterialProperties, const int materialLabel );
 
@@ -38,6 +45,12 @@ namespace Marmot::Materials {
                         Marmot::Matrix6d&       dStressDDStrain,
                         const Marmot::Vector6d& dStrain,
                         const timeInfo&         timeInfo ) const override;
+
+    bool computeStressAndIncrementalPotential( state3D&                state,
+                                               Marmot::Matrix6d&       dStressDDStrain,
+                                               const Marmot::Vector6d& dStrain,
+                                               const timeInfo&         timeInfo,
+                                               double&                 incrementalPotential ) const override;
 
     void computeStressExplicit( state3D&                state,
                                 const Marmot::Vector6d& dStrain,

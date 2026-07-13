@@ -46,123 +46,14 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include <atomic>
 #include <cmath>
-#include <cstdlib>
-#include <iomanip>
 #include <iostream>
 #include <memory>
-#include <mutex>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace Marmot::Elements {
-
-  namespace ExtendedInterfaceDebug {
-
-    inline bool enabled()
-    {
-      return std::getenv( "MARMOT_EI_DEBUG" ) != nullptr ||
-             std::getenv( "MARMOT_EI_DEBUG_ELEMENT_ASSEMBLY" ) != nullptr;
-    }
-
-    inline int envInt( const char* name, int defaultValue )
-    {
-      const char* value = std::getenv( name );
-      return value == nullptr ? defaultValue : std::atoi( value );
-    }
-
-    inline double envDouble( const char* name, double defaultValue )
-    {
-      const char* value = std::getenv( name );
-      return value == nullptr ? defaultValue : std::atof( value );
-    }
-
-    inline bool hasEnv( const char* name )
-    {
-      return std::getenv( name ) != nullptr;
-    }
-
-    inline bool coordinateFilterRequested()
-    {
-      return hasEnv( "MARMOT_EI_DEBUG_X" ) || hasEnv( "MARMOT_EI_DEBUG_Y" ) || hasEnv( "MARMOT_EI_DEBUG_Z" ) ||
-             hasEnv( "MARMOT_EI_DEBUG_X_MIN" ) || hasEnv( "MARMOT_EI_DEBUG_X_MAX" ) ||
-             hasEnv( "MARMOT_EI_DEBUG_Y_MIN" ) || hasEnv( "MARMOT_EI_DEBUG_Y_MAX" ) ||
-             hasEnv( "MARMOT_EI_DEBUG_Z_MIN" ) || hasEnv( "MARMOT_EI_DEBUG_Z_MAX" );
-    }
-
-    inline bool axisAllowed( double value, const char* exact, const char* min, const char* max )
-    {
-      const double tolerance = envDouble( "MARMOT_EI_DEBUG_TOL", 1e-8 );
-
-      if ( hasEnv( exact ) && std::abs( value - envDouble( exact, value ) ) > tolerance )
-        return false;
-
-      if ( hasEnv( min ) && value < envDouble( min, value ) - tolerance )
-        return false;
-
-      if ( hasEnv( max ) && value > envDouble( max, value ) + tolerance )
-        return false;
-
-      return true;
-    }
-
-    inline bool coordinatesAllowed( const std::vector< double >& center )
-    {
-      if ( !coordinateFilterRequested() )
-        return true;
-
-      if ( center.size() > 0 &&
-           !axisAllowed( center[0], "MARMOT_EI_DEBUG_X", "MARMOT_EI_DEBUG_X_MIN", "MARMOT_EI_DEBUG_X_MAX" ) )
-        return false;
-
-      if ( center.size() > 1 &&
-           !axisAllowed( center[1], "MARMOT_EI_DEBUG_Y", "MARMOT_EI_DEBUG_Y_MIN", "MARMOT_EI_DEBUG_Y_MAX" ) )
-        return false;
-
-      if ( center.size() > 2 &&
-           !axisAllowed( center[2], "MARMOT_EI_DEBUG_Z", "MARMOT_EI_DEBUG_Z_MIN", "MARMOT_EI_DEBUG_Z_MAX" ) )
-        return false;
-
-      return true;
-    }
-
-    inline std::mutex& debugStreamMutex()
-    {
-      static std::mutex mutex;
-      return mutex;
-    }
-
-    inline void writeDebugLine( const std::string& line )
-    {
-      std::lock_guard< std::mutex > lock( debugStreamMutex() );
-      std::cerr << line << '\n';
-    }
-
-    inline bool shouldPrint( int elementLabel, int qpIndex, const std::vector< double >& center )
-    {
-      if ( !enabled() )
-        return false;
-
-      const char* elementFilter = std::getenv( "MARMOT_EI_DEBUG_ELEMENT" );
-      if ( elementFilter != nullptr && std::atoi( elementFilter ) != elementLabel )
-        return false;
-
-      const char* qpFilter = std::getenv( "MARMOT_EI_DEBUG_QP" );
-      if ( qpFilter != nullptr && std::atoi( qpFilter ) != qpIndex )
-        return false;
-
-      if ( !coordinatesAllowed( center ) )
-        return false;
-
-      static std::atomic< int > nPrinted{ 0 };
-      const int                 maxPrints = envInt( "MARMOT_EI_DEBUG_MAX_CALLS", 50 );
-      return nPrinted.fetch_add( 1 ) < maxPrints;
-    }
-
-  } // namespace ExtendedInterfaceDebug
 
   /**
    * @class ExtendedInterfaceFiniteElement
@@ -722,9 +613,7 @@ namespace Marmot::Elements {
     Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
     Eigen::Map< RhsSized >       Pe( Pe_ );
 
-    constexpr int halfSize           = nNodes * nDim / 2;
-    const auto    debugElementCenter = ExtendedInterfaceDebug::enabled() ? getCoordinatesAtCenter()
-                                                                         : std::vector< double >{};
+    constexpr int halfSize = nNodes * nDim / 2;
 
     for ( size_t qpIndex = 0; qpIndex < qps.size(); ++qpIndex ) {
       QuadraturePoint& qp    = qps[qpIndex];
@@ -769,10 +658,6 @@ namespace Marmot::Elements {
       jumpSurfaceStressAverageSurfaceGradient.setZero();
       jumpSurfaceStressJumpSurfaceGradient.setZero();
 
-      const bool debugThisQP = ExtendedInterfaceDebug::shouldPrint( elLabel,
-                                                                    static_cast< int >( qpIndex ),
-                                                                    debugElementCenter );
-
       if constexpr ( nDim == 3 ) {
         Material::State         materialState{ force.data(),
                                        surface_stress.data(),
@@ -790,7 +675,6 @@ namespace Marmot::Elements {
         Material::Deformation   materialDeformation{ dU_GPs.data(), dSurface_strain_GPs.data(), qp.normal.data() };
         Material::TimeIncrement materialTimeIncrement{ time, dT };
 
-        qp.material->setDebugOutputForNextCall( debugThisQP );
         qp.material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
       }
       else if constexpr ( nDim == 2 ) {
@@ -857,7 +741,6 @@ namespace Marmot::Elements {
         Material::Deformation   materialDeformation{ dU3d.data(), dSurfaceStrain3d.data(), normal3d.data() };
         Material::TimeIncrement materialTimeIncrement{ time, dT };
 
-        qp.material->setDebugOutputForNextCall( debugThisQP );
         qp.material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
         for ( int i = 0; i < nDim; ++i ) {
@@ -910,53 +793,42 @@ namespace Marmot::Elements {
       qp.managedStateVars->displacement += dU_GPs;
       qp.managedStateVars->surfaceStrain += dSurface_strain_GPs;
 
-      const RhsSized peContribution = -Njump.transpose() * force * qp.J0xW -
-                                      Bavg.transpose() * surface_stress * qp.J0xW -
-                                      Bjump.transpose() * surface_stress_jump * qp.J0xW;
-      const KeSizedMatrix keContribution = ( Njump.transpose() * forceJumpU * Njump +
-                                             Njump.transpose() * forceAverageSurfaceGradient * Bavg +
-                                             Njump.transpose() * forceJumpSurfaceGradient * Bjump +
-                                             Bavg.transpose() * averageSurfaceStressJumpU * Njump +
-                                             Bavg.transpose() * averageSurfaceStressAverageSurfaceGradient * Bavg +
-                                             Bavg.transpose() * averageSurfaceStressJumpSurfaceGradient * Bjump +
-                                             Bjump.transpose() * jumpSurfaceStressJumpU * Njump +
-                                             Bjump.transpose() * jumpSurfaceStressAverageSurfaceGradient * Bavg +
-                                             Bjump.transpose() * jumpSurfaceStressJumpSurfaceGradient * Bjump ) *
-                                           qp.J0xW;
+      /*
+       * Split the generalized residual into traction, average-surface,
+       * and surface-jump contributions.  The sum is exactly the original
+       * EIQUAD residual.
+       */
+      const RhsSized peForce = -Njump.transpose() * force * qp.J0xW;
+
+      const RhsSized peAverageSurface = -Bavg.transpose() * surface_stress * qp.J0xW;
+
+      const RhsSized peJumpSurface = -Bjump.transpose() * surface_stress_jump * qp.J0xW;
+
+      const RhsSized peContribution = peForce + peAverageSurface + peJumpSurface;
+
+      /*
+       * Split the consistent element Jacobian using the same three
+       * generalized-resultant row groups.
+       */
+      const KeSizedMatrix keForce = ( Njump.transpose() * forceJumpU * Njump +
+                                      Njump.transpose() * forceAverageSurfaceGradient * Bavg +
+                                      Njump.transpose() * forceJumpSurfaceGradient * Bjump ) *
+                                    qp.J0xW;
+
+      const KeSizedMatrix keAverageSurface = ( Bavg.transpose() * averageSurfaceStressJumpU * Njump +
+                                               Bavg.transpose() * averageSurfaceStressAverageSurfaceGradient * Bavg +
+                                               Bavg.transpose() * averageSurfaceStressJumpSurfaceGradient * Bjump ) *
+                                             qp.J0xW;
+
+      const KeSizedMatrix keJumpSurface = ( Bjump.transpose() * jumpSurfaceStressJumpU * Njump +
+                                            Bjump.transpose() * jumpSurfaceStressAverageSurfaceGradient * Bavg +
+                                            Bjump.transpose() * jumpSurfaceStressJumpSurfaceGradient * Bjump ) *
+                                          qp.J0xW;
+
+      const KeSizedMatrix keContribution = keForce + keAverageSurface + keJumpSurface;
 
       Pe += peContribution;
       Ke += keContribution;
-
-      if ( debugThisQP ) {
-        const auto displacementJump = dU_GPs.template segment< nDim >( 0 ) - dU_GPs.template segment< nDim >( nDim );
-        const auto averageSurfaceGradient = 0.5 * ( dSurface_strain_GPs.template segment< nTensor >( 0 ) +
-                                                    dSurface_strain_GPs.template segment< nTensor >( nTensor ) );
-        const auto surfaceGradientJump    = dSurface_strain_GPs.template segment< nTensor >( 0 ) -
-                                         dSurface_strain_GPs.template segment< nTensor >( nTensor );
-
-        std::ostringstream line;
-        line << std::scientific << std::setprecision( 6 ) << "[Marmot EI element] el=" << elLabel << " qp=" << qpIndex
-             << " center=";
-        for ( size_t i = 0; i < debugElementCenter.size(); ++i ) {
-          if ( i > 0 )
-            line << ",";
-          line << debugElementCenter[i];
-        }
-        line << " timeOld=" << time << " dT=" << dT << " J0xW=" << qp.J0xW << " normal=" << qp.normal.transpose()
-             << " dQInf=" << dQ.template lpNorm< Eigen::Infinity >()
-             << " displacementJump=" << displacementJump.transpose()
-             << " averageSurfaceGradientNorm=" << averageSurfaceGradient.norm()
-             << " surfaceGradientJumpNorm=" << surfaceGradientJump.norm() << " force=" << force.transpose()
-             << " surfaceStressNorm=" << surface_stress.norm()
-             << " surfaceStressJumpNorm=" << surface_stress_jump.norm()
-             << " peContributionInf=" << peContribution.template lpNorm< Eigen::Infinity >()
-             << " peGlobalInfAfter=" << Pe.template lpNorm< Eigen::Infinity >()
-             << " keContributionInf=" << keContribution.template lpNorm< Eigen::Infinity >()
-             << " forceJumpUNorm=" << forceJumpU.norm()
-             << " avgStressAvgGradNorm=" << averageSurfaceStressAverageSurfaceGradient.norm()
-             << " jumpStressJumpGradNorm=" << jumpSurfaceStressJumpSurfaceGradient.norm();
-        ExtendedInterfaceDebug::writeDebugLine( line.str() );
-      }
     }
   }
 

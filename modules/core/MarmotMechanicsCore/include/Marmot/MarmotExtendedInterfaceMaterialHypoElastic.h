@@ -12,16 +12,7 @@
  * festigkeitslehre@uibk.ac.at
  *
  * This file is part of the MAteRialMOdellingToolbox (marmot).
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * The full text of the license can be found in the file LICENSE.md at
- * the top level directory of marmot.
- * ---------------------------------------------------------------------
- */
+ * --------------------------------------------------------------------- */
 
 #pragma once
 
@@ -34,16 +25,31 @@
 #include <vector>
 
 /**
- * Extended hypoelastic interface material with independent top and bottom
- * interphase material points.
+ * Extended hypoelastic interface material with two independent material
+ * points and a locally condensed moving bilinear kink.
+ *
+ * The top material state occupies alpha*h and the bottom material state
+ * occupies (1-alpha)*h.  At every constitutive update the local variables
+ *
+ *   g     = [u_{,n}],
+ *   alpha = h_top / h,
+ *
+ * are condensed from the incremental potential of the two sublayers.
+ * Stationarity with respect to g enforces traction continuity, while
+ * stationarity with respect to alpha determines the kink position.
+ *
+ * The implementation reconstructs the condensed incremental potential of
+ * the underlying material by integrating the stress response along the
+ * straight strain-increment path.  This is appropriate for potential-based
+ * algorithmic updates such as associative Von Mises plasticity and linear
+ * elasticity.  It must not be used unchanged for genuinely non-associated
+ * models whose algorithmic stress map is not potential-derived.
  *
  * Preferred property layout:
  *   [ h, nBottom, bottomProperties..., nTop, topProperties... ]
  *
- * A legacy single-material layout [ E, nu, h, ... ] is accepted as a fallback.
- * It assigns the same initial material properties to top and bottom, but still
- * creates two independent material instances with separate state-variable
- * storage.
+ * Legacy single-material layout:
+ *   [ E, nu, h, remainingBaseMaterialProperties... ]
  */
 class MarmotExtendedInterfaceMaterialHypoElastic {
 
@@ -51,6 +57,8 @@ protected:
   const double* materialProperties;
   const int     nMaterialProperties;
   double        h = 0.0;
+
+  std::string materialName;
 
   std::vector< double > bottomMaterialProperties;
   std::vector< double > topMaterialProperties;
@@ -62,12 +70,9 @@ public:
   using TensorMap3d  = Marmot::FastorStandardTensors::TensorMap3d;
   using TensorMap33d = Marmot::FastorStandardTensors::TensorMap33d;
   using TensorMap6d  = Marmot::FastorStandardTensors::TensorMap6d;
-  using TensorMap9d  = Marmot::FastorStandardTensors::TensorMap9d;
   using TensorMap18d = Marmot::FastorStandardTensors::TensorMap18d;
 
   const int materialNumber;
-
-  bool debugOutputForNextCall = false;
 
   MarmotExtendedInterfaceMaterialHypoElastic( const std::string& materialName,
                                               const double*      matProperties_,
@@ -81,10 +86,6 @@ public:
   double characteristicElementLength;
 
   void setCharacteristicElementLength( double length );
-
-  void setDebugOutputForNextCall( bool enabled ) { debugOutputForNextCall = enabled; }
-
-  bool isDebugOutputEnabledForNextCall() const { return debugOutputForNextCall; }
 
   struct State {
     TensorMap3d  force;
