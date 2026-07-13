@@ -50,6 +50,11 @@
  *
  * Legacy single-material layout:
  *   [ E, nu, h, remainingBaseMaterialProperties... ]
+ *
+ * The two layouts are distinguished structurally: the explicit layout is
+ * selected iff the second property is an integer sublayer property count
+ * >= 1, which no physically valid Poisson's ratio (nu < 1, including
+ * nu == 0) can be.
  */
 class MarmotExtendedInterfaceMaterialHypoElastic {
 

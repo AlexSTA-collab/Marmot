@@ -904,31 +904,132 @@ namespace {
                              "Elastic-regime legacy VONMISES loading unexpectedly accumulated plastic history." );
   }
 
-  // Documents a genuine, currently-unresolved ambiguity in the layout
-  // detection: hasExplicitTopBottomLayout is chosen whenever
-  // nMaterialProperties >= 5 and materialProperties[1] happens to be
-  // integer-valued. nu == 0.0 is a legitimate (if unusual) Poisson's ratio,
-  // and any legacy-layout call whose base material needs 2 or more of its
-  // own properties (e.g. VONMISES, which needs 5) reaches nMaterialProperties
-  // >= 5. Such a call is therefore misclassified as the explicit
-  // [h,nBottom,bottom...,nTop,top...] layout instead of the intended legacy
-  // [E,nu,h,remaining...] layout. This does not silently produce a
-  // wrong-but-plausible result: materialProperties[1] (nu=0.0) is read as
-  // nBottom, rounds to 0, and the explicit-layout validation immediately
-  // rejects nBottom <= 0. This test locks in that current (accepted)
-  // behavior -- a clear std::invalid_argument at construction time -- as a
-  // regression guard, and as documentation that nu == 0.0 is not usable via
-  // the legacy layout once the base material contributes >= 2 properties of
-  // its own. Callers who need nu == 0.0 with such a base material must use
-  // the explicit [h,nBottom,...,nTop,...] layout instead.
-  void testLegacyLayoutWithIntegerValuedNuIsMisclassifiedAndRejected()
+  // Regression test for a layout-detection ambiguity that used to reject
+  // valid legacy calls: hasExplicitTopBottomLayout was chosen whenever
+  // nMaterialProperties >= 5 and materialProperties[1] happened to be
+  // integer-valued, so the legitimate Poisson's ratio nu == 0.0 combined
+  // with a base material contributing >= 2 of its own properties (e.g.
+  // VONMISES) was misread as an nBottom sublayer count and rejected. The
+  // detection now additionally requires round(materialProperties[1]) >= 1,
+  // which no physically valid nu (< 1) can satisfy, so this call must be
+  // accepted as the legacy layout and, for perfectly symmetric elastic
+  // loading, reduce exactly to the standard interface material parsing the
+  // identical [E, nu, h, remaining...] array.
+  void testLegacyLayoutWithZeroNuIsAcceptedAndReducesToStandardInterface()
   {
-    const double ambiguousProperties[8] = { 210000., 0.0, 0.01, 200., 2100., 20., 20., 2400. };
+    const double legacyZeroNuProperties[8] = { 210000., 0.0, 0.01, 200., 2100., 20., 20., 2400. };
+    const double normal[3]                 = { 0., 0., 1. };
+
+    MarmotInterfaceMaterialHypoElastic         standardMaterial( "VONMISES", legacyZeroNuProperties, 8, 1 );
+    MarmotExtendedInterfaceMaterialHypoElastic extendedMaterial( "VONMISES", legacyZeroNuProperties, 8, 1 );
+
+    Eigen::VectorXd standardStateVars( standardMaterial.getNumberOfRequiredStateVars() );
+    Eigen::VectorXd extendedStateVars( extendedMaterial.getNumberOfRequiredStateVars() );
+    standardMaterial.initializeYourself( standardStateVars.data(), standardStateVars.size() );
+    extendedMaterial.initializeYourself( extendedStateVars.data(), extendedStateVars.size() );
+
+    Eigen::Vector3d               forceStandard             = Eigen::Vector3d::Zero();
+    Eigen::Vector3d               forceExtended             = Eigen::Vector3d::Zero();
+    Eigen::Matrix< double, 9, 1 > surfaceStressStandard     = Eigen::Matrix< double, 9, 1 >::Zero();
+    Eigen::Matrix< double, 9, 1 > surfaceStressExtended     = Eigen::Matrix< double, 9, 1 >::Zero();
+    Eigen::Matrix< double, 9, 1 > surfaceStressJumpExtended = Eigen::Matrix< double, 9, 1 >::Zero();
+
+    // Same sub-yield, face-symmetric amplitudes as
+    // testLegacyVonMisesLayoutReducesToStandardInterfaceInElasticRegime.
+    const double dU[6] = { 0., 1e-6, 0., 0., 0., 0. };
+    const double dSurfaceStrain[18] =
+      { 0., 2e-6, 0., 2e-6, 0., 0., 0., 0., 0., 0., 2e-6, 0., 2e-6, 0., 0., 0., 0., 0. };
+
+    double standardQ[9]  = { 0. };
+    double standardZ[81] = { 0. };
+    double standardH[27] = { 0. };
+    double standardY[81] = { 0. };
+
+    MarmotInterfaceMaterialHypoElastic::State         standardState{ forceStandard.data(),
+                                                             surfaceStressStandard.data(),
+                                                             standardStateVars.data() };
+    MarmotInterfaceMaterialHypoElastic::Tangents      standardTangents{ standardQ, standardZ, standardH, standardY };
+    MarmotInterfaceMaterialHypoElastic::Deformation   standardDeformation{ dU, dSurfaceStrain, normal };
+    MarmotInterfaceMaterialHypoElastic::TimeIncrement standardTime{ 0., 1. };
+
+    standardMaterial.computeStress( standardState, standardTangents, standardDeformation, standardTime );
+
+    double                                               extendedTangents[9][81] = {};
+    MarmotExtendedInterfaceMaterialHypoElastic::State    extendedState{ forceExtended.data(),
+                                                                     surfaceStressExtended.data(),
+                                                                     surfaceStressJumpExtended.data(),
+                                                                     extendedStateVars.data() };
+    MarmotExtendedInterfaceMaterialHypoElastic::Tangents extendedTangentBlocks{
+      extendedTangents[0],
+      extendedTangents[1],
+      extendedTangents[2],
+      extendedTangents[3],
+      extendedTangents[4],
+      extendedTangents[5],
+      extendedTangents[6],
+      extendedTangents[7],
+      extendedTangents[8],
+    };
+    MarmotExtendedInterfaceMaterialHypoElastic::Deformation   extendedDeformation{ dU, dSurfaceStrain, normal };
+    MarmotExtendedInterfaceMaterialHypoElastic::TimeIncrement extendedTime{ 0., 1. };
+
+    extendedMaterial.computeStress( extendedState, extendedTangentBlocks, extendedDeformation, extendedTime );
+
+    throwExceptionOnFailure( checkIfEqual< double >( forceExtended, forceStandard, 1e-8 ),
+                             "Legacy nu==0.0 extended interface force does not reduce to the standard interface "
+                             "force in the elastic regime." );
+    throwExceptionOnFailure( checkIfEqual< double >( surfaceStressExtended, surfaceStressStandard, 1e-8 ),
+                             "Legacy nu==0.0 extended interface average surface stress does not reduce to the "
+                             "standard surface stress in the elastic regime." );
+    throwExceptionOnFailure( checkIfEqual< double >( surfaceStressJumpExtended,
+                                                     Eigen::Matrix< double, 9, 1 >::Zero(),
+                                                     1e-10 ),
+                             "Legacy nu==0.0 extended interface surface stress jump is not zero for equal top and "
+                             "bottom sides." );
+  }
+
+  // Companion coverage for the fixed detection rule: an explicit
+  // [h,nBottom,bottom...,nTop,top...] layout must still be recognized as
+  // explicit even when one sublayer legitimately uses nu == 0.0 among its
+  // own properties -- the rule only inspects the structural count fields,
+  // never property values inside the sublayer slices. The two sides are
+  // given different Poisson's ratios; an explicit-layout parse yields an
+  // elastically asymmetric interface whose surface-stress jump is nonzero
+  // under face-symmetric loading, which a (mis)parse could not produce.
+  void testExplicitLayoutWithZeroNuOnOneSideIsDetectedAsExplicit()
+  {
+    const double explicitProperties[17] =
+      { 0.01, 7., 210000., 0.0, 1e8, 2100., 0., 0., 0., 7., 210000., 0.3, 1e8, 2100., 0., 0., 0. };
+
+    Eigen::Matrix< double, 21, 1 > generalizedIncrement;
+    generalizedIncrement.setZero();
+    generalizedIncrement.segment< 9 >( 3 ) << 2e-6, 1e-6, 0., 1e-6, 2e-6, 0., 0., 0., 0.;
+
+    const auto evaluation = evaluateExtendedMaterial( "VONMISES", explicitProperties, 17, generalizedIncrement );
+
+    throwExceptionOnFailure( evaluation.response.allFinite() && evaluation.tangent.allFinite(),
+                             "Explicit layout with nu==0.0 on one side produced a non-finite response or tangent." );
+    throwExceptionOnFailure( evaluation.response.segment< 9 >( 12 ).norm() > 1e-12,
+                             "Explicit layout with different top/bottom nu did not produce the asymmetric "
+                             "surface-stress jump expected from a correctly parsed explicit layout." );
+  }
+
+  // The informative construction-time error for genuinely malformed explicit
+  // layouts must survive the detection fix: whenever materialProperties[1]
+  // is an integer sublayer count >= 1 (which no legacy nu can be), the
+  // explicit layout is selected and its structural validation still rejects
+  // inconsistent counts instead of silently falling back to the legacy
+  // interpretation.
+  void testMalformedExplicitLayoutIsStillRejected()
+  {
+    // nBottom = 3 selects the explicit layout, but nTop = 5 at position 5
+    // requires 11 total properties while only 7 are supplied.
+    const double malformedProperties[7] = { 0.01, 3., 1., 2., 3., 5., 1. };
 
     bool        threw = false;
     std::string exceptionMessage;
     try {
-      MarmotExtendedInterfaceMaterialHypoElastic material( "VONMISES", ambiguousProperties, 8, 1 );
+      MarmotExtendedInterfaceMaterialHypoElastic material( "VONMISES", malformedProperties, 7, 1 );
       (void)material;
     }
     catch ( const std::invalid_argument& e ) {
@@ -937,13 +1038,10 @@ namespace {
     }
 
     throwExceptionOnFailure( threw,
-                             "A legacy-layout call with nu == 0.0 and >= 5 total properties was expected to be "
-                             "misclassified as the explicit layout and rejected, but construction succeeded "
-                             "instead; if the layout-detection heuristic changed, please update this regression "
-                             "test to match the new documented behavior." );
+                             "A structurally inconsistent explicit layout was expected to be rejected at "
+                             "construction time, but construction succeeded." );
     throwExceptionOnFailure( exceptionMessage.find( "Invalid extended interface material layout" ) != std::string::npos,
-                             "Unexpected exception message for the nu==0.0 layout-ambiguity case: " +
-                               exceptionMessage );
+                             "Unexpected exception message for the malformed explicit layout: " + exceptionMessage );
   }
 
   void testIndeterminateAlphaWithNonzeroNormalGradientJumpDoesNotFail()
@@ -1100,13 +1198,13 @@ namespace {
   // return-mapped tangent, independent of step size. This is therefore not a
   // "too large a step" failure that a cutback could ever repair, but it is a
   // genuine, naturally reachable Marmot::StressUpdateFailed raised from
-  // solveNormalGradientJumpForAlpha (i.e. reached before the commit=true
-  // MaterialTrial evaluation in computeStress runs). It is used here purely
-  // to exercise the "state must not be mutated by a failed trial" invariant
-  // documented in evaluateSideTrial/computeMaterialTrial (only commit==true
-  // callers write into the real bottomStress/topStress/*MaterialStateVars
-  // pointers; every trial evaluation used while iterating operates on a
-  // local stateCopy and is discarded on failure).
+  // solveNormalGradientJumpForAlpha (i.e. reached before commitMaterialTrial
+  // in computeStress runs). It is used here purely to exercise the "state
+  // must not be mutated by a failed trial" invariant: every trial evaluation
+  // operates on a local state copy carried inside the SideTrial, and only
+  // commitMaterialTrial -- called after the entire update, including the
+  // condensed tangent, has succeeded -- writes into the real
+  // bottomStress/topStress/*MaterialStateVars pointers.
   void testNaturalStressUpdateFailurePreservesCommittedState()
   {
     const double singleMaterialProperties[8] = { 210000., 0.3, 1e-8, 0., 0., 0., 0., 2400. };
@@ -1166,6 +1264,96 @@ namespace {
                              "Committed state vars were mutated by a trial that raised StressUpdateFailed; "
                              "a failed increment must leave the committed state byte-identical so that a "
                              "time-step cutback can safely retry from the same starting point." );
+  }
+
+  // Regression test for the commit-before-tangent ordering bug: the test
+  // above fails inside the local solve, i.e. before anything used to be
+  // committed, and therefore never exercised the later failure stage. Here
+  // the failure is provoked in computeCondensedTangent AFTER the local solve
+  // has fully succeeded. A LINEARELASTIC sublayer with E = 0 has an
+  // identically zero acoustic tensor Q = n.C.n, so every sublayer stress
+  // update trivially succeeds (the stress stays constant) and the local
+  // solve converges immediately with a zero traction jump -- but the
+  // condensed g-Jacobian K = (1-alpha)*Qtop + alpha*Qbottom is exactly
+  // singular, so the condensed-tangent stage raises
+  // Marmot::StressUpdateFailed as the *last* fallible step of the update.
+  // computeStress used to commit the sublayer state and the
+  // alpha/alphaEvolutionActive/normalGradientJump state entries before
+  // computing the tangent; the seeded alphaEvolutionActive flag below was
+  // then overwritten (a zero-stiffness trial never changes internal state,
+  // so the commit writes 0.0), corrupting the committed snapshot a cutback
+  // retry depends on. After the fix, no committed state may be touched when
+  // the tangent computation throws.
+  void testTangentStageFailureAfterSuccessfulLocalSolvePreservesCommittedState()
+  {
+    const double explicitZeroStiffnessProperties[7] = { 0.01, 2., 0., 0., 2., 0., 0. };
+
+    MarmotExtendedInterfaceMaterialHypoElastic material( "LINEARELASTIC", explicitZeroStiffnessProperties, 7, 1 );
+
+    Eigen::VectorXd stateVars( material.getNumberOfRequiredStateVars() );
+    material.initializeYourself( stateVars.data(), stateVars.size() );
+
+    // Seed a committed value that the (unwanted) pre-tangent commit would
+    // demonstrably change: with zero stiffness no internal state ever
+    // changes, so a commit would rewrite this flag to 0.0.
+    material.getStateView( "alphaEvolutionActive", stateVars.data() ).stateLocation[0] = 1.0;
+    const Eigen::VectorXd stateBeforeFailedAttempt                                     = stateVars;
+
+    Eigen::Matrix< double, 21, 1 > generalizedIncrement;
+    generalizedIncrement.setZero();
+    generalizedIncrement.segment< 3 >( 0 ) << 1.0e-4, -2.0e-4, 1.5e-4;
+    generalizedIncrement.segment< 9 >( 3 ) << 4.0e-3, 1.5e-3, 0.0, 1.0e-3, -2.0e-3, 0.0, 0.0, 0.0, -2.0e-3;
+
+    double dU[6]              = { 0. };
+    double dSurfaceStrain[18] = { 0. };
+    makeExtendedKinematics( generalizedIncrement, dU, dSurfaceStrain );
+    const double normal[3] = { 0., 0., 1. };
+
+    Eigen::Vector3d force                = Eigen::Vector3d::Zero();
+    Vector9d        averageSurfaceStress = Vector9d::Zero();
+    Vector9d        jumpSurfaceStress    = Vector9d::Zero();
+    double          tangentBlocks[9][81] = {};
+
+    MarmotExtendedInterfaceMaterialHypoElastic::State    state{ force.data(),
+                                                             averageSurfaceStress.data(),
+                                                             jumpSurfaceStress.data(),
+                                                             stateVars.data() };
+    MarmotExtendedInterfaceMaterialHypoElastic::Tangents tangentBlockViews{
+      tangentBlocks[0],
+      tangentBlocks[1],
+      tangentBlocks[2],
+      tangentBlocks[3],
+      tangentBlocks[4],
+      tangentBlocks[5],
+      tangentBlocks[6],
+      tangentBlocks[7],
+      tangentBlocks[8],
+    };
+    MarmotExtendedInterfaceMaterialHypoElastic::Deformation   deformation{ dU, dSurfaceStrain, normal };
+    MarmotExtendedInterfaceMaterialHypoElastic::TimeIncrement time{ 0., 1. };
+
+    bool        threw = false;
+    std::string exceptionMessage;
+    try {
+      material.computeStress( state, tangentBlockViews, deformation, time );
+    }
+    catch ( const Marmot::StressUpdateFailed& e ) {
+      threw            = true;
+      exceptionMessage = e.what();
+    }
+
+    throwExceptionOnFailure( threw,
+                             "Zero-stiffness extended interface did not raise StressUpdateFailed from the "
+                             "condensed-tangent stage as expected." );
+    throwExceptionOnFailure( exceptionMessage.find( "condensed g-Jacobian is singular" ) != std::string::npos,
+                             "Expected the failure to originate from the condensed-tangent stage (after a "
+                             "successful local solve), but got: " +
+                               exceptionMessage );
+    throwExceptionOnFailure( ( stateVars - stateBeforeFailedAttempt ).lpNorm< Eigen::Infinity >() == 0.0,
+                             "Committed state vars were mutated although the update failed in the "
+                             "condensed-tangent stage; the commit must only happen after the entire update, "
+                             "including the tangent computation, has succeeded, so that a time-step cutback "
+                             "can retry from an uncorrupted snapshot." );
   }
 
   // Models the actual cutback protocol an external FE driver implements
@@ -1584,6 +1772,7 @@ int main()
 {
   std::vector< std::function< void() > > tests = {
     testNaturalStressUpdateFailurePreservesCommittedState,
+    testTangentStageFailureAfterSuccessfulLocalSolvePreservesCommittedState,
     testCutbackRetryFromPreservedSnapshotIsDeterministicAfterDiscardedAttempt,
     testExtendedMaterialReducesToStandardInterfaceForEqualSides,
     testImplicitExtendedTangentMatchesFiniteDifference,
@@ -1597,7 +1786,9 @@ int main()
     testSingleMaterialInputKeepsIndependentTopAndBottomState,
     testLegacySingleMaterialLayoutReducesToStandardInterfaceForEqualSides,
     testLegacyVonMisesLayoutReducesToStandardInterfaceInElasticRegime,
-    testLegacyLayoutWithIntegerValuedNuIsMisclassifiedAndRejected,
+    testLegacyLayoutWithZeroNuIsAcceptedAndReducesToStandardInterface,
+    testExplicitLayoutWithZeroNuOnOneSideIsDetectedAsExplicit,
+    testMalformedExplicitLayoutIsStillRejected,
     testIndeterminateAlphaWithNonzeroNormalGradientJumpDoesNotFail,
     testAlphaRemainsFixedDuringElasticLoading,
     testCommittedPlasticActivityControlsAlphaEvolution,

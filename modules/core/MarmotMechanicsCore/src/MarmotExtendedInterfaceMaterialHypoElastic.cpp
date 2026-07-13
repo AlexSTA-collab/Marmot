@@ -56,6 +56,13 @@ namespace {
     Matrix3x9RowMajor H                    = Matrix3x9RowMajor::Zero();
     double            incrementalPotential = 0.0;
     bool              internalStateChanged = false;
+
+    // Updated sublayer material state belonging to this trial.  It is kept
+    // out of the committed state buffer so that a trial can be discarded
+    // without side effects; committing is a plain, infallible copy performed
+    // only after the entire update (including the condensed tangent) has
+    // succeeded.
+    std::vector< double > updatedStateVars;
   };
 
   struct MaterialTrial {
@@ -285,7 +292,14 @@ MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoE
   if ( nMaterialProperties < 3 )
     throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic requires material properties." );
 
-  const bool hasExplicitTopBottomLayout = nMaterialProperties >= 5 && isIntegerProperty( materialProperties[1] );
+  // Layout detection must be unambiguous for every physically valid legacy
+  // call [E,nu,h,remaining...]: in the explicit layout
+  // [h,nBottom,bottom...,nTop,top...] the second property is a sublayer
+  // property count and therefore an integer >= 1, whereas in the legacy
+  // layout it is Poisson's ratio nu < 1. In particular nu == 0.0 is a
+  // legitimate legacy value and must not trigger the explicit branch.
+  const bool hasExplicitTopBottomLayout = nMaterialProperties >= 5 && isIntegerProperty( materialProperties[1] ) &&
+                                          std::round( materialProperties[1] ) >= 1.0;
 
   if ( hasExplicitTopBottomLayout ) {
     h                         = materialProperties[0];
@@ -365,10 +379,7 @@ namespace {
                                const Matrix3dRowMajor&                    displacementGradient,
                                const Eigen::Vector3d&                     normal,
                                const MarmotMaterialHypoElastic::timeInfo& timeInfo,
-                               bool                                       computePotential,
-                               bool                                       commit,
-                               double*                                    committedStress,
-                               double*                                    committedStateVars )
+                               bool                                       computePotential )
   {
     std::vector< double > stateCopy( static_cast< size_t >( std::max( 0, nStateVars ) ) );
     if ( nStateVars > 0 )
@@ -409,13 +420,6 @@ namespace {
       }
     }
 
-    if ( commit ) {
-      Eigen::Map< Marmot::Vector6d > committedStressMap( committedStress );
-      committedStressMap = sideState.stress;
-      if ( nStateVars > 0 )
-        std::copy( stateCopy.begin(), stateCopy.end(), committedStateVars );
-    }
-
     const auto normalTensor             = Marmot::FastorStandardTensors::Tensor3d( normal.data() );
     const auto [Z, QTensor, HTensor, Y] = Marmot::Materials::InterfaceMaterialHelperFunctions::
       calculateInterfaceMaterialParameters( normalTensor, tangent );
@@ -428,6 +432,7 @@ namespace {
     result.H                    = Eigen::Map< const Matrix3x9RowMajor >( HTensor.data() );
     result.incrementalPotential = incrementalPotential;
     result.internalStateChanged = internalStateChanged;
+    result.updatedStateVars     = std::move( stateCopy );
 
     (void)Z;
     (void)Y;
@@ -444,13 +449,12 @@ namespace {
                                       const Eigen::Vector3d&                      normal,
                                       const MarmotMaterialHypoElastic::timeInfo&  timeInfo,
                                       double                                      alpha,
-                                      bool                                        computePotential,
-                                      bool                                        commit )
+                                      bool                                        computePotential )
   {
-    double* bottomStressPtr = stateLayout.getPtr( stateVars, "bottomStress" );
-    double* topStressPtr    = stateLayout.getPtr( stateVars, "topStress" );
-    double* bottomStatePtr  = stateLayout.getPtr( stateVars, "bottomMaterialStateVars" );
-    double* topStatePtr     = stateLayout.getPtr( stateVars, "topMaterialStateVars" );
+    const double* bottomStressPtr = stateLayout.getPtr( stateVars, "bottomStress" );
+    const double* topStressPtr    = stateLayout.getPtr( stateVars, "topStress" );
+    const double* bottomStatePtr  = stateLayout.getPtr( stateVars, "bottomMaterialStateVars" );
+    const double* topStatePtr     = stateLayout.getPtr( stateVars, "topMaterialStateVars" );
 
     const int nBottomStateVars = material.getStateView( "bottomMaterialStateVars", stateVars ).stateSize;
     const int nTopStateVars    = material.getStateView( "topMaterialStateVars", stateVars ).stateSize;
@@ -473,10 +477,7 @@ namespace {
                                    gradients.top,
                                    normal,
                                    timeInfo,
-                                   computePotential,
-                                   commit,
-                                   topStressPtr,
-                                   topStatePtr );
+                                   computePotential );
 
     trial.bottom = evaluateSideTrial( material.getBottomMaterial(),
                                       oldBottomStress,
@@ -485,10 +486,7 @@ namespace {
                                       gradients.bottom,
                                       normal,
                                       timeInfo,
-                                      computePotential,
-                                      commit,
-                                      bottomStressPtr,
-                                      bottomStatePtr );
+                                      computePotential );
 
     trial.topTraction    = trial.top.stressTensor * normal;
     trial.bottomTraction = trial.bottom.stressTensor * normal;
@@ -510,6 +508,25 @@ namespace {
     }
 
     return trial;
+  }
+
+  // Writes an already fully successful trial into the committed state buffer.
+  // This is a plain copy and cannot fail; it must only be called once every
+  // fallible step of the update (local solve, trial evaluation, condensed
+  // tangent) has succeeded, so that a Marmot::StressUpdateFailed raised
+  // anywhere in the update leaves the committed state byte-identical for a
+  // time-step cutback retry.
+  void commitMaterialTrial( MarmotStateLayoutDynamic& stateLayout, double* stateVars, const MaterialTrial& trial )
+  {
+    Eigen::Map< Marmot::Vector6d >( stateLayout.getPtr( stateVars, "topStress" ) )    = trial.top.stress;
+    Eigen::Map< Marmot::Vector6d >( stateLayout.getPtr( stateVars, "bottomStress" ) ) = trial.bottom.stress;
+
+    std::copy( trial.top.updatedStateVars.begin(),
+               trial.top.updatedStateVars.end(),
+               stateLayout.getPtr( stateVars, "topMaterialStateVars" ) );
+    std::copy( trial.bottom.updatedStateVars.begin(),
+               trial.bottom.updatedStateVars.end(),
+               stateLayout.getPtr( stateVars, "bottomMaterialStateVars" ) );
   }
 
   double tractionResidualTolerance( const MaterialTrial& trial )
@@ -547,7 +564,6 @@ namespace {
                                                normal,
                                                timeInfo,
                                                alpha,
-                                               false,
                                                false );
 
       const Eigen::Vector3d residual  = trial.tractionJump;
@@ -584,7 +600,6 @@ namespace {
                                                           normal,
                                                           timeInfo,
                                                           alpha,
-                                                          false,
                                                           false );
 
         const double candidatePhi = 0.5 * candidateTrial.tractionJump.squaredNorm();
@@ -666,8 +681,7 @@ namespace {
                                              normal,
                                              timeInfo,
                                              solution.alpha,
-                                             true,
-                                             false );
+                                             true );
       return solution;
     };
 
@@ -1204,31 +1218,25 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
                                                      gOld,
                                                      alphaEvolutionActive );
 
-  MaterialTrial committedTrial = computeMaterialTrial( *this,
-                                                       stateLayout,
-                                                       state.stateVars,
-                                                       kinematics.averageNormalGradient,
-                                                       solution.normalGradientJump,
-                                                       kinematics.averageSurfaceGradient,
-                                                       kinematics.surfaceGradientJump,
-                                                       normal,
-                                                       timeInfo,
-                                                       solution.alpha,
-                                                       true,
-                                                       true );
+  // The condensed tangent can itself raise Marmot::StressUpdateFailed (e.g.
+  // a singular condensed/acoustic tangent).  It only needs the converged
+  // trial state returned by the local solve, so it is computed BEFORE any
+  // committed state is written: a failure anywhere in the update leaves the
+  // committed state exactly as it was, which is what a pNewDT<1 time-step
+  // cutback retry relies on.
+  const Matrix21dRowMajor tangent  = computeCondensedTangent( solution, normal, h );
+  const ExtendedResponse  response = makeExtendedResponse( solution.trial, normal, h );
 
-  solution.trial = committedTrial;
+  // Nothing below can fail: commit the successful trial.
+  commitMaterialTrial( stateLayout, state.stateVars, solution.trial );
 
   Eigen::Map< Eigen::Vector3d > storedNormalGradientJump( stateLayout.getPtr( state.stateVars, "normalGradientJump" ) );
   storedNormalGradientJump                                       = solution.normalGradientJump;
   *stateLayout.getPtr( state.stateVars, "alpha" )                = solution.alpha;
-  *stateLayout.getPtr( state.stateVars, "alphaEvolutionActive" ) = ( committedTrial.top.internalStateChanged ||
-                                                                     committedTrial.bottom.internalStateChanged )
+  *stateLayout.getPtr( state.stateVars, "alphaEvolutionActive" ) = ( solution.trial.top.internalStateChanged ||
+                                                                     solution.trial.bottom.internalStateChanged )
                                                                      ? 1.0
                                                                      : 0.0;
-
-  const Matrix21dRowMajor tangent  = computeCondensedTangent( solution, normal, h );
-  const ExtendedResponse  response = makeExtendedResponse( committedTrial, normal, h );
 
   writeResponseToState( state, response );
   writeTangentBlocks( tangents, tangent );
