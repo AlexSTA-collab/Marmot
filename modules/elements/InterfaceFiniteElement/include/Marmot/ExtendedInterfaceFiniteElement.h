@@ -46,11 +46,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include <cmath>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace Marmot::Elements {
@@ -105,9 +102,8 @@ namespace Marmot::Elements {
     using NMatrixSized     = typename ParentGeometryElement::NMatrixSized;
     using NJumpMatrixSized = typename ParentGeometryElement::NJumpMatrixSized;
 
-    using BSurfaceSized     = typename ParentGeometryElement::BSurfaceSized;
-    using BAvgSurfaceSized  = typename ParentGeometryElement::BAvgSurfaceSized;
-    using BJumpSurfaceSized = typename ParentGeometryElement::BAvgSurfaceSized;
+    using BSurfaceSized    = typename ParentGeometryElement::BSurfaceSized;
+    using BAvgSurfaceSized = typename ParentGeometryElement::BAvgSurfaceSized;
 
     using RhsSized      = Eigen::Matrix< double, sizeLoadVector, 1 >;
     using KeSizedMatrix = Eigen::Matrix< double, sizeLoadVector, sizeLoadVector >;
@@ -117,11 +113,10 @@ namespace Marmot::Elements {
     using InterfaceDisplSized       = Eigen::Matrix< double, 2 * nDim, 1 >;
     using InterfaceSurfaceGradSized = Eigen::Matrix< double, 2 * nTensor, 1 >;
 
-    using QMatrixSized            = Eigen::Matrix< double, nDim, nDim, Eigen::RowMajor >;
-    using ZMatrixSized            = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
-    using HMatrixSized            = Eigen::Matrix< double, nDim, nTensor, Eigen::RowMajor >;
-    using YMatrixSized            = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
-    using SurfaceJumpUMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
+    using QMatrixSized = Eigen::Matrix< double, nDim, nDim, Eigen::RowMajor >;
+    using ZMatrixSized = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
+    using HMatrixSized = Eigen::Matrix< double, nDim, nTensor, Eigen::RowMajor >;
+    using KMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
 
     using Material = MarmotExtendedInterfaceMaterialHypoElastic;
 
@@ -151,6 +146,14 @@ namespace Marmot::Elements {
       TensorDim normalProjection;
       TensorDim tangentProjection;
 
+      // Actual reference connector between paired lower and upper points:
+      //   d = x_top - x_bottom = ell * n + d_tangent.
+      // For a zero-thickness interface mesh, d is zero and the material
+      // falls back to its constitutive thickness h.
+      VectorDim separationVector;
+      VectorDim tangentialSeparation;
+      double    normalSeparation;
+
       /*
        * One-side operators:
        *
@@ -175,9 +178,8 @@ namespace Marmot::Elements {
        *   grad_s u_avg = 0.5 * (grad_s u_bottom + grad_s u_top)
        *   BmatAverage = 0.5 * [ Bside , Bside ]
        */
-      NJumpMatrixSized  NmatJump;
-      BAvgSurfaceSized  BmatAverage;
-      BJumpSurfaceSized BmatJump;
+      NJumpMatrixSized NmatJump;
+      BAvgSurfaceSized BmatAverage;
 
       /**
        * @brief Named state-variable manager for interface quadrature points.
@@ -198,19 +200,17 @@ namespace Marmot::Elements {
           { .name = "force", .length = nDim },
           { .name = "alignment padding", .length = nDim % 2 },
           { .name = "surface stress", .length = nDim * nDim },
-          { .name = "surface stress jump", .length = nDim * nDim },
           { .name = "displacement", .length = 2 * nDim },
           { .name = "surface strain", .length = 2 * nDim * nDim },
           // For nDim == 3, the material state starts after 40 entries.
           { .name   = "state block alignment padding",
-            .length = ( 4 - ( ( nDim + ( nDim % 2 ) + 2 * nDim * nDim + 2 * nDim + 2 * nDim * nDim ) % 4 ) ) % 4 },
+            .length = ( 4 - ( ( nDim + ( nDim % 2 ) + nDim * nDim + 2 * nDim + 2 * nDim * nDim ) % 4 ) ) % 4 },
           { .name = "begin of material state", .length = 0 },
         } );
 
       public:
         Eigen::Map< ForceSized >                force;
         Eigen::Map< SurfaceStressSized >        surfaceStress;
-        Eigen::Map< SurfaceStressSized >        surfaceStressJump;
         Eigen::Map< InterfaceDisplSized >       displacement;
         Eigen::Map< InterfaceSurfaceGradSized > surfaceStrain;
 
@@ -222,7 +222,6 @@ namespace Marmot::Elements {
           : MarmotStateVarVectorManager( theStateVarVector, layout ),
             force( &find( "force" ) ),
             surfaceStress( &find( "surface stress" ) ),
-            surfaceStressJump( &find( "surface stress jump" ) ),
             displacement( &find( "displacement" ) ),
             surfaceStrain( &find( "surface strain" ) ),
             materialStateVars( &find( "begin of material state" ),
@@ -275,11 +274,13 @@ namespace Marmot::Elements {
           normal( VectorDim::Zero() ),
           normalProjection( TensorDim::Zero() ),
           tangentProjection( TensorDim::Zero() ),
+          separationVector( VectorDim::Zero() ),
+          tangentialSeparation( VectorDim::Zero() ),
+          normalSeparation( 0.0 ),
           NmatSide( NMatrixSized::Zero() ),
           BmatSide( BSurfaceSized::Zero() ),
           NmatJump( NJumpMatrixSized::Zero() ),
-          BmatAverage( BAvgSurfaceSized::Zero() ),
-          BmatJump( BJumpSurfaceSized::Zero() )
+          BmatAverage( BAvgSurfaceSized::Zero() )
       {
       }
     };
@@ -560,8 +561,7 @@ namespace Marmot::Elements {
     const double thickness = elementProperties.size() > 0 ? elementProperties[0] : 1.0;
 
     for ( QuadraturePoint& qp : qps ) {
-      const bool fullyProjectedB = ( nDim == 3 );
-      const auto geom            = this->evaluateAt( qp.xi, 0, fullyProjectedB );
+      const auto geom = this->evaluateAt( qp.xi, 0 );
 
       qp.N                 = geom.N;
       qp.dNdXi             = geom.dNdXi;
@@ -578,12 +578,26 @@ namespace Marmot::Elements {
       qp.BmatSide    = geom.BmatSide;
       qp.NmatJump    = geom.NmatJump;
       qp.BmatAverage = geom.BmatAverage;
-      qp.BmatJump.setZero();
-      for ( int row = 0; row < nTensor; ++row ) {
-        for ( int col = 0; col < nSideDofs; ++col ) {
-          qp.BmatJump( row, col )             = -qp.BmatSide( row, col );
-          qp.BmatJump( row, nSideDofs + col ) = qp.BmatSide( row, col );
-        }
+
+      // Geometry of the actual top--bottom pairing used by NmatJump.
+      // The interface normal is oriented from the lower side to the upper side.
+      const VectorDim xBottom = qp.NmatSide * this->getSideCoordinates( 0 );
+      const VectorDim xTop    = qp.NmatSide * this->getSideCoordinates( 1 );
+      qp.separationVector     = xTop - xBottom;
+
+      constexpr double geometryTolerance = 1.0e-12;
+      if ( qp.separationVector.norm() > geometryTolerance && qp.separationVector.dot( qp.normal ) < 0.0 ) {
+        qp.normal *= -1.0;
+      }
+
+      qp.normalProjection     = qp.normal * qp.normal.transpose();
+      qp.tangentProjection    = TensorDim::Identity() - qp.normalProjection;
+      qp.normalSeparation     = qp.separationVector.dot( qp.normal );
+      qp.tangentialSeparation = qp.tangentProjection * qp.separationVector;
+
+      if ( qp.separationVector.norm() > geometryTolerance && qp.normalSeparation <= geometryTolerance ) {
+        throw std::invalid_argument( "ExtendedInterfaceFiniteElement: paired faces have no positive separation in the "
+                                     "interface-normal direction." );
       }
 
       qp.J0xW = qp.weight * qp.sqrtDetG * thickness;
@@ -615,13 +629,11 @@ namespace Marmot::Elements {
 
     constexpr int halfSize = nNodes * nDim / 2;
 
-    for ( size_t qpIndex = 0; qpIndex < qps.size(); ++qpIndex ) {
-      QuadraturePoint& qp    = qps[qpIndex];
-      const auto&      Nside = qp.NmatSide;
-      const auto&      Bside = qp.BmatSide;
-      const auto&      Njump = qp.NmatJump;
-      const auto&      Bavg  = qp.BmatAverage;
-      const auto&      Bjump = qp.BmatJump;
+    for ( QuadraturePoint& qp : qps ) {
+      const auto& Nside = qp.NmatSide;
+      const auto& Bside = qp.BmatSide;
+      const auto& Njump = qp.NmatJump;
+      const auto& Bavg  = qp.BmatAverage;
 
       const auto dQBottom = dQ.template segment< halfSize >( 0 );
       const auto dQTop    = dQ.template segment< halfSize >( halfSize );
@@ -634,45 +646,28 @@ namespace Marmot::Elements {
       dSurface_strain_GPs.template segment< nTensor >( 0 )       = Bside * dQTop;
       dSurface_strain_GPs.template segment< nTensor >( nTensor ) = Bside * dQBottom;
 
-      ForceSized         force               = qp.managedStateVars->force;
-      SurfaceStressSized surface_stress      = qp.managedStateVars->surfaceStress;
-      SurfaceStressSized surface_stress_jump = qp.managedStateVars->surfaceStressJump;
+      ForceSized         force          = qp.managedStateVars->force;
+      SurfaceStressSized surface_stress = qp.managedStateVars->surfaceStress;
 
-      QMatrixSized            forceJumpU;
-      HMatrixSized            forceAverageSurfaceGradient;
-      HMatrixSized            forceJumpSurfaceGradient;
-      SurfaceJumpUMatrixSized averageSurfaceStressJumpU;
-      ZMatrixSized            averageSurfaceStressAverageSurfaceGradient;
-      ZMatrixSized            averageSurfaceStressJumpSurfaceGradient;
-      SurfaceJumpUMatrixSized jumpSurfaceStressJumpU;
-      ZMatrixSized            jumpSurfaceStressAverageSurfaceGradient;
-      ZMatrixSized            jumpSurfaceStressJumpSurfaceGradient;
+      QMatrixSized Q_ij;
+      ZMatrixSized Z_ijkl;
+      HMatrixSized H_ijk;
+      KMatrixSized K_ijk;
 
-      forceJumpU.setZero();
-      forceAverageSurfaceGradient.setZero();
-      forceJumpSurfaceGradient.setZero();
-      averageSurfaceStressJumpU.setZero();
-      averageSurfaceStressAverageSurfaceGradient.setZero();
-      averageSurfaceStressJumpSurfaceGradient.setZero();
-      jumpSurfaceStressJumpU.setZero();
-      jumpSurfaceStressAverageSurfaceGradient.setZero();
-      jumpSurfaceStressJumpSurfaceGradient.setZero();
+      Q_ij.setZero();
+      Z_ijkl.setZero();
+      H_ijk.setZero();
+      K_ijk.setZero();
 
       if constexpr ( nDim == 3 ) {
         Material::State         materialState{ force.data(),
                                        surface_stress.data(),
-                                       surface_stress_jump.data(),
                                        qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents      materialTangents{ forceJumpU.data(),
-                                             forceAverageSurfaceGradient.data(),
-                                             forceJumpSurfaceGradient.data(),
-                                             averageSurfaceStressJumpU.data(),
-                                             averageSurfaceStressAverageSurfaceGradient.data(),
-                                             averageSurfaceStressJumpSurfaceGradient.data(),
-                                             jumpSurfaceStressJumpU.data(),
-                                             jumpSurfaceStressAverageSurfaceGradient.data(),
-                                             jumpSurfaceStressJumpSurfaceGradient.data() };
-        Material::Deformation   materialDeformation{ dU_GPs.data(), dSurface_strain_GPs.data(), qp.normal.data() };
+        Material::Tangents      materialTangents{ Q_ij.data(), Z_ijkl.data(), H_ijk.data(), K_ijk.data() };
+        Material::Deformation   materialDeformation{ dU_GPs.data(),
+                                                   dSurface_strain_GPs.data(),
+                                                   qp.normal.data(),
+                                                   qp.separationVector.data() };
         Material::TimeIncrement materialTimeIncrement{ time, dT };
 
         qp.material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
@@ -680,46 +675,35 @@ namespace Marmot::Elements {
       else if constexpr ( nDim == 2 ) {
         Eigen::Vector3d                                force3d = Eigen::Vector3d::Zero();
         Eigen::Matrix< double, 9, 1 >                  surfaceStress3d;
-        Eigen::Matrix< double, 9, 1 >                  surfaceStressJump3d;
         Eigen::Matrix< double, 6, 1 >                  dU3d;
         Eigen::Matrix< double, 18, 1 >                 dSurfaceStrain3d;
         Eigen::Vector3d                                normal3d = Eigen::Vector3d::Zero();
-        Eigen::Matrix< double, 3, 3, Eigen::RowMajor > forceJumpU3d;
-        Eigen::Matrix< double, 3, 9, Eigen::RowMajor > forceAverageSurfaceGradient3d;
-        Eigen::Matrix< double, 3, 9, Eigen::RowMajor > forceJumpSurfaceGradient3d;
-        Eigen::Matrix< double, 9, 3, Eigen::RowMajor > averageSurfaceStressJumpU3d;
-        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > averageSurfaceStressAverageSurfaceGradient3d;
-        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > averageSurfaceStressJumpSurfaceGradient3d;
-        Eigen::Matrix< double, 9, 3, Eigen::RowMajor > jumpSurfaceStressJumpU3d;
-        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > jumpSurfaceStressAverageSurfaceGradient3d;
-        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > jumpSurfaceStressJumpSurfaceGradient3d;
+        Eigen::Matrix< double, 3, 3, Eigen::RowMajor > Q3d;
+        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > Z3d;
+        Eigen::Matrix< double, 3, 9, Eigen::RowMajor > H3d;
+        Eigen::Matrix< double, 9, 3, Eigen::RowMajor > K3d;
+        Eigen::Vector3d                                separation3d = Eigen::Vector3d::Zero();
 
         surfaceStress3d.setZero();
-        surfaceStressJump3d.setZero();
         dU3d.setZero();
         dSurfaceStrain3d.setZero();
-        forceJumpU3d.setZero();
-        forceAverageSurfaceGradient3d.setZero();
-        forceJumpSurfaceGradient3d.setZero();
-        averageSurfaceStressJumpU3d.setZero();
-        averageSurfaceStressAverageSurfaceGradient3d.setZero();
-        averageSurfaceStressJumpSurfaceGradient3d.setZero();
-        jumpSurfaceStressJumpU3d.setZero();
-        jumpSurfaceStressAverageSurfaceGradient3d.setZero();
-        jumpSurfaceStressJumpSurfaceGradient3d.setZero();
+        Q3d.setZero();
+        Z3d.setZero();
+        H3d.setZero();
+        K3d.setZero();
 
         for ( int i = 0; i < nDim; ++i ) {
-          force3d( i )  = force( i );
-          normal3d( i ) = qp.normal( i );
-          dU3d( i )     = dU_GPs( i );
-          dU3d( 3 + i ) = dU_GPs( nDim + i );
+          force3d( i )      = force( i );
+          normal3d( i )     = qp.normal( i );
+          separation3d( i ) = qp.separationVector( i );
+          dU3d( i )         = dU_GPs( i );
+          dU3d( 3 + i )     = dU_GPs( nDim + i );
 
           for ( int j = 0; j < nDim; ++j ) {
             const int index2d = i * nDim + j;
             const int index3d = i * 3 + j;
 
             surfaceStress3d( index3d )      = surface_stress( index2d );
-            surfaceStressJump3d( index3d )  = surface_stress_jump( index2d );
             dSurfaceStrain3d( index3d )     = dSurface_strain_GPs( index2d );
             dSurfaceStrain3d( 9 + index3d ) = dSurface_strain_GPs( nTensor + index2d );
           }
@@ -727,108 +711,70 @@ namespace Marmot::Elements {
 
         Material::State         materialState{ force3d.data(),
                                        surfaceStress3d.data(),
-                                       surfaceStressJump3d.data(),
                                        qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents      materialTangents{ forceJumpU3d.data(),
-                                             forceAverageSurfaceGradient3d.data(),
-                                             forceJumpSurfaceGradient3d.data(),
-                                             averageSurfaceStressJumpU3d.data(),
-                                             averageSurfaceStressAverageSurfaceGradient3d.data(),
-                                             averageSurfaceStressJumpSurfaceGradient3d.data(),
-                                             jumpSurfaceStressJumpU3d.data(),
-                                             jumpSurfaceStressAverageSurfaceGradient3d.data(),
-                                             jumpSurfaceStressJumpSurfaceGradient3d.data() };
-        Material::Deformation   materialDeformation{ dU3d.data(), dSurfaceStrain3d.data(), normal3d.data() };
+        Material::Tangents      materialTangents{ Q3d.data(), Z3d.data(), H3d.data(), K3d.data() };
+        Material::Deformation   materialDeformation{ dU3d.data(),
+                                                   dSurfaceStrain3d.data(),
+                                                   normal3d.data(),
+                                                   separation3d.data() };
         Material::TimeIncrement materialTimeIncrement{ time, dT };
 
         qp.material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
         for ( int i = 0; i < nDim; ++i ) {
           force( i ) = force3d( i );
+          for ( int k = 0; k < nDim; ++k ) {
+            Q_ij( i, k ) = Q3d( i, k );
+          }
+        }
 
+        for ( int i = 0; i < nDim; ++i ) {
           for ( int j = 0; j < nDim; ++j ) {
-            const int index2d = i * nDim + j;
-            const int index3d = i * 3 + j;
+            const int row2d = i * nDim + j;
+            const int row3d = i * 3 + j;
 
-            surface_stress( index2d )      = surfaceStress3d( index3d );
-            surface_stress_jump( index2d ) = surfaceStressJump3d( index3d );
-            forceJumpU( i, j )             = forceJumpU3d( i, j );
+            surface_stress( row2d ) = surfaceStress3d( row3d );
 
             for ( int k = 0; k < nDim; ++k ) {
-              const int tensorCol2d = j * nDim + k;
-              const int tensorCol3d = j * 3 + k;
+              K_ijk( row2d, k ) = K3d( row3d, k );
+            }
 
-              forceAverageSurfaceGradient( i, tensorCol2d ) = forceAverageSurfaceGradient3d( i, tensorCol3d );
-              forceJumpSurfaceGradient( i, tensorCol2d )    = forceJumpSurfaceGradient3d( i, tensorCol3d );
-              averageSurfaceStressJumpU( tensorCol2d, i )   = averageSurfaceStressJumpU3d( tensorCol3d, i );
-              jumpSurfaceStressJumpU( tensorCol2d, i )      = jumpSurfaceStressJumpU3d( tensorCol3d, i );
-
+            for ( int k = 0; k < nDim; ++k ) {
               for ( int l = 0; l < nDim; ++l ) {
-                const int tensorRow2d  = i * nDim + j;
-                const int tensorRow3d  = i * 3 + j;
-                const int tensorCol2d4 = k * nDim + l;
-                const int tensorCol3d4 = k * 3 + l;
+                const int col2d = k * nDim + l;
+                const int col3d = k * 3 + l;
 
-                averageSurfaceStressAverageSurfaceGradient( tensorRow2d,
-                                                            tensorCol2d4 ) = averageSurfaceStressAverageSurfaceGradient3d( tensorRow3d,
-                                                                                                                           tensorCol3d4 );
-                averageSurfaceStressJumpSurfaceGradient( tensorRow2d,
-                                                         tensorCol2d4 ) = averageSurfaceStressJumpSurfaceGradient3d( tensorRow3d,
-                                                                                                                     tensorCol3d4 );
-                jumpSurfaceStressAverageSurfaceGradient( tensorRow2d,
-                                                         tensorCol2d4 ) = jumpSurfaceStressAverageSurfaceGradient3d( tensorRow3d,
-                                                                                                                     tensorCol3d4 );
-                jumpSurfaceStressJumpSurfaceGradient( tensorRow2d,
-                                                      tensorCol2d4 ) = jumpSurfaceStressJumpSurfaceGradient3d( tensorRow3d,
-                                                                                                               tensorCol3d4 );
+                Z_ijkl( row2d, col2d ) = Z3d( row3d, col3d );
               }
+            }
+          }
+        }
+
+        for ( int i = 0; i < nDim; ++i ) {
+          for ( int k = 0; k < nDim; ++k ) {
+            for ( int l = 0; l < nDim; ++l ) {
+              const int col2d   = k * nDim + l;
+              const int col3d   = k * 3 + l;
+              H_ijk( i, col2d ) = H3d( i, col3d );
             }
           }
         }
       }
 
-      qp.managedStateVars->force             = force;
-      qp.managedStateVars->surfaceStress     = surface_stress;
-      qp.managedStateVars->surfaceStressJump = surface_stress_jump;
+      qp.managedStateVars->force         = force;
+      qp.managedStateVars->surfaceStress = surface_stress;
       qp.managedStateVars->displacement += dU_GPs;
       qp.managedStateVars->surfaceStrain += dSurface_strain_GPs;
 
-      /*
-       * Split the generalized residual into traction, average-surface,
-       * and surface-jump contributions.  The sum is exactly the original
-       * EIQUAD residual.
-       */
-      const RhsSized peForce = -Njump.transpose() * force * qp.J0xW;
+      Pe -= Njump.transpose() * force * qp.J0xW;
+      Pe -= Bavg.transpose() * surface_stress * qp.J0xW;
 
-      const RhsSized peAverageSurface = -Bavg.transpose() * surface_stress * qp.J0xW;
-
-      const RhsSized peJumpSurface = -Bjump.transpose() * surface_stress_jump * qp.J0xW;
-
-      const RhsSized peContribution = peForce + peAverageSurface + peJumpSurface;
-
-      /*
-       * Split the consistent element Jacobian using the same three
-       * generalized-resultant row groups.
-       */
-      const KeSizedMatrix keForce = ( Njump.transpose() * forceJumpU * Njump +
-                                      Njump.transpose() * forceAverageSurfaceGradient * Bavg +
-                                      Njump.transpose() * forceJumpSurfaceGradient * Bjump ) *
-                                    qp.J0xW;
-
-      const KeSizedMatrix keAverageSurface = ( Bavg.transpose() * averageSurfaceStressJumpU * Njump +
-                                               Bavg.transpose() * averageSurfaceStressAverageSurfaceGradient * Bavg +
-                                               Bavg.transpose() * averageSurfaceStressJumpSurfaceGradient * Bjump ) *
-                                             qp.J0xW;
-
-      const KeSizedMatrix keJumpSurface = ( Bjump.transpose() * jumpSurfaceStressJumpU * Njump +
-                                            Bjump.transpose() * jumpSurfaceStressAverageSurfaceGradient * Bavg +
-                                            Bjump.transpose() * jumpSurfaceStressJumpSurfaceGradient * Bjump ) *
-                                          qp.J0xW;
-
-      const KeSizedMatrix keContribution = keForce + keAverageSurface + keJumpSurface;
-
-      Pe += peContribution;
-      Ke += keContribution;
+      // No major symmetry is assumed:
+      //   H_ijk = d(force_i)/d(surfaceGradient_jk),
+      //   K_ijk = d(surfaceStress_ij)/d(jump_k).
+      Ke += ( Njump.transpose() * Q_ij * Njump + Njump.transpose() * H_ijk * Bavg + Bavg.transpose() * K_ijk * Njump +
+              Bavg.transpose() * Z_ijkl * Bavg ) *
+            qp.J0xW;
     }
   }
 

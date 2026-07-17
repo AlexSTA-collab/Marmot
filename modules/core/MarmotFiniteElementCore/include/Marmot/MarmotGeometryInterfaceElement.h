@@ -403,16 +403,18 @@ public:
   }
 
   /**
-   * @brief Build the projected surface displacement-gradient matrix for one side.
+   * @brief Build the surface displacement-gradient matrix for one side.
    *
    * @param gradN Physical surface gradients of scalar shape functions.
    * @param T Tangent projection tensor.
-   * @return Matrix mapping side nodal displacements to the projected full surface displacement gradient.
+   * @return Matrix mapping side nodal displacements to `u_{i,r} T_{rj}`.
    *
    * @details
-   * The operator stores the full projected displacement gradient in row-major tensor order
-   * `row = i * nDim + k`, where `i` is the displacement component and `k` is the gradient direction. It is not the
-   * symmetric small-strain `B` matrix.
+   * Only the derivative direction is projected onto the tangent plane, i.e. this builds
+   * `u_{i,r} T_{rj}`, not `T_{im} u_{m,r} T_{rj}`: the displacement-component index `i` is left
+   * unprojected, per the thin-interface theory this element implements. The operator stores the
+   * result in row-major tensor order `row = i * nDim + k`, where `i` is the displacement component
+   * and `k` is the (projected) gradient direction. It is not the symmetric small-strain `B` matrix.
    */
   BSurfaceSized BSurfaceMatrix( const GradSized& gradN, const TensorDim& T ) const
   {
@@ -420,35 +422,18 @@ public:
     B.setZero();
 
     for ( int A = 0; A < nInterfaceNodes; ++A ) {
-      for ( int i = 0; i < nDim; ++i ) {
-        for ( int k = 0; k < nDim; ++k ) {
+      for ( int k = 0; k < nDim; ++k ) {
+        double value = 0.0;
 
-          if constexpr ( nDim == 2 ) {
-            double value = 0.0;
+        for ( int j = 0; j < nDim; ++j ) {
+          value += gradN( j, A ) * T( j, k );
+        }
 
-            for ( int j = 0; j < nDim; ++j ) {
-              value += gradN( j, A ) * T( j, k );
-            }
+        for ( int i = 0; i < nDim; ++i ) {
+          const int row = i * nDim + k;
+          const int col = A * nDim + i;
 
-            const int row = i * nDim + k;
-            const int col = A * nDim + i;
-
-            B( row, col ) = value;
-          }
-          else if constexpr ( nDim == 3 ) {
-            for ( int m = 0; m < nDim; ++m ) {
-              double value = 0.0;
-
-              for ( int j = 0; j < nDim; ++j ) {
-                value += T( i, m ) * gradN( j, A ) * T( j, k );
-              }
-
-              const int row = i * nDim + k;
-              const int col = A * nDim + m;
-
-              B( row, col ) = value;
-            }
-          }
+          B( row, col ) = value;
         }
       }
     }
@@ -475,21 +460,6 @@ public:
     }
 
     return BAvg;
-  }
-
-  /**
-   * @brief Backward-compatible entry point for the projected surface displacement-gradient matrix.
-   *
-   * @param gradN Physical surface gradients of scalar shape functions.
-   * @param T Tangent projection tensor.
-   * @return Same result as BSurfaceMatrix().
-   *
-   * @details
-   * Kept as a source-compatible alias for call sites that still expose a `fullyProjectedB` option.
-   */
-  BSurfaceSized BSurfaceMatrixFullyProjected( const GradSized& gradN, const TensorDim& T ) const
-  {
-    return BSurfaceMatrix( gradN, T );
   }
 
   /**
@@ -547,16 +517,12 @@ public:
    * @param xi Parametric coordinates of the quadrature point.
    * @param sideForGeometry Interface side used for the surface Jacobian and derived geometry terms. Use `0` for
    * bottom-side geometry and `1` for top-side geometry.
-   * @param fullyProjectedB Legacy flag retained for source compatibility. Both values currently produce the projected
-   * surface displacement-gradient operator.
    * @return Fully populated QuadratureGeometry bundle.
    *
    * @throws std::invalid_argument If `sideForGeometry` is neither `0` nor `1`.
    * @throws std::runtime_error If the selected side is geometrically degenerate.
    */
-  QuadratureGeometry evaluateAt( const XiSized& xi,
-                                 const int      sideForGeometry = 0,
-                                 const bool     fullyProjectedB = false ) const
+  QuadratureGeometry evaluateAt( const XiSized& xi, const int sideForGeometry = 0 ) const
   {
     QuadratureGeometry q;
 
@@ -577,11 +543,7 @@ public:
     q.NmatSide = NMatrix( q.N );
     q.NmatJump = NJumpMatrix( q.N );
 
-    if ( fullyProjectedB )
-      q.BmatSide = BSurfaceMatrixFullyProjected( q.gradN, q.tangentProjection );
-    else
-      q.BmatSide = BSurfaceMatrix( q.gradN, q.tangentProjection );
-
+    q.BmatSide    = BSurfaceMatrix( q.gradN, q.tangentProjection );
     q.BmatAverage = BAverageSurfaceMatrix( q.BmatSide );
 
     return q;

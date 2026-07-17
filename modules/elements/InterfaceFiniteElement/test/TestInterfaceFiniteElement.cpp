@@ -581,9 +581,9 @@ void TestSingleInputFileElementGeometryMatrices()
   }
 }
 
-void TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling()
+void TestBSurfaceMatrixOnlyProjectsGradientDirection()
 {
-  std::cout << "\n--- TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling ---\n";
+  std::cout << "\n--- TestBSurfaceMatrixOnlyProjectsGradientDirection ---\n";
 
   constexpr int nDim     = 3;
   constexpr int nNodes   = 8;
@@ -596,30 +596,29 @@ void TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling()
   const double tol = 1e-12;
 
   for ( const auto& qp : element->qps ) {
+    // Thin-interface theory contracts u_{i,r} T_{rj}: only the gradient
+    // (derivative) direction is projected onto the tangent plane, the
+    // displacement-component index i is left untouched.
     Eigen::Matrix< double, nTensor, halfNDof > BExpected;
     BExpected.setZero();
 
     for ( int A = 0; A < nNodes / 2; ++A ) {
-      for ( int i = 0; i < nDim; ++i ) {
-        for ( int k = 0; k < nDim; ++k ) {
-          for ( int m = 0; m < nDim; ++m ) {
-            double value = 0.0;
+      for ( int k = 0; k < nDim; ++k ) {
+        double value = 0.0;
 
-            for ( int j = 0; j < nDim; ++j )
-              value += qp.tangentProjection( i, m ) * qp.gradN( j, A ) * qp.tangentProjection( j, k );
+        for ( int j = 0; j < nDim; ++j )
+          value += qp.gradN( j, A ) * qp.tangentProjection( j, k );
 
-            BExpected( i * nDim + k, A * nDim + m ) = value;
-          }
-        }
+        for ( int i = 0; i < nDim; ++i )
+          BExpected( i * nDim + k, A * nDim + i ) = value;
       }
     }
 
     assertMatrixNear( qp.BmatSide,
                       BExpected,
                       tol,
-                      "Projected 3D BmatSide must retain displacement-component coupling." );
+                      "BmatSide must project only the gradient direction, not the displacement component." );
 
-    bool hasOffComponentCoupling = false;
     for ( int A = 0; A < nNodes / 2; ++A ) {
       for ( int i = 0; i < nDim; ++i ) {
         for ( int m = 0; m < nDim; ++m ) {
@@ -627,14 +626,11 @@ void TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling()
             continue;
 
           for ( int k = 0; k < nDim; ++k )
-            hasOffComponentCoupling = hasOffComponentCoupling ||
-                                      std::abs( BExpected( i * nDim + k, A * nDim + m ) ) > tol;
+            throwExceptionOnFailure( std::abs( qp.BmatSide( i * nDim + k, A * nDim + m ) ) < tol,
+                                     "BmatSide must not couple different displacement components." );
         }
       }
     }
-
-    throwExceptionOnFailure( hasOffComponentCoupling,
-                             "Test geometry must exercise off-component projected-gradient coupling." );
   }
 }
 
@@ -1241,25 +1237,26 @@ void TestSkewedExtendedInterfaceElementWiechertTangentMatchesResidualFiniteDiffe
 
 // End-to-end natural-failure cutback test for the *real* extended-interface
 // material (as opposed to TestStressUpdateFailureRequestsSmallerTimeStep's
-// FailingInterfaceMaterial test double above). A single-material Von Mises
-// sublayer with essentially zero yield stress and no hardening/softening
-// makes the elastic-branch acoustic Jacobian singular for the very first
-// nonzero trial evaluated in MarmotExtendedInterfaceMaterialHypoElastic's
-// coupled local Newton solve (see solveNormalGradientJumpForAlpha), so
+// FailingInterfaceMaterial test double above). A Von Mises base material
+// with a tiny yield stress and a steep exponential-softening branch
+// (deltaFy < 0 with a very large delta) makes the scalar return-mapping
+// Newton in VonMisesModel::computeStress overshoot and hit its iteration
+// cap for the very first plastically-loading quadrature point, so
 // ExtendedInterfaceFiniteElement::computeKernels genuinely raises
 // Marmot::StressUpdateFailed here rather than being told to by a test
 // double. This verifies (a) the exception really propagates out of
 // computeKernels, (b) the persisted quadrature-point state is left
-// byte-identical by the failed attempt (the commit=false trial evaluations
-// inside the local Newton solve never touch the real state pointers), and
-// (c) MarmotElement::computeYourself still translates it into a
-// pNewDT<1 cutback request instead of rethrowing.
+// byte-identical by the failed attempt (the failing update throws before
+// any state write, and the element commits its local copies only after a
+// successful material update), and (c) MarmotElement::computeYourself
+// still translates it into a pNewDT<1 cutback request instead of
+// rethrowing.
 void TestExtendedInterfaceElementNaturalStressUpdateFailurePreservesStateAndRequestsCutback()
 {
   std::cout << "\n--- TestExtendedInterfaceElementNaturalStressUpdateFailurePreservesStateAndRequestsCutback ---\n";
 
   constexpr int               nElementDofs       = 24;
-  const std::vector< double > materialProperties = { 210000., 0.3, 1e-8, 0., 0., 0., 0., 2400. };
+  const std::vector< double > materialProperties = { 210000., 0.3, 1e-8, 1e-3, 0., -20., 1e5, 2400. };
 
   auto                  element = makeExtendedInterfaceElementWithMaterial( "VONMISES",
                                                            materialProperties.data(),
@@ -1323,7 +1320,7 @@ int main()
                 TestUnsupportedInertiaThrows,
                 TestStressUpdateFailureRequestsSmallerTimeStep,
                 TestSingleInputFileElementGeometryMatrices,
-                TestProjectedBSurfaceMatrixKeepsDisplacementComponentCoupling,
+                TestBSurfaceMatrixOnlyProjectsGradientDirection,
                 TestSingleInputFileElementMaterialResponseIsFinite,
                 TestSingleInputFileElementGaussPointStiffnessAndResidual,
                 TestSingleInputFileElementRigidTranslationGivesZeroResidual,

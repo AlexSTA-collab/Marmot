@@ -11,8 +11,20 @@
  *
  * festigkeitslehre@uibk.ac.at
  *
+ * Alexandros Stathas alexandros.stathas@boku.ac.at
+ * Matthias Neuner matthias.neuner@uibk.ac.at
+ *
  * This file is part of the MAteRialMOdellingToolbox (marmot).
- * --------------------------------------------------------------------- */
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * The full text of the license can be found in the file LICENSE.md at
+ * the top level directory of marmot.
+ * ---------------------------------------------------------------------
+ */
 
 #pragma once
 
@@ -25,57 +37,36 @@
 #include <vector>
 
 /**
- * Extended hypoelastic interface material with two independent material
- * points and a locally condensed moving bilinear kink.
+ * Abstract base class for hypoelastic interface materials.
  *
- * The top material state occupies alpha*h and the bottom material state
- * occupies (1-alpha)*h.  At every constitutive update the local variables
+ * The interface kinematics use the actual connector between paired mesh
+ * points,
  *
- *   g     = [u_{,n}],
- *   alpha = h_top / h,
+ *   d = x_top - x_bottom = ell n + d_tau,
  *
- * are condensed from the incremental potential of the two sublayers.
- * Stationarity with respect to g enforces traction continuity, while
- * stationarity with respect to alpha determines the kink position.
+ * and reconstruct the displacement-gradient increment as
  *
- * The implementation reconstructs the condensed incremental potential of
- * the underlying material by integrating the stress response along the
- * straight strain-increment path.  This is appropriate for potential-based
- * algorithmic updates such as associative Von Mises plasticity and linear
- * elasticity.  It must not be used unchanged for genuinely non-associated
- * models whose algorithmic stress map is not potential-derived.
+ *   dG = dG_s + (1/ell) ( d[u] - dG_s d_tau ) \otimes n.
  *
- * Preferred property layout:
- *   [ h, nBottom, bottomProperties..., nTop, topProperties... ]
- *
- * Legacy single-material layout:
- *   [ E, nu, h, remainingBaseMaterialProperties... ]
- *
- * The two layouts are distinguished structurally: the explicit layout is
- * selected iff the second property is an integer sublayer property count
- * >= 1, which no physically valid Poisson's ratio (nu < 1, including
- * nu == 0) can be.
+ * For coincident interface faces, ell falls back to the constitutive
+ * interface thickness h and d_tau is set to zero.
  */
 class MarmotExtendedInterfaceMaterialHypoElastic {
 
 protected:
-  const double* materialProperties;
-  const int     nMaterialProperties;
-  double        h = 0.0;
-
-  std::string materialName;
-
-  std::vector< double > bottomMaterialProperties;
-  std::vector< double > topMaterialProperties;
-
-  std::unique_ptr< MarmotMaterialHypoElastic > bottomMaterial;
-  std::unique_ptr< MarmotMaterialHypoElastic > topMaterial;
+  const double*                                materialProperties;
+  const int                                    nMaterialProperties;
+  double                                       h = 0.0;
+  std::vector< double >                        baseMaterialProperties;
+  std::unique_ptr< MarmotMaterialHypoElastic > baseMaterial;
 
 public:
-  using TensorMap3d  = Marmot::FastorStandardTensors::TensorMap3d;
-  using TensorMap33d = Marmot::FastorStandardTensors::TensorMap33d;
-  using TensorMap6d  = Marmot::FastorStandardTensors::TensorMap6d;
-  using TensorMap18d = Marmot::FastorStandardTensors::TensorMap18d;
+  using TensorMap3d    = Marmot::FastorStandardTensors::TensorMap3d;
+  using TensorMap33d   = Marmot::FastorStandardTensors::TensorMap33d;
+  using TensorMap333d  = Marmot::FastorStandardTensors::TensorMap333d;
+  using TensorMap3333d = Marmot::FastorStandardTensors::TensorMap3333d;
+  using TensorMap6d    = Marmot::FastorStandardTensors::TensorMap6d;
+  using TensorMap18d   = Marmot::FastorStandardTensors::TensorMap18d;
 
   const int materialNumber;
 
@@ -93,36 +84,67 @@ public:
   void setCharacteristicElementLength( double length );
 
   struct State {
-    TensorMap3d  force;
-    TensorMap33d averageSurfaceStress;
-    TensorMap33d jumpSurfaceStress;
-    double*      stateVars;
+    /** Generalized force conjugate to the raw mesh displacement jump. */
+    TensorMap3d force;
+
+    /**
+     * Generalized surface resultant conjugate to the average surface
+     * gradient. For a nonzero tangential connector,
+     *
+     *   surfaceStress = h sigma - force \otimes d_tau.
+     */
+    TensorMap33d surfaceStress;
+
+    double* stateVars;
   };
 
   struct Tangents {
-    double* forceJumpU;
-    double* forceAverageSurfaceGradient;
-    double* forceJumpSurfaceGradient;
+    /** d(force_i) / d([u_k]). */
+    TensorMap33d Q_ij;
 
-    double* averageSurfaceStressJumpU;
-    double* averageSurfaceStressAverageSurfaceGradient;
-    double* averageSurfaceStressJumpSurfaceGradient;
+    /** d(surfaceStress_ij) / d(<u_{k,l}>_s). */
+    TensorMap3333d Z_ijkl;
 
-    double* jumpSurfaceStressJumpU;
-    double* jumpSurfaceStressAverageSurfaceGradient;
-    double* jumpSurfaceStressJumpSurfaceGradient;
+    /** d(force_i) / d(<u_{k,l}>_s). */
+    TensorMap333d H_ijk;
+
+    /** d(surfaceStress_ij) / d([u_k]). */
+    TensorMap333d K_ijk;
   };
 
   struct Deformation {
     TensorMap6d  dU;
     TensorMap18d dSurfaceStrain;
     TensorMap3d  normal;
+    TensorMap3d  separationVector;
 
-    Deformation( const double* dU_, const double* dSurfaceStrain_, const double* normal_ )
+    // Fastor's const TensorMap cannot be used with slicing and norm operations.
+    // These views are therefore mutable types but are exposed through const Deformation&.
+    Deformation( const double* dU_,
+                 const double* dSurfaceStrain_,
+                 const double* normal_,
+                 const double* separationVector_ )
       : dU( const_cast< double* >( dU_ ) ),
         dSurfaceStrain( const_cast< double* >( dSurfaceStrain_ ) ),
-        normal( const_cast< double* >( normal_ ) )
+        normal( const_cast< double* >( normal_ ) ),
+        separationVector( const_cast< double* >( separationVector_ ) )
     {
+    }
+
+    /**
+     * Backward-compatible constructor for coincident interface faces.
+     * The material then uses d = 0, ell = h, and d_tau = 0.
+     */
+    Deformation( const double* dU_, const double* dSurfaceStrain_, const double* normal_ )
+      : Deformation( dU_, dSurfaceStrain_, normal_, zeroSeparationVector() )
+    {
+    }
+
+  private:
+    static double* zeroSeparationVector()
+    {
+      static double zero[3] = { 0.0, 0.0, 0.0 };
+      return zero;
     }
   };
 
@@ -135,10 +157,6 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
-
-  MarmotMaterialHypoElastic& getBottomMaterial() { return *bottomMaterial; }
-
-  MarmotMaterialHypoElastic& getTopMaterial() { return *topMaterial; }
 
   StateView getStateView( const std::string& stateName, double* stateVars ) const
   {
