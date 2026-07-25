@@ -26,20 +26,25 @@
  */
 
 /**
- * @file ExtendedInterfaceFiniteElement.h
- * @brief Extended interface finite element formulation for displacement-jump based interface mechanics.
+ * @file YInterfaceFiniteElement.h
+ * @brief Equilibrated two-sided interface finite element (YIQUAD4/YILINE2).
  *
- * This file defines the templated class `Marmot::Elements::ExtendedInterfaceFiniteElement`
- * and its full in-header implementation. The element evaluates interface traction-like
- * quantities from displacement jumps and average surface kinematics and assembles
- * residual/tangent contributions at quadrature points.
+ * This file defines the templated class `Marmot::Elements::YInterfaceFiniteElement`
+ * and its full in-header implementation. It routes the same top/bottom
+ * surface-gradient B-matrices as `XInterfaceFiniteElement` to
+ * `MarmotEquilibratedXInterfaceMaterialHypoElastic`, which internally solves
+ * a local traction-equilibrium problem and returns a single, generally
+ * FULLY POPULATED 3x3 block tangent over (w, A+, A-) -- including the
+ * A+/A- cross-coupling blocks that `XInterfaceFiniteElement` assumes to be
+ * zero. The element assembly below therefore includes all nine tangent
+ * blocks, not just the four side-diagonal ones.
  */
 #pragma once
 
 #include "Marmot/MarmotElement.h"
 #include "Marmot/MarmotElementProperty.h"
+#include "Marmot/MarmotEquilibratedXInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotExceptions.h"
-#include "Marmot/MarmotExtendedInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotFiniteElement.h"
 #include "Marmot/MarmotGeometryInterfaceElement.h"
 #include "Marmot/MarmotStateVarVectorManager.h"
@@ -53,27 +58,15 @@
 namespace Marmot::Elements {
 
   /**
-   * @class ExtendedInterfaceFiniteElement
+   * @class YInterfaceFiniteElement
    * @tparam nDim Spatial embedding dimension.
    * @tparam nNodes Number of element nodes.
-   * @brief Interface finite element with displacement-jump kinematics.
-   *
-   * The element combines geometric interface operators from
-   * `MarmotGeometryInterfaceElement<nDim, nNodes>` with an interface-material
-   * update (`MarmotExtendedInterfaceMaterialHypoElastic`) at each quadrature point.
-   * The current formulation uses linearized, small-deformation kinematics.
-   * It stores quadrature-point state variables and assembles:
-   * - element residual vector,
-   * - algorithmic tangent matrix,
-   * - zero inertia terms (current formulation).
+   * @brief Interface finite element with equilibrated two-sided kinematics.
    */
   template < int nDim, int nNodes >
-  class ExtendedInterfaceFiniteElement : public MarmotElement, public MarmotGeometryInterfaceElement< nDim, nNodes > {
+  class YInterfaceFiniteElement : public MarmotElement, public MarmotGeometryInterfaceElement< nDim, nNodes > {
 
   public:
-    /**
-     * @brief Section type selector for the interface element.
-     */
     enum SectionType {
       Interface,
     };
@@ -113,21 +106,18 @@ namespace Marmot::Elements {
     using InterfaceDisplSized       = Eigen::Matrix< double, 2 * nDim, 1 >;
     using InterfaceSurfaceGradSized = Eigen::Matrix< double, 2 * nTensor, 1 >;
 
-    using QMatrixSized = Eigen::Matrix< double, nDim, nDim, Eigen::RowMajor >;
-    using ZMatrixSized = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
-    using HMatrixSized = Eigen::Matrix< double, nDim, nTensor, Eigen::RowMajor >;
-    using KMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
+    using QwwMatrixSized = Eigen::Matrix< double, nDim, nDim, Eigen::RowMajor >;
+    using QwAMatrixSized = Eigen::Matrix< double, nDim, nTensor, Eigen::RowMajor >;
+    using QAwMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
+    using QAAMatrixSized = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
 
-    using Material = MarmotExtendedInterfaceMaterialHypoElastic;
+    using Material = MarmotEquilibratedXInterfaceMaterialHypoElastic;
 
     Eigen::Map< const Eigen::VectorXd > elementProperties;
 
     const int         elLabel;
     const SectionType sectionType;
 
-    /**
-     * @brief Container for all per-quadrature-point data.
-     */
     struct QuadraturePoint {
       const XiSized xi;
       const double  weight;
@@ -146,38 +136,13 @@ namespace Marmot::Elements {
       TensorDim normalProjection;
       TensorDim tangentProjection;
 
-      // Actual reference connector between paired lower and upper points:
-      //   d = x_top - x_bottom = ell * n + d_tangent.
-      // For a zero-thickness interface mesh, d is zero and the material
-      // falls back to its constitutive thickness h.
       VectorDim separationVector;
       VectorDim tangentialSeparation;
       double    normalSeparation;
 
-      /*
-       * One-side operators:
-       *
-       * NmatSide:
-       *   maps one side's nodal displacement vector to u at the interface qp.
-       *
-       * BmatSide:
-       *   maps one side's nodal displacement vector to the surface-gradient
-       *   quantity passed to the material.
-       */
       NMatrixSized  NmatSide;
       BSurfaceSized BmatSide;
 
-      /*
-       * Whole-element operators:
-       *
-       * NmatJump:
-       *   jump u = u_top - u_bottom
-       *   NmatJump = [ -Nside , +Nside ]
-       *
-       * BmatAverage:
-       *   grad_s u_avg = 0.5 * (grad_s u_bottom + grad_s u_top)
-       *   BmatAverage = 0.5 * [ Bside , Bside ]
-       */
       NJumpMatrixSized NmatJump;
       BAvgSurfaceSized BmatAverage;
 
@@ -186,31 +151,21 @@ namespace Marmot::Elements {
        */
       class QPStateVarManager : public MarmotStateVarVectorManager {
 
-        /*
-         * Persistent state layout for accumulated force, surface stress,
-         * displacement, surface strain, and material state variables.
-         *
-         * The displacement and surface strain entries store the accumulated
-         * top/bottom quantities:
-         *
-         *   displacement   = [u_top, u_bottom]
-         *   surface strain = [grad_s u_top, grad_s u_bottom]
-         */
         inline const static auto layout = makeLayout( {
-          { .name = "force", .length = nDim },
-          { .name = "alignment padding", .length = nDim % 2 },
-          { .name = "surface stress", .length = nDim * nDim },
+          { .name = "generalizedForce", .length = nDim },
+          { .name = "surfaceStressPlus", .length = nDim * nDim },
+          { .name = "surfaceStressMinus", .length = nDim * nDim },
           { .name = "displacement", .length = 2 * nDim },
-          { .name = "surface strain", .length = 2 * nDim * nDim },
-          // For nDim == 3, the material state starts after 40 entries.
+          { .name = "surfaceStrain", .length = 2 * nDim * nDim },
           { .name   = "state block alignment padding",
-            .length = ( 4 - ( ( nDim + ( nDim % 2 ) + nDim * nDim + 2 * nDim + 2 * nDim * nDim ) % 4 ) ) % 4 },
+            .length = ( 4 - ( ( nDim + nDim * nDim + nDim * nDim + 2 * nDim + 2 * nDim * nDim ) % 4 ) ) % 4 },
           { .name = "begin of material state", .length = 0 },
         } );
 
       public:
-        Eigen::Map< ForceSized >                force;
-        Eigen::Map< SurfaceStressSized >        surfaceStress;
+        Eigen::Map< ForceSized >                generalizedForce;
+        Eigen::Map< SurfaceStressSized >        surfaceStressPlus;
+        Eigen::Map< SurfaceStressSized >        surfaceStressMinus;
         Eigen::Map< InterfaceDisplSized >       displacement;
         Eigen::Map< InterfaceSurfaceGradSized > surfaceStrain;
 
@@ -220,10 +175,11 @@ namespace Marmot::Elements {
 
         QPStateVarManager( double* theStateVarVector, int nStateVars )
           : MarmotStateVarVectorManager( theStateVarVector, layout ),
-            force( &find( "force" ) ),
-            surfaceStress( &find( "surface stress" ) ),
+            generalizedForce( &find( "generalizedForce" ) ),
+            surfaceStressPlus( &find( "surfaceStressPlus" ) ),
+            surfaceStressMinus( &find( "surfaceStressMinus" ) ),
             displacement( &find( "displacement" ) ),
-            surfaceStrain( &find( "surface strain" ) ),
+            surfaceStrain( &find( "surfaceStrain" ) ),
             materialStateVars( &find( "begin of material state" ),
                                nStateVars - getNumberOfRequiredStateVarsQuadraturePointOnly() )
         {
@@ -233,33 +189,21 @@ namespace Marmot::Elements {
       std::unique_ptr< QPStateVarManager > managedStateVars;
       std::unique_ptr< Material >          material;
 
-      /**
-       * @brief Number of non-material state variables stored at this quadrature point.
-       */
       int getNumberOfRequiredStateVarsQuadraturePointOnly()
       {
         return QPStateVarManager::getNumberOfRequiredStateVarsQuadraturePointOnly();
       }
 
-      /**
-       * @brief Total number of state variables including material state.
-       */
       int getNumberOfRequiredStateVars()
       {
         return getNumberOfRequiredStateVarsQuadraturePointOnly() + material->getNumberOfRequiredStateVars();
       }
 
-      /**
-       * @brief Assign state-variable memory to this quadrature point.
-       */
       void assignStateVars( double* stateVars, int nStateVars )
       {
         managedStateVars = std::make_unique< QPStateVarManager >( stateVars, nStateVars );
       }
 
-      /**
-       * @brief Construct a quadrature-point data container.
-       */
       QuadraturePoint( XiSized xi, double weight )
         : xi( xi ),
           weight( weight ),
@@ -287,29 +231,14 @@ namespace Marmot::Elements {
 
     std::vector< QuadraturePoint > qps;
 
-    /**
-     * @brief Construct an interface finite element.
-     * @param[in] elementID Element label.
-     * @param[in] integrationType Quadrature rule type.
-     * @param[in] sectionType Interface section type.
-     */
-    ExtendedInterfaceFiniteElement( int                                         elementID,
-                                    FiniteElement::Quadrature::IntegrationTypes integrationType,
-                                    SectionType                                 sectionType = SectionType::Interface );
+    YInterfaceFiniteElement( int                                         elementID,
+                             FiniteElement::Quadrature::IntegrationTypes integrationType,
+                             SectionType                                 sectionType = SectionType::Interface );
 
-    /**
-     * @brief Return number of required state variables per element.
-     */
     int getNumberOfRequiredStateVars();
 
-    /**
-     * @brief Return nodal primary fields associated with this element.
-     */
     std::vector< std::vector< std::string > > getNodeFields();
 
-    /**
-     * @brief Return DOF permutation pattern.
-     */
     std::vector< int > getDofIndicesPermutationPattern();
 
     int getNNodes() { return nNodes; }
@@ -318,18 +247,6 @@ namespace Marmot::Elements {
 
     int getNDofPerElement() { return sizeLoadVector; }
 
-    /*
-     * Important:
-     * ParentGeometryElement::getElementShape() returns the computational
-     * interface shape, e.g. "iquad4".
-     *
-     * EnSight/ParaView do not understand "iquad4" as a geometry keyword.
-     * Therefore, for output/visualization we map interface elements to valid
-     * EnSight element names.
-     *
-     * The computational element remains an interface element. This only affects
-     * the geometry keyword written to result files.
-     */
     std::string getElementShape()
     {
       if constexpr ( nDim == 3 && nNodes == 8 ) {
@@ -343,44 +260,20 @@ namespace Marmot::Elements {
       }
     }
 
-    /**
-     * @brief Assign element state-variable memory to quadrature points.
-     */
     void assignStateVars( double* stateVars, int nStateVars );
 
-    /**
-     * @brief Assign element-level properties (e.g., extrusion thickness of the element).
-     */
     void assignProperty( const ElementProperties& marmotElementProperty );
 
-    /**
-     * @brief Assign a material section to all quadrature points.
-     */
     void assignProperty( const MarmotMaterialSection& marmotElementProperty );
 
-    /**
-     * @brief Assign a material by name and property array to all quadrature points.
-     */
     void assignMaterial( const std::string& materialName, const double* materialProperties, int nMaterialProperties );
 
-    /**
-     * @brief Assign nodal coordinates.
-     */
     void assignNodeCoordinates( const double* coordinates );
 
-    /**
-     * @brief Initialize element geometric operators and quadrature-point geometry data.
-     */
     void initializeYourself();
 
-    /**
-     * @brief Set initial conditions for supported state categories.
-     */
     void setInitialConditions( StateTypes state, const double* values );
 
-    /**
-     * @brief Distributed-load routine (currently not implemented).
-     */
     void computeDistributedLoad( MarmotElement::DistributedLoadTypes loadType,
                                  double*                             P,
                                  double*                             K,
@@ -390,29 +283,14 @@ namespace Marmot::Elements {
                                  double                              time,
                                  double                              dT );
 
-    /**
-     * @brief Body-force routine (currently not implemented).
-     */
     void computeBodyForce( double* P, double* K, const double* load, const double* QTotal, double time, double dT );
 
-    /**
-     * @brief Assemble residual and tangent for one increment.
-     */
     void computeKernels( const double* QTotal, const double* dQ, double* Pe, double* Ke, double time, double dT );
 
-    /**
-     * @brief Report that consistent inertia is unsupported for interface elements.
-     */
     void computeConsistentInertia( double* M );
 
-    /**
-     * @brief Report that lumped inertia is unsupported for interface elements.
-     */
     void computeLumpedInertia( double* M );
 
-    /**
-     * @brief Access a named state view at a quadrature point.
-     */
     StateView getStateView( const std::string& stateName, int qpNumber )
     {
       const auto& qp = qps[qpNumber];
@@ -430,30 +308,17 @@ namespace Marmot::Elements {
       return qp.material->getStateView( stateName, qp.managedStateVars->materialStateVars.data() );
     }
 
-    /**
-     * @brief Coordinates of the element center (on reference interface side).
-     */
     std::vector< double > getCoordinatesAtCenter();
 
-    /**
-     * @brief Coordinates of all quadrature points (on reference interface side).
-     */
     std::vector< std::vector< double > > getCoordinatesAtQuadraturePoints();
 
-    /**
-     * @brief Number of quadrature points.
-     */
     int getNumberOfQuadraturePoints();
   };
 
-  /**
-   * @name Template implementation (header-only)
-   * @brief In-header method definitions for `ExtendedInterfaceFiniteElement`.
-   */
   ///@{
 
   template < int nDim, int nNodes >
-  ExtendedInterfaceFiniteElement< nDim, nNodes >::ExtendedInterfaceFiniteElement(
+  YInterfaceFiniteElement< nDim, nNodes >::YInterfaceFiniteElement(
     int                                         elementID,
     FiniteElement::Quadrature::IntegrationTypes integrationType,
     SectionType                                 sectionType )
@@ -471,13 +336,13 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  int ExtendedInterfaceFiniteElement< nDim, nNodes >::getNumberOfRequiredStateVars()
+  int YInterfaceFiniteElement< nDim, nNodes >::getNumberOfRequiredStateVars()
   {
     return qps[0].getNumberOfRequiredStateVars() * qps.size();
   }
 
   template < int nDim, int nNodes >
-  std::vector< std::vector< std::string > > ExtendedInterfaceFiniteElement< nDim, nNodes >::getNodeFields()
+  std::vector< std::vector< std::string > > YInterfaceFiniteElement< nDim, nNodes >::getNodeFields()
   {
     using namespace std;
 
@@ -494,7 +359,7 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  std::vector< int > ExtendedInterfaceFiniteElement< nDim, nNodes >::getDofIndicesPermutationPattern()
+  std::vector< int > YInterfaceFiniteElement< nDim, nNodes >::getDofIndicesPermutationPattern()
   {
     static std::vector< int > permutationPattern;
 
@@ -507,7 +372,7 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::assignStateVars( double* stateVars, int nStateVars )
+  void YInterfaceFiniteElement< nDim, nNodes >::assignStateVars( double* stateVars, int nStateVars )
   {
     const int nQpStateVars = nStateVars / qps.size();
 
@@ -519,44 +384,44 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::assignProperty( const ElementProperties& elementPropertiesInfo )
+  void YInterfaceFiniteElement< nDim, nNodes >::assignProperty( const ElementProperties& elementPropertiesInfo )
   {
     new ( &elementProperties ) Eigen::Map< const Eigen::VectorXd >( elementPropertiesInfo.elementProperties,
                                                                     elementPropertiesInfo.nElementProperties );
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::assignProperty( const MarmotMaterialSection& section )
+  void YInterfaceFiniteElement< nDim, nNodes >::assignProperty( const MarmotMaterialSection& section )
   {
     for ( auto& qp : qps ) {
-      qp.material = std::make_unique< MarmotExtendedInterfaceMaterialHypoElastic >( section.materialName,
-                                                                                    section.materialProperties,
-                                                                                    section.nMaterialProperties,
-                                                                                    elLabel );
+      qp.material = std::make_unique< MarmotEquilibratedXInterfaceMaterialHypoElastic >( section.materialName,
+                                                                                         section.materialProperties,
+                                                                                         section.nMaterialProperties,
+                                                                                         elLabel );
     }
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::assignMaterial( const std::string& materialName,
-                                                                       const double*      materialProperties,
-                                                                       int                nMaterialProperties )
+  void YInterfaceFiniteElement< nDim, nNodes >::assignMaterial( const std::string& materialName,
+                                                                const double*      materialProperties,
+                                                                int                nMaterialProperties )
   {
     for ( auto& qp : qps ) {
-      qp.material = std::make_unique< MarmotExtendedInterfaceMaterialHypoElastic >( materialName,
-                                                                                    materialProperties,
-                                                                                    nMaterialProperties,
-                                                                                    elLabel );
+      qp.material = std::make_unique< MarmotEquilibratedXInterfaceMaterialHypoElastic >( materialName,
+                                                                                         materialProperties,
+                                                                                         nMaterialProperties,
+                                                                                         elLabel );
     }
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::assignNodeCoordinates( const double* coordinates )
+  void YInterfaceFiniteElement< nDim, nNodes >::assignNodeCoordinates( const double* coordinates )
   {
     ParentGeometryElement::assignNodeCoordinates( coordinates );
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::initializeYourself()
+  void YInterfaceFiniteElement< nDim, nNodes >::initializeYourself()
   {
     const double thickness = elementProperties.size() > 0 ? elementProperties[0] : 1.0;
 
@@ -579,8 +444,6 @@ namespace Marmot::Elements {
       qp.NmatJump    = geom.NmatJump;
       qp.BmatAverage = geom.BmatAverage;
 
-      // Geometry of the actual top--bottom pairing used by NmatJump.
-      // The interface normal is oriented from the lower side to the upper side.
       const VectorDim xBottom = qp.NmatSide * this->getSideCoordinates( 0 );
       const VectorDim xTop    = qp.NmatSide * this->getSideCoordinates( 1 );
       qp.separationVector     = xTop - xBottom;
@@ -596,8 +459,8 @@ namespace Marmot::Elements {
       qp.tangentialSeparation = qp.tangentProjection * qp.separationVector;
 
       if ( qp.separationVector.norm() > geometryTolerance && qp.normalSeparation <= geometryTolerance ) {
-        throw std::invalid_argument( "ExtendedInterfaceFiniteElement: paired faces have no positive separation in the "
-                                     "interface-normal direction." );
+        throw std::invalid_argument(
+          "YInterfaceFiniteElement: paired faces have no positive separation in the interface-normal direction." );
       }
 
       qp.J0xW = qp.weight * qp.sqrtDetG * thickness;
@@ -614,12 +477,12 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::computeKernels( const double* QTotal_,
-                                                                       const double* dQ_,
-                                                                       double*       Pe_,
-                                                                       double*       Ke_,
-                                                                       double        time,
-                                                                       double        dT )
+  void YInterfaceFiniteElement< nDim, nNodes >::computeKernels( const double* QTotal_,
+                                                                const double* dQ_,
+                                                                double*       Pe_,
+                                                                double*       Ke_,
+                                                                double        time,
+                                                                double        dT )
   {
     (void)QTotal_;
 
@@ -633,7 +496,11 @@ namespace Marmot::Elements {
       const auto& Nside = qp.NmatSide;
       const auto& Bside = qp.BmatSide;
       const auto& Njump = qp.NmatJump;
-      const auto& Bavg  = qp.BmatAverage;
+
+      BAvgSurfaceSized BPlusFull                                   = BAvgSurfaceSized::Zero();
+      BAvgSurfaceSized BMinusFull                                  = BAvgSurfaceSized::Zero();
+      BMinusFull.template block< nTensor, halfSize >( 0, 0 )       = Bside;
+      BPlusFull.template block< nTensor, halfSize >( 0, halfSize ) = Bside;
 
       const auto dQBottom = dQ.template segment< halfSize >( 0 );
       const auto dQTop    = dQ.template segment< halfSize >( halfSize );
@@ -646,24 +513,39 @@ namespace Marmot::Elements {
       dSurface_strain_GPs.template segment< nTensor >( 0 )       = Bside * dQTop;
       dSurface_strain_GPs.template segment< nTensor >( nTensor ) = Bside * dQBottom;
 
-      ForceSized         force          = qp.managedStateVars->force;
-      SurfaceStressSized surface_stress = qp.managedStateVars->surfaceStress;
+      ForceSized         generalizedForce   = qp.managedStateVars->generalizedForce;
+      SurfaceStressSized surfaceStressPlus  = qp.managedStateVars->surfaceStressPlus;
+      SurfaceStressSized surfaceStressMinus = qp.managedStateVars->surfaceStressMinus;
 
-      QMatrixSized Q_ij;
-      ZMatrixSized Z_ijkl;
-      HMatrixSized H_ijk;
-      KMatrixSized K_ijk;
+      QwwMatrixSized Q_ww;
+      QwAMatrixSized Q_wAp, Q_wAm;
+      QAwMatrixSized Q_Apw, Q_Amw;
+      QAAMatrixSized Q_ApAp, Q_ApAm, Q_AmAp, Q_AmAm;
 
-      Q_ij.setZero();
-      Z_ijkl.setZero();
-      H_ijk.setZero();
-      K_ijk.setZero();
+      Q_ww.setZero();
+      Q_wAp.setZero();
+      Q_wAm.setZero();
+      Q_Apw.setZero();
+      Q_Amw.setZero();
+      Q_ApAp.setZero();
+      Q_ApAm.setZero();
+      Q_AmAp.setZero();
+      Q_AmAm.setZero();
 
       if constexpr ( nDim == 3 ) {
-        Material::State         materialState{ force.data(),
-                                       surface_stress.data(),
+        Material::State         materialState{ generalizedForce.data(),
+                                       surfaceStressPlus.data(),
+                                       surfaceStressMinus.data(),
                                        qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents      materialTangents{ Q_ij.data(), Z_ijkl.data(), H_ijk.data(), K_ijk.data() };
+        Material::Tangents      materialTangents{ Q_ww.data(),
+                                             Q_wAp.data(),
+                                             Q_wAm.data(),
+                                             Q_Apw.data(),
+                                             Q_ApAp.data(),
+                                             Q_ApAm.data(),
+                                             Q_Amw.data(),
+                                             Q_AmAp.data(),
+                                             Q_AmAm.data() };
         Material::Deformation   materialDeformation{ dU_GPs.data(),
                                                    dSurface_strain_GPs.data(),
                                                    qp.normal.data(),
@@ -674,26 +556,33 @@ namespace Marmot::Elements {
       }
       else if constexpr ( nDim == 2 ) {
         Eigen::Vector3d                                force3d = Eigen::Vector3d::Zero();
-        Eigen::Matrix< double, 9, 1 >                  surfaceStress3d;
+        Eigen::Matrix< double, 9, 1 >                  surfaceStressPlus3d;
+        Eigen::Matrix< double, 9, 1 >                  surfaceStressMinus3d;
         Eigen::Matrix< double, 6, 1 >                  dU3d;
         Eigen::Matrix< double, 18, 1 >                 dSurfaceStrain3d;
         Eigen::Vector3d                                normal3d = Eigen::Vector3d::Zero();
-        Eigen::Matrix< double, 3, 3, Eigen::RowMajor > Q3d;
-        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > Z3d;
-        Eigen::Matrix< double, 3, 9, Eigen::RowMajor > H3d;
-        Eigen::Matrix< double, 9, 3, Eigen::RowMajor > K3d;
+        Eigen::Matrix< double, 3, 3, Eigen::RowMajor > Qww3d;
+        Eigen::Matrix< double, 3, 9, Eigen::RowMajor > QwAp3d, QwAm3d;
+        Eigen::Matrix< double, 9, 3, Eigen::RowMajor > QApw3d, QAmw3d;
+        Eigen::Matrix< double, 9, 9, Eigen::RowMajor > QApAp3d, QApAm3d, QAmAp3d, QAmAm3d;
         Eigen::Vector3d                                separation3d = Eigen::Vector3d::Zero();
 
-        surfaceStress3d.setZero();
+        surfaceStressPlus3d.setZero();
+        surfaceStressMinus3d.setZero();
         dU3d.setZero();
         dSurfaceStrain3d.setZero();
-        Q3d.setZero();
-        Z3d.setZero();
-        H3d.setZero();
-        K3d.setZero();
+        Qww3d.setZero();
+        QwAp3d.setZero();
+        QwAm3d.setZero();
+        QApw3d.setZero();
+        QAmw3d.setZero();
+        QApAp3d.setZero();
+        QApAm3d.setZero();
+        QAmAp3d.setZero();
+        QAmAm3d.setZero();
 
         for ( int i = 0; i < nDim; ++i ) {
-          force3d( i )      = force( i );
+          force3d( i )      = generalizedForce( i );
           normal3d( i )     = qp.normal( i );
           separation3d( i ) = qp.separationVector( i );
           dU3d( i )         = dU_GPs( i );
@@ -703,16 +592,26 @@ namespace Marmot::Elements {
             const int index2d = i * nDim + j;
             const int index3d = i * 3 + j;
 
-            surfaceStress3d( index3d )      = surface_stress( index2d );
+            surfaceStressPlus3d( index3d )  = surfaceStressPlus( index2d );
+            surfaceStressMinus3d( index3d ) = surfaceStressMinus( index2d );
             dSurfaceStrain3d( index3d )     = dSurface_strain_GPs( index2d );
             dSurfaceStrain3d( 9 + index3d ) = dSurface_strain_GPs( nTensor + index2d );
           }
         }
 
         Material::State         materialState{ force3d.data(),
-                                       surfaceStress3d.data(),
+                                       surfaceStressPlus3d.data(),
+                                       surfaceStressMinus3d.data(),
                                        qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents      materialTangents{ Q3d.data(), Z3d.data(), H3d.data(), K3d.data() };
+        Material::Tangents      materialTangents{ Qww3d.data(),
+                                             QwAp3d.data(),
+                                             QwAm3d.data(),
+                                             QApw3d.data(),
+                                             QApAp3d.data(),
+                                             QApAm3d.data(),
+                                             QAmw3d.data(),
+                                             QAmAp3d.data(),
+                                             QAmAm3d.data() };
         Material::Deformation   materialDeformation{ dU3d.data(),
                                                    dSurfaceStrain3d.data(),
                                                    normal3d.data(),
@@ -722,9 +621,9 @@ namespace Marmot::Elements {
         qp.material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
         for ( int i = 0; i < nDim; ++i ) {
-          force( i ) = force3d( i );
+          generalizedForce( i ) = force3d( i );
           for ( int k = 0; k < nDim; ++k ) {
-            Q_ij( i, k ) = Q3d( i, k );
+            Q_ww( i, k ) = Qww3d( i, k );
           }
         }
 
@@ -733,10 +632,12 @@ namespace Marmot::Elements {
             const int row2d = i * nDim + j;
             const int row3d = i * 3 + j;
 
-            surface_stress( row2d ) = surfaceStress3d( row3d );
+            surfaceStressPlus( row2d )  = surfaceStressPlus3d( row3d );
+            surfaceStressMinus( row2d ) = surfaceStressMinus3d( row3d );
 
             for ( int k = 0; k < nDim; ++k ) {
-              K_ijk( row2d, k ) = K3d( row3d, k );
+              Q_Apw( row2d, k ) = QApw3d( row3d, k );
+              Q_Amw( row2d, k ) = QAmw3d( row3d, k );
             }
 
             for ( int k = 0; k < nDim; ++k ) {
@@ -744,7 +645,10 @@ namespace Marmot::Elements {
                 const int col2d = k * nDim + l;
                 const int col3d = k * 3 + l;
 
-                Z_ijkl( row2d, col2d ) = Z3d( row3d, col3d );
+                Q_ApAp( row2d, col2d ) = QApAp3d( row3d, col3d );
+                Q_ApAm( row2d, col2d ) = QApAm3d( row3d, col3d );
+                Q_AmAp( row2d, col2d ) = QAmAp3d( row3d, col3d );
+                Q_AmAm( row2d, col2d ) = QAmAm3d( row3d, col3d );
               }
             }
           }
@@ -753,33 +657,40 @@ namespace Marmot::Elements {
         for ( int i = 0; i < nDim; ++i ) {
           for ( int k = 0; k < nDim; ++k ) {
             for ( int l = 0; l < nDim; ++l ) {
-              const int col2d   = k * nDim + l;
-              const int col3d   = k * 3 + l;
-              H_ijk( i, col2d ) = H3d( i, col3d );
+              const int col2d = k * nDim + l;
+              const int col3d = k * 3 + l;
+
+              Q_wAp( i, col2d ) = QwAp3d( i, col3d );
+              Q_wAm( i, col2d ) = QwAm3d( i, col3d );
             }
           }
         }
       }
 
-      qp.managedStateVars->force         = force;
-      qp.managedStateVars->surfaceStress = surface_stress;
+      qp.managedStateVars->generalizedForce   = generalizedForce;
+      qp.managedStateVars->surfaceStressPlus  = surfaceStressPlus;
+      qp.managedStateVars->surfaceStressMinus = surfaceStressMinus;
       qp.managedStateVars->displacement += dU_GPs;
       qp.managedStateVars->surfaceStrain += dSurface_strain_GPs;
 
-      Pe -= Njump.transpose() * force * qp.J0xW;
-      Pe -= Bavg.transpose() * surface_stress * qp.J0xW;
+      Pe -= Njump.transpose() * generalizedForce * qp.J0xW;
+      Pe -= BPlusFull.transpose() * surfaceStressPlus * qp.J0xW;
+      Pe -= BMinusFull.transpose() * surfaceStressMinus * qp.J0xW;
 
-      // No major symmetry is assumed:
-      //   H_ijk = d(force_i)/d(surfaceGradient_jk),
-      //   K_ijk = d(surfaceStress_ij)/d(jump_k).
-      Ke += ( Njump.transpose() * Q_ij * Njump + Njump.transpose() * H_ijk * Bavg + Bavg.transpose() * K_ijk * Njump +
-              Bavg.transpose() * Z_ijkl * Bavg ) *
+      // Full nine-block assembly -- unlike XInterfaceFiniteElement, the
+      // cross blocks Q_ApAm/Q_AmAp are generally nonzero after
+      // equilibrium condensation and must NOT be omitted.
+      Ke += ( Njump.transpose() * Q_ww * Njump + Njump.transpose() * Q_wAp * BPlusFull +
+              Njump.transpose() * Q_wAm * BMinusFull + BPlusFull.transpose() * Q_Apw * Njump +
+              BPlusFull.transpose() * Q_ApAp * BPlusFull + BPlusFull.transpose() * Q_ApAm * BMinusFull +
+              BMinusFull.transpose() * Q_Amw * Njump + BMinusFull.transpose() * Q_AmAp * BPlusFull +
+              BMinusFull.transpose() * Q_AmAm * BMinusFull ) *
             qp.J0xW;
     }
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::setInitialConditions( StateTypes state, const double* values )
+  void YInterfaceFiniteElement< nDim, nNodes >::setInitialConditions( StateTypes state, const double* values )
   {
     switch ( state ) {
     case MarmotElement::MarmotMaterialInitialization: {
@@ -796,54 +707,52 @@ namespace Marmot::Elements {
 
     default:
       throw std::invalid_argument( MakeString() << __PRETTY_FUNCTION__
-                                                << ": invalid initial condition for ExtendedInterfaceFiniteElement" );
+                                                << ": invalid initial condition for YInterfaceFiniteElement" );
     }
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::computeDistributedLoad(
-    MarmotElement::DistributedLoadTypes loadType,
-    double*                             P,
-    double*                             K,
-    const int                           elementFace,
-    const double*                       load,
-    const double*                       QTotal,
-    double                              time,
-    double                              dT )
-  {
-    throw std::invalid_argument( MakeString()
-                                 << __PRETTY_FUNCTION__
-                                 << ": distributed loads are not implemented for ExtendedInterfaceFiniteElement." );
-  }
-
-  template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::computeBodyForce( double*       P,
-                                                                         double*       K,
-                                                                         const double* load,
-                                                                         const double* QTotal,
-                                                                         double        time,
-                                                                         double        dT )
+  void YInterfaceFiniteElement< nDim, nNodes >::computeDistributedLoad( MarmotElement::DistributedLoadTypes loadType,
+                                                                        double*                             P,
+                                                                        double*                             K,
+                                                                        const int                           elementFace,
+                                                                        const double*                       load,
+                                                                        const double*                       QTotal,
+                                                                        double                              time,
+                                                                        double                              dT )
   {
     throw std::invalid_argument(
-      MakeString() << __PRETTY_FUNCTION__ << ": body forces are not implemented for ExtendedInterfaceFiniteElement." );
+      MakeString() << __PRETTY_FUNCTION__ << ": distributed loads are not implemented for YInterfaceFiniteElement." );
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::computeConsistentInertia( double* M )
+  void YInterfaceFiniteElement< nDim, nNodes >::computeBodyForce( double*       P,
+                                                                  double*       K,
+                                                                  const double* load,
+                                                                  const double* QTotal,
+                                                                  double        time,
+                                                                  double        dT )
   {
-    throw std::runtime_error( MakeString() << __PRETTY_FUNCTION__
-                                           << ": inertia is not implemented for ExtendedInterfaceFiniteElement." );
+    throw std::invalid_argument( MakeString() << __PRETTY_FUNCTION__
+                                              << ": body forces are not implemented for YInterfaceFiniteElement." );
   }
 
   template < int nDim, int nNodes >
-  void ExtendedInterfaceFiniteElement< nDim, nNodes >::computeLumpedInertia( double* M )
+  void YInterfaceFiniteElement< nDim, nNodes >::computeConsistentInertia( double* M )
   {
-    throw std::runtime_error( MakeString() << __PRETTY_FUNCTION__
-                                           << ": inertia is not implemented for ExtendedInterfaceFiniteElement." );
+    throw std::runtime_error( MakeString()
+                              << __PRETTY_FUNCTION__ << ": inertia is not implemented for YInterfaceFiniteElement." );
   }
 
   template < int nDim, int nNodes >
-  std::vector< double > ExtendedInterfaceFiniteElement< nDim, nNodes >::getCoordinatesAtCenter()
+  void YInterfaceFiniteElement< nDim, nNodes >::computeLumpedInertia( double* M )
+  {
+    throw std::runtime_error( MakeString()
+                              << __PRETTY_FUNCTION__ << ": inertia is not implemented for YInterfaceFiniteElement." );
+  }
+
+  template < int nDim, int nNodes >
+  std::vector< double > YInterfaceFiniteElement< nDim, nNodes >::getCoordinatesAtCenter()
   {
     std::vector< double > coords( nDim );
 
@@ -861,8 +770,7 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  std::vector< std::vector< double > > ExtendedInterfaceFiniteElement< nDim,
-                                                                       nNodes >::getCoordinatesAtQuadraturePoints()
+  std::vector< std::vector< double > > YInterfaceFiniteElement< nDim, nNodes >::getCoordinatesAtQuadraturePoints()
   {
     std::vector< std::vector< double > > listedCoords;
 
@@ -881,7 +789,7 @@ namespace Marmot::Elements {
   }
 
   template < int nDim, int nNodes >
-  int ExtendedInterfaceFiniteElement< nDim, nNodes >::getNumberOfQuadraturePoints()
+  int YInterfaceFiniteElement< nDim, nNodes >::getNumberOfQuadraturePoints()
   {
     return static_cast< int >( qps.size() );
   }

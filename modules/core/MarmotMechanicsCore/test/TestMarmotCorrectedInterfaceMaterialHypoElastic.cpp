@@ -1,4 +1,4 @@
-#include "Marmot/MarmotExtendedInterfaceMaterialHypoElastic.h"
+#include "Marmot/MarmotCorrectedInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotMaterialHypoElasticFactory.h"
 #include "Marmot/MarmotTesting.h"
@@ -25,7 +25,7 @@ namespace {
   using Matrix3x9RowMajor = Eigen::Matrix< double, 3, 9, Eigen::RowMajor >;
   using Matrix9x3RowMajor = Eigen::Matrix< double, 9, 3, Eigen::RowMajor >;
 
-  using ExtendedMaterial = MarmotExtendedInterfaceMaterialHypoElastic;
+  using CorrectedMaterial = MarmotCorrectedInterfaceMaterialHypoElastic;
 
   template < typename DerivedA, typename DerivedB >
   void assertMatrixNear( const Eigen::MatrixBase< DerivedA >& actual,
@@ -45,7 +45,7 @@ namespace {
    * force/surfaceStress double as the persistent generalized state between
    * increments, exactly as in the element.
    */
-  struct ExtendedResponse {
+  struct CorrectedResponse {
     Eigen::Vector3d   force         = Eigen::Vector3d::Zero();
     Matrix3dRowMajor  surfaceStress = Matrix3dRowMajor::Zero();
     Matrix3dRowMajor  Q             = Matrix3dRowMajor::Zero();
@@ -67,31 +67,31 @@ namespace {
    * the backward-compatible 3-argument Deformation constructor (coincident
    * faces); otherwise the full separation-vector-aware path is used.
    */
-  void computeExtendedStress( ExtendedMaterial& material,
-                              ExtendedResponse& response,
-                              double*           stateVars,
-                              const double*     dU,
-                              const double*     dSurfaceStrain,
-                              const double*     normal,
-                              const double*     separation,
-                              double            timeOld,
-                              double            dT )
+  void computeExtendedStress( CorrectedMaterial& material,
+                              CorrectedResponse& response,
+                              double*            stateVars,
+                              const double*      dU,
+                              const double*      dSurfaceStrain,
+                              const double*      normal,
+                              const double*      separation,
+                              double             timeOld,
+                              double             dT )
   {
-    ExtendedMaterial::State    state{ response.force.data(), response.surfaceStress.data(), stateVars };
-    ExtendedMaterial::Tangents tangents{ response.Q.data(), response.Z.data(), response.H.data(), response.K.data() };
-    ExtendedMaterial::TimeIncrement timeIncrement{ timeOld, dT };
+    CorrectedMaterial::State    state{ response.force.data(), response.surfaceStress.data(), stateVars };
+    CorrectedMaterial::Tangents tangents{ response.Q.data(), response.Z.data(), response.H.data(), response.K.data() };
+    CorrectedMaterial::TimeIncrement timeIncrement{ timeOld, dT };
 
     if ( separation ) {
-      ExtendedMaterial::Deformation deformation{ dU, dSurfaceStrain, normal, separation };
+      CorrectedMaterial::Deformation deformation{ dU, dSurfaceStrain, normal, separation };
       material.computeStress( state, tangents, deformation, timeIncrement );
     }
     else {
-      ExtendedMaterial::Deformation deformation{ dU, dSurfaceStrain, normal };
+      CorrectedMaterial::Deformation deformation{ dU, dSurfaceStrain, normal };
       material.computeStress( state, tangents, deformation, timeIncrement );
     }
   }
 
-  Eigen::VectorXd makeInitializedStateVars( ExtendedMaterial& material )
+  Eigen::VectorXd makeInitializedStateVars( CorrectedMaterial& material )
   {
     Eigen::VectorXd stateVars = Eigen::VectorXd::Zero( material.getNumberOfRequiredStateVars() );
     material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
@@ -99,14 +99,14 @@ namespace {
   }
 
   /** Single virgin-state evaluation, used by the finite-difference checks. */
-  ExtendedResponse evaluateVirginResponse( ExtendedMaterial& material,
-                                           const double*     dU,
-                                           const double*     dSurfaceStrain,
-                                           const double*     normal,
-                                           const double*     separation )
+  CorrectedResponse evaluateVirginResponse( CorrectedMaterial& material,
+                                            const double*      dU,
+                                            const double*      dSurfaceStrain,
+                                            const double*      normal,
+                                            const double*      separation )
   {
-    ExtendedResponse response;
-    Eigen::VectorXd  stateVars = makeInitializedStateVars( material );
+    CorrectedResponse response;
+    Eigen::VectorXd   stateVars = makeInitializedStateVars( material );
     computeExtendedStress( material, response, stateVars.data(), dU, dSurfaceStrain, normal, separation, 0.0, 1.0 );
     return response;
   }
@@ -130,18 +130,18 @@ namespace {
     const double h         = interfaceProperties[2];
     const double normal[3] = { 0., 0., 1. };
 
-    auto interfaceMaterial = std::make_unique< ExtendedMaterial >( materialName,
-                                                                   interfaceProperties,
-                                                                   nInterfaceProperties,
-                                                                   1 );
+    auto interfaceMaterial = std::make_unique< CorrectedMaterial >( materialName,
+                                                                    interfaceProperties,
+                                                                    nInterfaceProperties,
+                                                                    1 );
     auto bulkMaterial      = createBulkMaterial( materialName, bulkProperties, nBulkProperties );
 
     Eigen::VectorXd interfaceStateVars = makeInitializedStateVars( *interfaceMaterial );
     Eigen::VectorXd bulkStateVars( bulkMaterial->getNumberOfRequiredStateVars() );
     bulkMaterial->initializeYourself( bulkStateVars.data(), bulkStateVars.size() );
 
-    ExtendedResponse response;
-    Marmot::Vector6d bulkStress = Marmot::Vector6d::Zero();
+    CorrectedResponse response;
+    Marmot::Vector6d  bulkStress = Marmot::Vector6d::Zero();
 
     struct Increment {
       double dT;
@@ -232,8 +232,8 @@ namespace {
    */
   void testExplicitZeroSeparationMatchesCoincidentFacePath()
   {
-    const double     interfaceProperties[3] = { 1e5, 0.3, 0.01 };
-    ExtendedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
+    const double      interfaceProperties[3] = { 1e5, 0.3, 0.01 };
+    CorrectedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
 
     const double dU[6]              = { 1.2e-4, -0.4e-4, 2.0e-4, 0.3e-4, 0.5e-4, -0.6e-4 };
     const double dSurfaceStrain[18] = { 1.0e-4,
@@ -257,12 +257,12 @@ namespace {
     const double normal[3]          = { 0., 0., 1. };
     const double zeroSeparation[3]  = { 0., 0., 0. };
 
-    const ExtendedResponse coincident   = evaluateVirginResponse( material, dU, dSurfaceStrain, normal, nullptr );
-    const ExtendedResponse explicitZero = evaluateVirginResponse( material,
-                                                                  dU,
-                                                                  dSurfaceStrain,
-                                                                  normal,
-                                                                  zeroSeparation );
+    const CorrectedResponse coincident   = evaluateVirginResponse( material, dU, dSurfaceStrain, normal, nullptr );
+    const CorrectedResponse explicitZero = evaluateVirginResponse( material,
+                                                                   dU,
+                                                                   dSurfaceStrain,
+                                                                   normal,
+                                                                   zeroSeparation );
 
     assertMatrixNear( explicitZero.force, coincident.force, 1e-14, "Explicit zero separation: force differs" );
     assertMatrixNear( explicitZero.surfaceStress,
@@ -285,14 +285,14 @@ namespace {
   {
     const double interfaceProperties[3] = { 1e5, 0.3, 0.01 };
 
-    ExtendedMaterial                   extendedMaterial( "LINEARELASTIC", interfaceProperties, 3, 1 );
+    CorrectedMaterial                  extendedMaterial( "LINEARELASTIC", interfaceProperties, 3, 1 );
     MarmotInterfaceMaterialHypoElastic plainMaterial( "LINEARELASTIC", interfaceProperties, 3, 1 );
 
     Eigen::VectorXd extendedStateVars = makeInitializedStateVars( extendedMaterial );
     Eigen::VectorXd plainStateVars    = Eigen::VectorXd::Zero( plainMaterial.getNumberOfRequiredStateVars() );
     plainMaterial.initializeYourself( plainStateVars.data(), plainStateVars.size() );
 
-    ExtendedResponse extendedResponse;
+    CorrectedResponse extendedResponse;
 
     Eigen::Vector3d  plainForce         = Eigen::Vector3d::Zero();
     Matrix3dRowMajor plainSurfaceStress = Matrix3dRowMajor::Zero();
@@ -403,15 +403,15 @@ namespace {
                                         0.003 * Eigen::Vector3d( 0.0, 1.0, 0.0 );
     const Eigen::Vector3d separation = ell * n + dTangential;
 
-    ExtendedMaterial interfaceMaterial( "LINEARELASTIC", interfaceProperties, 3, 1 );
-    auto             bulkMaterial = createBulkMaterial( "LINEARELASTIC", bulkProperties, 2 );
+    CorrectedMaterial interfaceMaterial( "LINEARELASTIC", interfaceProperties, 3, 1 );
+    auto              bulkMaterial = createBulkMaterial( "LINEARELASTIC", bulkProperties, 2 );
 
     Eigen::VectorXd interfaceStateVars = makeInitializedStateVars( interfaceMaterial );
     Eigen::VectorXd bulkStateVars      = Eigen::VectorXd::Zero( bulkMaterial->getNumberOfRequiredStateVars() );
     bulkMaterial->initializeYourself( bulkStateVars.data(), bulkStateVars.size() );
 
-    ExtendedResponse response;
-    Marmot::Vector6d bulkStress = Marmot::Vector6d::Zero();
+    CorrectedResponse response;
+    Marmot::Vector6d  bulkStress = Marmot::Vector6d::Zero();
 
     const double dUIncrements[2][6] = { { 1.2e-4, -0.4e-4, 2.0e-4, 0.3e-4, 0.5e-4, -0.6e-4 },
                                         { -0.5e-4, 0.8e-4, 1.0e-4, 0.2e-4, -0.3e-4, 0.4e-4 } };
@@ -521,7 +521,7 @@ namespace {
                                         0.003 * Eigen::Vector3d( 0.0, 1.0, 0.0 );
     const Eigen::Vector3d separation = ell * n + dTangential;
 
-    ExtendedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
+    CorrectedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
 
     const double dU[6]              = { 1.2e-4, -0.4e-4, 2.0e-4, 0.3e-4, 0.5e-4, -0.6e-4 };
     const double dSurfaceStrain[18] = { 1.0e-4,
@@ -543,11 +543,11 @@ namespace {
                                         0.5e-4,
                                         -1.4e-4 };
 
-    const ExtendedResponse analytic = evaluateVirginResponse( material,
-                                                              dU,
-                                                              dSurfaceStrain,
-                                                              n.data(),
-                                                              separation.data() );
+    const CorrectedResponse analytic = evaluateVirginResponse( material,
+                                                               dU,
+                                                               dSurfaceStrain,
+                                                               n.data(),
+                                                               separation.data() );
 
     const double eps = 1e-6;
 
@@ -563,17 +563,17 @@ namespace {
       dUPlus[k] += eps;
       dUMinus[k] -= eps;
 
-      const ExtendedResponse plus = evaluateVirginResponse( material,
-                                                            dUPlus,
-                                                            dSurfaceStrain,
-                                                            n.data(),
-                                                            separation.data() );
-
-      const ExtendedResponse minus = evaluateVirginResponse( material,
-                                                             dUMinus,
+      const CorrectedResponse plus = evaluateVirginResponse( material,
+                                                             dUPlus,
                                                              dSurfaceStrain,
                                                              n.data(),
                                                              separation.data() );
+
+      const CorrectedResponse minus = evaluateVirginResponse( material,
+                                                              dUMinus,
+                                                              dSurfaceStrain,
+                                                              n.data(),
+                                                              separation.data() );
 
       QFiniteDifference.col( k ) = ( plus.force - minus.force ) / ( 2.0 * eps );
       KFiniteDifference.col( k ) = ( flattenRowMajor( plus.surfaceStress ) - flattenRowMajor( minus.surfaceStress ) ) /
@@ -595,9 +595,13 @@ namespace {
       dSurfaceMinus[entry] -= eps;
       dSurfaceMinus[9 + entry] -= eps;
 
-      const ExtendedResponse plus = evaluateVirginResponse( material, dU, dSurfacePlus, n.data(), separation.data() );
+      const CorrectedResponse plus = evaluateVirginResponse( material, dU, dSurfacePlus, n.data(), separation.data() );
 
-      const ExtendedResponse minus = evaluateVirginResponse( material, dU, dSurfaceMinus, n.data(), separation.data() );
+      const CorrectedResponse minus = evaluateVirginResponse( material,
+                                                              dU,
+                                                              dSurfaceMinus,
+                                                              n.data(),
+                                                              separation.data() );
 
       HFiniteDifference.col( entry ) = ( plus.force - minus.force ) / ( 2.0 * eps );
       ZFiniteDifference.col(
@@ -650,31 +654,31 @@ namespace {
     // Construction guards.
     expectInvalidArgument(
       []() {
-        const double     tooFewProperties[2] = { 1e5, 0.3 };
-        ExtendedMaterial material( "LINEARELASTIC", tooFewProperties, 2, 1 );
+        const double      tooFewProperties[2] = { 1e5, 0.3 };
+        CorrectedMaterial material( "LINEARELASTIC", tooFewProperties, 2, 1 );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic requires at least E, nu, and interface thickness h.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic requires at least E, nu, and interface thickness h.",
       "Construction with 2 properties" );
 
     expectInvalidArgument(
       []() {
-        const double     zeroThickness[3] = { 1e5, 0.3, 0.0 };
-        ExtendedMaterial material( "LINEARELASTIC", zeroThickness, 3, 1 );
+        const double      zeroThickness[3] = { 1e5, 0.3, 0.0 };
+        CorrectedMaterial material( "LINEARELASTIC", zeroThickness, 3, 1 );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic requires h > 0.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic requires h > 0.",
       "Construction with h = 0" );
 
     expectInvalidArgument(
       []() {
-        const double     negativeThickness[3] = { 1e5, 0.3, -0.01 };
-        ExtendedMaterial material( "LINEARELASTIC", negativeThickness, 3, 1 );
+        const double      negativeThickness[3] = { 1e5, 0.3, -0.01 };
+        CorrectedMaterial material( "LINEARELASTIC", negativeThickness, 3, 1 );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic requires h > 0.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic requires h > 0.",
       "Construction with h < 0" );
 
     // Stress-update geometry guards.
-    const double     interfaceProperties[3] = { 1e5, 0.3, 0.01 };
-    ExtendedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
+    const double      interfaceProperties[3] = { 1e5, 0.3, 0.01 };
+    CorrectedMaterial material( "LINEARELASTIC", interfaceProperties, 3, 1 );
 
     const double dU[6]              = { 1e-4, 0., 0., 0., 0., 0. };
     const double dSurfaceStrain[18] = { 0. };
@@ -684,7 +688,7 @@ namespace {
         const double zeroNormal[3] = { 0., 0., 0. };
         evaluateVirginResponse( material, dU, dSurfaceStrain, zeroNormal, nullptr );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic: interface normal is zero.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic: interface normal is zero.",
       "Stress update with zero interface normal" );
 
     const double normal[3] = { 0., 0., 1. };
@@ -694,7 +698,7 @@ namespace {
         const double tangentialOnlySeparation[3] = { 0.003, 0., 0. };
         evaluateVirginResponse( material, dU, dSurfaceStrain, normal, tangentialOnlySeparation );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal component.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal component.",
       "Stress update with purely tangential connector" );
 
     expectInvalidArgument(
@@ -702,14 +706,14 @@ namespace {
         const double invertedSeparation[3] = { 0.001, 0., -0.02 };
         evaluateVirginResponse( material, dU, dSurfaceStrain, normal, invertedSeparation );
       },
-      "MarmotExtendedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal component.",
+      "MarmotCorrectedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal component.",
       "Stress update with inverted connector" );
   }
 
   void testDensityDelegation()
   {
-    const double     interfaceProperties[9] = { 1e8, 0.3, 0.01, 2e7, 0.25, 6., 1e-4, 1., 2400. };
-    ExtendedMaterial material( "LINEARVISCOELASTICWIECHERT", interfaceProperties, 9, 1 );
+    const double      interfaceProperties[9] = { 1e8, 0.3, 0.01, 2e7, 0.25, 6., 1e-4, 1., 2400. };
+    CorrectedMaterial material( "LINEARVISCOELASTICWIECHERT", interfaceProperties, 9, 1 );
 
     throwExceptionOnFailure( checkIfEqual( material.getDensity(), interfaceProperties[8] ),
                              "Extended interface density delegation failed." );

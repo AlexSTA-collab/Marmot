@@ -1,4 +1,4 @@
-#include "Marmot/MarmotExtendedInterfaceMaterialHypoElastic.h"
+#include "Marmot/MarmotCorrectedInterfaceMaterialHypoElastic.h"
 
 #include "Marmot/MarmotMaterialHypoElasticFactory.h"
 #include "Marmot/MarmotTypedefs.h"
@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 
@@ -75,7 +76,7 @@ namespace {
 
     if ( constitutiveThickness <= 0.0 ) {
       throw std::invalid_argument(
-        "MarmotExtendedInterfaceMaterialHypoElastic: interface thickness h must be positive." );
+        "MarmotCorrectedInterfaceMaterialHypoElastic: interface thickness h must be positive." );
     }
 
     if ( separationVector.norm() <= tolerance ) {
@@ -85,7 +86,8 @@ namespace {
     const double normalSeparation = separationVector.dot( normal );
     if ( normalSeparation <= tolerance ) {
       throw std::invalid_argument(
-        "MarmotExtendedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal component." );
+        "MarmotCorrectedInterfaceMaterialHypoElastic: the top-bottom connector must have a positive normal "
+        "component." );
     }
 
     return { normalSeparation, separationVector - normalSeparation * normal };
@@ -186,20 +188,21 @@ namespace {
 
 } // namespace
 
-MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoElastic( const std::string& materialName,
-                                                                                        const double* matProperties_,
-                                                                                        int nMaterialProperties_,
-                                                                                        int materialNumber_ )
+MarmotCorrectedInterfaceMaterialHypoElastic::MarmotCorrectedInterfaceMaterialHypoElastic(
+  const std::string& materialName,
+  const double*      matProperties_,
+  int                nMaterialProperties_,
+  int                materialNumber_ )
   : materialProperties( matProperties_ ), nMaterialProperties( nMaterialProperties_ ), materialNumber( materialNumber_ )
 {
   if ( nMaterialProperties < 3 ) {
     throw std::invalid_argument(
-      "MarmotExtendedInterfaceMaterialHypoElastic requires at least E, nu, and interface thickness h." );
+      "MarmotCorrectedInterfaceMaterialHypoElastic requires at least E, nu, and interface thickness h." );
   }
 
   h = materialProperties[2];
   if ( h <= 0.0 ) {
-    throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic requires h > 0." );
+    throw std::invalid_argument( "MarmotCorrectedInterfaceMaterialHypoElastic requires h > 0." );
   }
 
   baseMaterialProperties.reserve( nMaterialProperties - 1 );
@@ -220,7 +223,7 @@ MarmotExtendedInterfaceMaterialHypoElastic::MarmotExtendedInterfaceMaterialHypoE
   stateLayout.finalize();
 }
 
-void MarmotExtendedInterfaceMaterialHypoElastic::setCharacteristicElementLength( double length )
+void MarmotCorrectedInterfaceMaterialHypoElastic::setCharacteristicElementLength( double length )
 {
   characteristicElementLength = length;
   if ( baseMaterial ) {
@@ -228,13 +231,13 @@ void MarmotExtendedInterfaceMaterialHypoElastic::setCharacteristicElementLength(
   }
 }
 
-void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&               state,
-                                                                Tangents&            tangents,
-                                                                const Deformation&   deformation,
-                                                                const TimeIncrement& timeIncrement )
+void MarmotCorrectedInterfaceMaterialHypoElastic::computeStress( State&               state,
+                                                                 Tangents&            tangents,
+                                                                 const Deformation&   deformation,
+                                                                 const TimeIncrement& timeIncrement )
 {
   if ( !baseMaterial ) {
-    throw std::logic_error( "MarmotExtendedInterfaceMaterialHypoElastic has no base material." );
+    throw std::logic_error( "MarmotCorrectedInterfaceMaterialHypoElastic has no base material." );
   }
 
   Eigen::Map< Eigen::Vector3d >  force( state.force.data() );
@@ -251,13 +254,24 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
   Vector3d     normal     = normalMap;
   const double normalNorm = normal.norm();
   if ( normalNorm <= 1.0e-12 ) {
-    throw std::invalid_argument( "MarmotExtendedInterfaceMaterialHypoElastic: interface normal is zero." );
+    throw std::invalid_argument( "MarmotCorrectedInterfaceMaterialHypoElastic: interface normal is zero." );
   }
   normal /= normalNorm;
 
-  const InterfaceGeometry geometry    = evaluateInterfaceGeometry( normal, separationMap, h );
-  const double            ell         = geometry.normalSeparation;
-  const Vector3d&         dTangential = geometry.tangentialSeparation;
+  const InterfaceGeometry geometry = evaluateInterfaceGeometry( normal, separationMap, h );
+  const double            ell      = geometry.normalSeparation;
+
+  // Diagnostic hook: MARMOT_CORRECTED_IFACE_DTAU_SCALE scales the tangential
+  // connector d_tau in ALL of its appearances (kinematic reconstruction,
+  // generalized-stress maps, tangent blocks, and state recovery), i.e. a
+  // variationally consistent lambda-scaling of the geometric coupling.
+  // lambda = 1 (default) is the physical model; 0 disables the coupling;
+  // -1 reverses d_tau.
+  static const double dTauScale = []() {
+    const char* s = std::getenv( "MARMOT_CORRECTED_IFACE_DTAU_SCALE" );
+    return s ? std::atof( s ) : 1.0;
+  }();
+  const Vector3d dTangential = dTauScale * geometry.tangentialSeparation;
 
   const Eigen::Map< const Eigen::Matrix< double, 6, 1 > >  dU( deformation.dU.data() );
   const Eigen::Map< const Eigen::Matrix< double, 18, 1 > > dSurfaceGradient( deformation.dSurfaceStrain.data() );
@@ -310,7 +324,7 @@ void MarmotExtendedInterfaceMaterialHypoElastic::computeStress( State&          
   Z = RSurface * CFull * BSurface;
 }
 
-void MarmotExtendedInterfaceMaterialHypoElastic::initializeYourself( double* stateVars, int nStateVars )
+void MarmotCorrectedInterfaceMaterialHypoElastic::initializeYourself( double* stateVars, int nStateVars )
 {
   if ( !baseMaterial ) {
     for ( int i = 0; i < nStateVars; ++i ) {
@@ -323,7 +337,7 @@ void MarmotExtendedInterfaceMaterialHypoElastic::initializeYourself( double* sta
                                     baseMaterial->getNumberOfRequiredStateVars() );
 }
 
-double MarmotExtendedInterfaceMaterialHypoElastic::getDensity()
+double MarmotCorrectedInterfaceMaterialHypoElastic::getDensity()
 {
   if ( !baseMaterial ) {
     return -1;

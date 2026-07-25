@@ -12,7 +12,6 @@
  * festigkeitslehre@uibk.ac.at
  *
  * Alexandros Stathas alexandros.stathas@boku.ac.at
- * Matthias Neuner matthias.neuner@uibk.ac.at
  *
  * This file is part of the MAteRialMOdellingToolbox (marmot).
  *
@@ -37,28 +36,47 @@
 #include <vector>
 
 /**
- * Abstract base class for hypoelastic interface materials.
+ * Hypoelastic interface material resolving the top and bottom surface
+ * strains of the interface layer independently (a "+ / -" split), instead
+ * of collapsing them into one averaged surface gradient.
+ *
+ * The layer's virtual work is evaluated as the thin-interface weak form
+ *
+ *   h \int_I < C_{ijkl} u_{k,l} \hat u_{i,j} > dA,
+ *   <.> := 1/2 [ (.)^+ + (.)^- ],
+ *
+ * i.e. the average of two SEPARATELY contracted one-sided energies, each
+ * built from its own face's surface gradient A^+ / A^- plus the shared
+ * normal-jump correction:
+ *
+ *   q^s   = [u] - A^s d_tau,
+ *   G^s   = A^s + (1/ell) q^s \otimes n,
+ *   eps^s = sym(G^s),        s in {+, -}.
+ *
+ * Each eps^s drives its own embedded bulk-material instance (own
+ * plastic/history state), each integrated over half the constitutive
+ * thickness h/2. Unlike the single-averaged-gradient formulation, a
+ * cross-sectional-rotation mode (A^+ = -A^-) does not produce zero strain
+ * on both sides simultaneously, so the layer is not blind to it.
  *
  * The interface kinematics use the actual connector between paired mesh
  * points,
  *
  *   d = x_top - x_bottom = ell n + d_tau,
  *
- * and reconstruct the displacement-gradient increment as
- *
- *   dG = dG_s + (1/ell) ( d[u] - dG_s d_tau ) \otimes n.
- *
- * For coincident interface faces, ell falls back to the constitutive
- * interface thickness h and d_tau is set to zero.
+ * exactly as in MarmotCorrectedInterfaceMaterialHypoElastic. For coincident
+ * interface faces, ell falls back to the constitutive interface thickness h
+ * and d_tau is set to zero.
  */
-class MarmotExtendedInterfaceMaterialHypoElastic {
+class MarmotXInterfaceMaterialHypoElastic {
 
 protected:
   const double*                                materialProperties;
   const int                                    nMaterialProperties;
   double                                       h = 0.0;
   std::vector< double >                        baseMaterialProperties;
-  std::unique_ptr< MarmotMaterialHypoElastic > baseMaterial;
+  std::unique_ptr< MarmotMaterialHypoElastic > topMaterial;
+  std::unique_ptr< MarmotMaterialHypoElastic > bottomMaterial;
 
 public:
   using TensorMap3d    = Marmot::FastorStandardTensors::TensorMap3d;
@@ -70,12 +88,12 @@ public:
 
   const int materialNumber;
 
-  MarmotExtendedInterfaceMaterialHypoElastic( const std::string& materialName,
-                                              const double*      matProperties_,
-                                              int                nMaterialProperties_,
-                                              int                materialNumber_ );
+  MarmotXInterfaceMaterialHypoElastic( const std::string& materialName,
+                                       const double*      matProperties_,
+                                       int                nMaterialProperties_,
+                                       int                materialNumber_ );
 
-  virtual ~MarmotExtendedInterfaceMaterialHypoElastic() = default;
+  virtual ~MarmotXInterfaceMaterialHypoElastic() = default;
 
   MarmotStateLayoutDynamic stateLayout;
 
@@ -84,32 +102,45 @@ public:
   void setCharacteristicElementLength( double length );
 
   struct State {
-    /** Generalized force conjugate to the raw mesh displacement jump. */
-    TensorMap3d force;
+    /** Generalized force conjugate to [u], contribution from side +. */
+    TensorMap3d forcePlus;
 
-    /**
-     * Generalized surface resultant conjugate to the average surface
-     * gradient. For a nonzero tangential connector,
-     *
-     *   surfaceStress = h sigma - force \otimes d_tau.
-     */
-    TensorMap33d surfaceStress;
+    /** Generalized force conjugate to [u], contribution from side -. */
+    TensorMap3d forceMinus;
+
+    /** Generalized surface resultant conjugate to A^+. */
+    TensorMap33d surfaceStressPlus;
+
+    /** Generalized surface resultant conjugate to A^-. */
+    TensorMap33d surfaceStressMinus;
 
     double* stateVars;
   };
 
   struct Tangents {
-    /** d(force_i) / d([u_k]). */
-    TensorMap33d Q_ij;
+    /** d(forcePlus_i) / d([u_k]). */
+    TensorMap33d Q_plus;
 
-    /** d(surfaceStress_ij) / d(<u_{k,l}>_s). */
-    TensorMap3333d Z_ijkl;
+    /** d(forceMinus_i) / d([u_k]). */
+    TensorMap33d Q_minus;
 
-    /** d(force_i) / d(<u_{k,l}>_s). */
-    TensorMap333d H_ijk;
+    /** d(forcePlus_i) / d(A^+_{kl}). */
+    TensorMap333d H_plus;
 
-    /** d(surfaceStress_ij) / d([u_k]). */
-    TensorMap333d K_ijk;
+    /** d(forceMinus_i) / d(A^-_{kl}). */
+    TensorMap333d H_minus;
+
+    /** d(surfaceStressPlus_ij) / d([u_k]). */
+    TensorMap333d K_plus;
+
+    /** d(surfaceStressMinus_ij) / d([u_k]). */
+    TensorMap333d K_minus;
+
+    /** d(surfaceStressPlus_ij) / d(A^+_{kl}). */
+    TensorMap3333d Z_plus;
+
+    /** d(surfaceStressMinus_ij) / d(A^-_{kl}). */
+    TensorMap3333d Z_minus;
   };
 
   struct Deformation {
