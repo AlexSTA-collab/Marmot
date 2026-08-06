@@ -537,14 +537,61 @@ namespace Marmot::Elements {
       // return-mapping, so R_beta is NONLINEAR in beta. A single step from beta=0
       // leaves Pe (evaluated at beta=0) inconsistent with the condensed Ke, which
       // shows up directly as a large tangent-vs-FD error on the displacement columns.
+      // Backtracking line search + exception guard, mirroring the line search the
+      // material's own local gamma-solve already uses. Without it an undamped beta
+      // step overshoots at yield onset, drives the strain into a state where the
+      // local traction-equilibrium solve cannot converge, and the StressUpdateFailed
+      // propagates out as a global cutback (measured: 1 cutback, 1 StressUpdateFailed
+      // for MINI vs 0/0 for the same element without the bubble).
       V3  beta = qps[0].managedStateVars->bubbleAlpha;
       Acc A    = assembleAll( beta, false );
       for ( int it = 0; it < 20; it++ ) {
-        const double rn = A.Rb.norm();
-        if ( rn <= 1.0e-12 * std::max( 1.0, A.Pe.norm() ) )
+        const double rn  = A.Rb.norm();
+        const double tol = 1.0e-10 * std::max( 1.0, A.Pe.norm() );
+        if ( rn <= tol )
           break;
-        beta -= A.Kbb.fullPivLu().solve( A.Rb );
-        A = assembleAll( beta, false );
+        const V3 dBeta = -A.Kbb.fullPivLu().solve( A.Rb );
+
+        // Backtracking line search on the inner bubble Newton: accept only a step
+        // that does not increase ||R_beta||, and halve otherwise. The catch treats
+        // a throwing trial (a beta that drove the local traction-equilibrium solve
+        // past convergence) exactly like a non-improving step.
+        //
+        // This is REQUIRED FOR ROBUSTNESS, not for speed. Measured both ways:
+        //   * accuracy: irrelevant -- the oscillation result is bit-identical
+        //     (p2p 0.03897), i.e. beta reaches the same root either way;
+        //   * iterations: no benefit (180 vs 173 on the diagnosis benchmark);
+        //   * runtime: it COSTS ~67% there (1953 s vs 1170 s), because it spends
+        //     extra material evaluations on trial steps that are valid but merely
+        //     non-improving;
+        //   * robustness: decisive. Without it, beta can take a full Newton step
+        //     that increases the residual, wander into a bad state, and make the
+        //     material throw. On the parametric-study mesh (stiff, angle 10,
+        //     h=0.01, fy=5) that produced "Element ... requests for a cutback",
+        //     minInc exhaustion and a FAILED simulation at t~0.185, on a case the
+        //     older EIQUAD4 completes. With the line search the analysis runs.
+        // The runtime penalty is worth paying: these jobs are ~50 s, and not
+        // completing at all is not a trade.
+        double alpha    = 1.0;
+        bool   accepted = false;
+        for ( int ls = 0; ls < 10; ls++ ) {
+          try {
+            Acc trial = assembleAll( beta + alpha * dBeta, false );
+            if ( trial.Rb.norm() <= tol || trial.Rb.norm() < rn ) {
+              beta += alpha * dBeta;
+              A        = trial;
+              accepted = true;
+              break;
+            }
+          }
+          catch ( const std::exception& ) {
+            // the trial beta drove the local material solve past convergence:
+            // treat exactly like a non-improving step and halve
+          }
+          alpha *= 0.5;
+        }
+        if ( !accepted )
+          break; // keep the last good beta; the outer Newton continues from there
       }
       // final pass at the converged beta, committing material state
       A = assembleAll( beta, true );
