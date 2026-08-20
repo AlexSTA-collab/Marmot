@@ -66,3 +66,9 @@ add_marmot_test("TestMarmotGaussLobattoInterfaceMaterialHypoElastic" "${CURR_TES
 
 # Tests for MarmotGaussLobattoBBarInterfaceMaterialHypoElastic
 add_marmot_test("TestMarmotGaussLobattoBBarInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotGaussLobattoBBarInterfaceMaterialHypoElastic.cpp")
+
+# Tests for MarmotWarpingInterfaceMaterialHypoElastic
+add_marmot_test("TestMarmotWarpingInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotWarpingInterfaceMaterialHypoElastic.cpp")
+
+# Tests for MarmotWarpingStabPressureInterfaceMaterialHypoElastic
+add_marmot_test("TestMarmotWarpingStabPressureInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotWarpingStabPressureInterfaceMaterialHypoElastic.cpp")

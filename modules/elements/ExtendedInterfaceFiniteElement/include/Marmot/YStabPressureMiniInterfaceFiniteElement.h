@@ -67,13 +67,119 @@
 #include "Marmot/MarmotStateVarVectorManager.h"
 
 #include <Eigen/Dense>
+#include <array>
+#include <atomic>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace Marmot::Elements {
+
+  namespace MiniProfiling {
+
+    /**
+     * Env-gated instrumentation for the element-local work of
+     * YIQUAD4_STABP_MINI. Enable with MARMOT_MINI_PROFILE=1; the summary is
+     * printed at process exit. Disabled it costs one predictable branch per
+     * element call, so it can stay in the production header.
+     *
+     * The clock reads sit around the MATERIAL call and around the small dense
+     * solves, so the split between "constitutive" and "everything else the
+     * element does" is measured rather than inferred.
+     */
+    struct Counters {
+      std::atomic< long long > elementCalls{ 0 };
+      std::atomic< long long > assemblyPasses{ 0 }; // full 4-QP sweeps
+      std::atomic< long long > materialCalls{ 0 };  // constitutive evaluations
+      std::atomic< long long > newtonIterations{ 0 };
+      std::atomic< long long > lineSearchTrials{ 0 };
+      std::atomic< long long > maxNewtonIterations{ 0 };
+      std::atomic< long long > nanosecondsTotal{ 0 };
+      std::atomic< long long > nanosecondsMaterial{ 0 };
+      std::atomic< long long > nanosecondsAssembly{ 0 }; // assembly excluding the material
+      std::atomic< long long > nanosecondsBubbleSolve{ 0 };
+      std::atomic< long long > nanosecondsCondensation{ 0 };
+
+      /** MARMOT_MINI_PROFILE=<path>: the summary is rewritten to that file every
+       *  `dumpEvery` element calls. A periodic dump rather than one at exit,
+       *  because the library is dlopened from Python and its static
+       *  destructors are not reliably run. */
+      std::string path = [] {
+        const char* v = std::getenv( "MARMOT_MINI_PROFILE" );
+        return v ? std::string( v ) : std::string();
+      }();
+      bool                       enabled   = !path.empty();
+      static constexpr long long dumpEvery = 50000;
+
+      ~Counters() { dump(); }
+
+      void dump()
+      {
+        if ( !enabled || elementCalls.load() == 0 ) {
+          return;
+        }
+        std::FILE* out = std::fopen( path.c_str(), "w" );
+        if ( !out ) {
+          return;
+        }
+        const double    toSeconds = 1.0e-9;
+        const long long calls     = elementCalls.load();
+        std::fprintf( out,
+                      "\n==== YIQUAD4_STABP_MINI element-local profile ====\n"
+                      "  element calls                : %lld\n"
+                      "  assembly passes (4 QP each)  : %lld   (%.2f per element call)\n"
+                      "  constitutive evaluations     : %lld   (%.2f per element call)\n"
+                      "  bubble Newton iterations     : %lld   (avg %.2f, max %lld per call)\n"
+                      "  line-search trials           : %lld   (%.2f per call)\n"
+                      "  ---- time ----\n"
+                      "  total in computeKernels      : %8.2f s\n"
+                      "    constitutive (material)    : %8.2f s  (%5.1f%%)\n"
+                      "    assembly excl. material    : %8.2f s  (%5.1f%%)\n"
+                      "    3x3 bubble solves          : %8.2f s  (%5.1f%%)\n"
+                      "    static condensation        : %8.2f s  (%5.1f%%)\n"
+                      "=================================================\n",
+                      calls,
+                      assemblyPasses.load(),
+                      double( assemblyPasses.load() ) / calls,
+                      materialCalls.load(),
+                      double( materialCalls.load() ) / calls,
+                      newtonIterations.load(),
+                      double( newtonIterations.load() ) / calls,
+                      maxNewtonIterations.load(),
+                      lineSearchTrials.load(),
+                      double( lineSearchTrials.load() ) / calls,
+                      nanosecondsTotal.load() * toSeconds,
+                      nanosecondsMaterial.load() * toSeconds,
+                      100.0 * nanosecondsMaterial.load() / std::max( 1LL, nanosecondsTotal.load() ),
+                      nanosecondsAssembly.load() * toSeconds,
+                      100.0 * nanosecondsAssembly.load() / std::max( 1LL, nanosecondsTotal.load() ),
+                      nanosecondsBubbleSolve.load() * toSeconds,
+                      100.0 * nanosecondsBubbleSolve.load() / std::max( 1LL, nanosecondsTotal.load() ),
+                      nanosecondsCondensation.load() * toSeconds,
+                      100.0 * nanosecondsCondensation.load() / std::max( 1LL, nanosecondsTotal.load() ) );
+        std::fclose( out );
+      }
+    };
+
+    inline Counters& counters()
+    {
+      static Counters instance;
+      return instance;
+    }
+
+    using Clock = std::chrono::steady_clock;
+
+    inline long long since( const Clock::time_point& start )
+    {
+      return std::chrono::duration_cast< std::chrono::nanoseconds >( Clock::now() - start ).count();
+    }
+
+  } // namespace MiniProfiling
 
   class YStabPressureMiniInterfaceFiniteElement : public MarmotElement, public MarmotGeometryInterfaceElement< 3, 8 > {
 
@@ -215,11 +321,41 @@ namespace Marmot::Elements {
     // whenever gamma is raised.
     double stabGamma = defaultStabGamma();
 
+    /**
+     * DIAGNOSTIC ABLATION SWITCH. MARMOT_MINI_BUBBLE=OFF disables ONLY the
+     * internal displacement bubble: beta is held at zero, its residual/tangent
+     * blocks are not condensed, and the element degenerates to the plain
+     * equal-order Q1/Q1 displacement-pressure pairing with the SAME pressure
+     * interpolation, the SAME pressure equation, the SAME Brezzi-Pitkaranta
+     * term, the SAME quadrature and the SAME material. Nothing else changes.
+     */
+    static bool bubbleDisabled()
+    {
+      static const bool disabled = [] {
+        const char* v = std::getenv( "MARMOT_MINI_BUBBLE" );
+        return v && std::string( v ) == "OFF";
+      }();
+      return disabled;
+    }
+
+    /** Local pressure/displacement coupling B_u = d(R_p)/d(u), 4 x 24.
+     *  Filled by the last computeKernels call; diagnostic only. */
+    Eigen::Matrix< double, nDofP, nDofU > pressureDisplacementCoupling = Eigen::Matrix< double, nDofP, nDofU >::Zero();
+
+    /** Local pressure/bubble coupling B_a = d(R_p)/d(beta), 4 x 3.
+     *  Filled by the last computeKernels call; diagnostic only. */
+    Eigen::Matrix< double, nDofP, nDim > pressureBubbleCoupling = Eigen::Matrix< double, nDofP, nDim >::Zero();
+
+    // gamma = 0 is admissible and meaningful: it turns the Brezzi-Pitkaranta term
+    // off entirely, leaving the MINI bubble as the only stabilising mechanism.
+    // Parsed with strtod rather than atof so that a non-numeric value still falls
+    // back to the default instead of silently becoming 0.
     static double defaultStabGamma()
     {
       if ( const char* e = std::getenv( "MARMOT_STABP_GAMMA" ) ) {
-        const double v = std::atof( e );
-        if ( v > 0.0 )
+        char*        end = nullptr;
+        const double v   = std::strtod( e, &end );
+        if ( end != e && *end == '\0' && v >= 0.0 )
           return v;
       }
       return 0.2;
@@ -367,6 +503,16 @@ namespace Marmot::Elements {
 
     void computeKernels( const double* QTotal_, const double* dQ_, double* Pe_, double* Ke_, double time, double dT )
     {
+      auto&      profile      = MiniProfiling::counters();
+      const bool profiling    = profile.enabled;
+      const auto elementStart = profiling ? MiniProfiling::Clock::now() : MiniProfiling::Clock::time_point{};
+      if ( profiling ) {
+        const long long call = profile.elementCalls.fetch_add( 1, std::memory_order_relaxed ) + 1;
+        if ( call % MiniProfiling::Counters::dumpEvery == 0 ) {
+          profile.dump();
+        }
+      }
+
       Eigen::Map< const RhsSized > QTotal( QTotal_ ), dQ( dQ_ );
       Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
       Eigen::Map< RhsSized >       Pe( Pe_ );
@@ -385,17 +531,34 @@ namespace Marmot::Elements {
       }
 
       struct Acc {
-        RhsSized                          Pe;
-        KeSizedMatrix                     Ke;
-        V3                                Rb;
-        M33                               Kbb;
-        Eigen::Matrix< double, 3, nDofU > Kbu;
-        Eigen::Matrix< double, nDofU, 3 > Kub;
-        Eigen::Matrix< double, 3, nDofP > Kbp;
-        Eigen::Matrix< double, nDofP, 3 > Kpb;
+        RhsSized                              Pe;
+        KeSizedMatrix                         Ke;
+        V3                                    Rb;
+        M33                                   Kbb;
+        Eigen::Matrix< double, 3, nDofU >     Kbu;
+        Eigen::Matrix< double, nDofU, 3 >     Kub;
+        Eigen::Matrix< double, 3, nDofP >     Kbp;
+        Eigen::Matrix< double, nDofP, 3 >     Kpb;
+        Eigen::Matrix< double, nDofP, nDofU > Kpu; // diagnostic: B_u
+
+        // Per-QP results carried out of the pass, so that the element state can
+        // be written from ANY pass without recomputing it. This is what lets the
+        // redundant final "commit" sweep be dropped: it used to re-run all four
+        // constitutive updates at a beta that had just been evaluated, and the
+        // profile showed it was 1 of every 3.11 assembly passes, i.e. ~32% of all
+        // element-local work.
+        std::array< Eigen::Matrix< double, 3, 1 >, 8 > qpForce;
+        std::array< Eigen::Matrix< double, 9, 1 >, 8 > qpSurfacePlus;
+        std::array< Eigen::Matrix< double, 9, 1 >, 8 > qpSurfaceMinus;
+        std::array< double, 8 >                        qpVolumetricResidual;
       };
 
-      auto assembleAll = [&]( const V3& beta, bool commit ) {
+      auto assembleAll = [&]( const V3& beta ) {
+        const auto passStart = profiling ? MiniProfiling::Clock::now() : MiniProfiling::Clock::time_point{};
+        long long  passMaterialNanoseconds = 0;
+        if ( profiling ) {
+          profile.assemblyPasses.fetch_add( 1, std::memory_order_relaxed );
+        }
         Acc A;
         A.Pe.setZero();
         A.Ke.setZero();
@@ -405,6 +568,7 @@ namespace Marmot::Elements {
         A.Kub.setZero();
         A.Kbp.setZero();
         A.Kpb.setZero();
+        A.Kpu.setZero();
 
         for ( size_t iq = 0; iq < qps.size(); iq++ ) {
           auto& qp  = qps[iq];
@@ -478,14 +642,20 @@ namespace Marmot::Elements {
                                      qp.separationVector.data(),
                                      ( Np * dP )( 0, 0 ) };
           Material::TimeIncrement tinc{ time, dT };
-          qp.material->computeStress( msv.data(), resp, tg, def, tinc );
-
-          if ( commit ) {
-            qp.managedStateVars->generalizedForce        = f;
-            qp.managedStateVars->surfaceStressPlus       = Sp;
-            qp.managedStateVars->surfaceStressMinus      = Sm;
-            qp.managedStateVars->volumetricResidual( 0 ) = rp;
+          if ( profiling ) {
+            const auto materialStart = MiniProfiling::Clock::now();
+            qp.material->computeStress( msv.data(), resp, tg, def, tinc );
+            passMaterialNanoseconds += MiniProfiling::since( materialStart );
+            profile.materialCalls.fetch_add( 1, std::memory_order_relaxed );
           }
+          else {
+            qp.material->computeStress( msv.data(), resp, tg, def, tinc );
+          }
+
+          A.qpForce[iq]              = f;
+          A.qpSurfacePlus[iq]        = Sp;
+          A.qpSurfaceMinus[iq]       = Sm;
+          A.qpVolumetricResidual[iq] = rp;
 
           const double h   = qp.material->getInterfaceThickness();
           const double mu  = qp.material->getShearModulus();
@@ -514,6 +684,7 @@ namespace Marmot::Elements {
           A.Ke.block< nDofU, nDofU >( offU, offU ) += Kuu * qp.J0xW;
           A.Ke.block< nDofU, nDofP >( offU, offP ) += Kup * qp.J0xW;
           A.Ke.block< nDofP, nDofU >( offP, offU ) += Kpu * qp.J0xW;
+          A.Kpu += Kpu * qp.J0xW; // diagnostic copy of the raw (uncondensed) B_u
           A.Ke.block< nDofP, nDofP >( offP, offP ) += Kpp * qp.J0xW;
 
           const Eigen::Matrix< double, 9, 3 > dSpdb = ( QApAp + QApAm ) * Bbub;
@@ -529,7 +700,37 @@ namespace Marmot::Elements {
           A.Kbp += ( Bbub.transpose() * ( QApp + QAmp ) * Np ) * qp.J0xW;
           A.Kpb += ( h * ( Np.transpose() * ( QpAp + QpAm ) * Bbub ) ) * qp.J0xW;
         }
+        if ( profiling ) {
+          const long long total = MiniProfiling::since( passStart );
+          profile.nanosecondsMaterial.fetch_add( passMaterialNanoseconds, std::memory_order_relaxed );
+          profile.nanosecondsAssembly.fetch_add( total - passMaterialNanoseconds, std::memory_order_relaxed );
+        }
         return A;
+      };
+
+      // The material state left in the state vector after a pass belongs to that
+      // pass's beta. Snapshot it whenever a pass is ACCEPTED, so a later rejected
+      // trial can be undone without re-running the constitutive updates.
+      std::vector< std::vector< double > > acceptedMaterialState( qps.size() );
+
+      auto snapshotMaterialState = [&]() {
+        for ( size_t i = 0; i < qps.size(); i++ ) {
+          auto& m = qps[i].managedStateVars->materialStateVars;
+          acceptedMaterialState[i].assign( m.data(), m.data() + m.size() );
+        }
+      };
+
+      auto commitAccepted = [&]( const Acc& A ) {
+        for ( size_t i = 0; i < qps.size(); i++ ) {
+          auto& managed = *qps[i].managedStateVars;
+          std::copy( acceptedMaterialState[i].begin(),
+                     acceptedMaterialState[i].end(),
+                     managed.materialStateVars.data() );
+          managed.generalizedForce        = A.qpForce[i];
+          managed.surfaceStressPlus       = A.qpSurfacePlus[i];
+          managed.surfaceStressMinus      = A.qpSurfaceMinus[i];
+          managed.volumetricResidual( 0 ) = A.qpVolumetricResidual[i];
+        }
       };
 
       // ---- inner Newton on the internal bubble amplitude: solve R_beta(beta)=0 ----
@@ -543,14 +744,37 @@ namespace Marmot::Elements {
       // local traction-equilibrium solve cannot converge, and the StressUpdateFailed
       // propagates out as a global cutback (measured: 1 cutback, 1 StressUpdateFailed
       // for MINI vs 0/0 for the same element without the bubble).
+      if ( bubbleDisabled() ) {
+        // Ablation: no bubble at all. beta stays zero, so it contributes
+        // nothing to the strain, and its blocks are NOT condensed -- the
+        // element is the plain Q1/Q1 pairing with the identical pressure
+        // equation and stabilisation.
+        Acc A0 = assembleAll( V3::Zero() );
+        snapshotMaterialState();
+        commitAccepted( A0 );
+        Pe                                   = A0.Pe;
+        Ke                                   = A0.Ke;
+        qps[0].managedStateVars->bubbleAlpha = V3::Zero();
+        pressureDisplacementCoupling         = A0.Kpu;
+        pressureBubbleCoupling               = A0.Kpb;
+        return;
+      }
+
       V3  beta = qps[0].managedStateVars->bubbleAlpha;
-      Acc A    = assembleAll( beta, false );
+      Acc A    = assembleAll( beta );
+      snapshotMaterialState();
+      int newtonIterations = 0;
       for ( int it = 0; it < 20; it++ ) {
         const double rn  = A.Rb.norm();
         const double tol = 1.0e-10 * std::max( 1.0, A.Pe.norm() );
         if ( rn <= tol )
           break;
-        const V3 dBeta = -A.Kbb.fullPivLu().solve( A.Rb );
+        ++newtonIterations;
+        const auto solveStart = profiling ? MiniProfiling::Clock::now() : MiniProfiling::Clock::time_point{};
+        const V3   dBeta      = -A.Kbb.fullPivLu().solve( A.Rb );
+        if ( profiling ) {
+          profile.nanosecondsBubbleSolve.fetch_add( MiniProfiling::since( solveStart ), std::memory_order_relaxed );
+        }
 
         // Backtracking line search on the inner bubble Newton: accept only a step
         // that does not increase ||R_beta||, and halve otherwise. The catch treats
@@ -575,11 +799,15 @@ namespace Marmot::Elements {
         double alpha    = 1.0;
         bool   accepted = false;
         for ( int ls = 0; ls < 10; ls++ ) {
+          if ( profiling ) {
+            profile.lineSearchTrials.fetch_add( 1, std::memory_order_relaxed );
+          }
           try {
-            Acc trial = assembleAll( beta + alpha * dBeta, false );
+            Acc trial = assembleAll( beta + alpha * dBeta );
             if ( trial.Rb.norm() <= tol || trial.Rb.norm() < rn ) {
               beta += alpha * dBeta;
-              A        = trial;
+              A = trial;
+              snapshotMaterialState();
               accepted = true;
               break;
             }
@@ -593,22 +821,78 @@ namespace Marmot::Elements {
         if ( !accepted )
           break; // keep the last good beta; the outer Newton continues from there
       }
-      // final pass at the converged beta, committing material state
-      A = assembleAll( beta, true );
+      if ( profiling ) {
+        profile.newtonIterations.fetch_add( newtonIterations, std::memory_order_relaxed );
+        long long previous = profile.maxNewtonIterations.load( std::memory_order_relaxed );
+        while ( newtonIterations > previous &&
+                !profile.maxNewtonIterations.compare_exchange_weak( previous, newtonIterations ) ) {
+        }
+      }
 
-      const M33 KbbInv = A.Kbb.fullPivLu().inverse();
-      Pe               = A.Pe;
-      Ke               = A.Ke;
+      // The accepted pass already evaluated everything at this beta, so the
+      // element state is written from it instead of re-running a whole
+      // constitutive sweep. The material state is restored from the snapshot,
+      // which undoes any rejected trial that ran afterwards.
+      //
+      // MARMOT_MINI_LEGACY_COMMIT_PASS=1 restores the old behaviour (a full
+      // extra sweep at the same beta), kept ONLY so the two can be timed
+      // back-to-back under identical machine load.
+      static const bool legacyCommitPass = [] {
+        const char* v = std::getenv( "MARMOT_MINI_LEGACY_COMMIT_PASS" );
+        return v && std::string( v ) == "1";
+      }();
+      if ( legacyCommitPass ) {
+        A = assembleAll( beta );
+      }
+      commitAccepted( A );
+
+      const auto condensationStart = profiling ? MiniProfiling::Clock::now() : MiniProfiling::Clock::time_point{};
+
+      // One factorisation, three solves -- no explicit K_bb^-1.
+      // Spectrum of the bubble block, for comparison with the two-face element's Qbar.
+      // grad_s b is a surface gradient, so the contraction sits on tangential slots and
+      // lambda_min is expected O(G) with no H-scaling.
+      if ( std::getenv( "MARMOT_MINI_KBB_SPECTRUM" ) ) {
+        static std::atomic< long > kbbCalls{ 0 };
+        const long                 kbbN = ++kbbCalls;
+        if ( kbbN % 20000 == 0 ) {
+          Eigen::JacobiSVD< Eigen::Matrix3d > kbbSvd( Eigen::Matrix3d( A.Kbb ) );
+          const auto                          sv = kbbSvd.singularValues();
+          std::printf( "  [kbb] n=%ld  sMax=%.6e sMin=%.6e  sMin/sMax=%.6e\n",
+                       kbbN,
+                       sv( 0 ),
+                       sv( 2 ),
+                       sv( 0 ) > 0.0 ? sv( 2 ) / sv( 0 ) : 0.0 );
+          std::fflush( stdout );
+        }
+      }
+
+      const auto                              KbbFactorisation = A.Kbb.fullPivLu();
+      const V3                                KbbInvRb         = KbbFactorisation.solve( A.Rb );
+      const Eigen::Matrix< double, 3, nDofU > KbbInvKbu        = KbbFactorisation.solve( A.Kbu );
+      const Eigen::Matrix< double, 3, nDofP > KbbInvKbp        = KbbFactorisation.solve( A.Kbp );
+
+      Pe = A.Pe;
+      Ke = A.Ke;
       // R_beta is ~0 now, so the condensed residual equals Pe; only the tangent
       // needs the Schur complement.
-      Pe.segment< nDofU >( offU ) += A.Kub * ( KbbInv * A.Rb );
-      Pe.segment< nDofP >( offP ) += A.Kpb * ( KbbInv * A.Rb );
-      Ke.block< nDofU, nDofU >( offU, offU ) -= A.Kub * KbbInv * A.Kbu;
-      Ke.block< nDofU, nDofP >( offU, offP ) -= A.Kub * KbbInv * A.Kbp;
-      Ke.block< nDofP, nDofU >( offP, offU ) -= A.Kpb * KbbInv * A.Kbu;
-      Ke.block< nDofP, nDofP >( offP, offP ) -= A.Kpb * KbbInv * A.Kbp;
+      Pe.segment< nDofU >( offU ) += A.Kub * KbbInvRb;
+      Pe.segment< nDofP >( offP ) += A.Kpb * KbbInvRb;
+      Ke.block< nDofU, nDofU >( offU, offU ) -= A.Kub * KbbInvKbu;
+      Ke.block< nDofU, nDofP >( offU, offP ) -= A.Kub * KbbInvKbp;
+      Ke.block< nDofP, nDofU >( offP, offU ) -= A.Kpb * KbbInvKbu;
+      Ke.block< nDofP, nDofP >( offP, offP ) -= A.Kpb * KbbInvKbp;
 
       qps[0].managedStateVars->bubbleAlpha = beta;
+
+      pressureDisplacementCoupling = A.Kpu;
+      pressureBubbleCoupling       = A.Kpb;
+
+      if ( profiling ) {
+        profile.nanosecondsCondensation.fetch_add( MiniProfiling::since( condensationStart ),
+                                                   std::memory_order_relaxed );
+        profile.nanosecondsTotal.fetch_add( MiniProfiling::since( elementStart ), std::memory_order_relaxed );
+      }
     }
 
     void computeDistributedLoad( MarmotElement::DistributedLoadTypes,

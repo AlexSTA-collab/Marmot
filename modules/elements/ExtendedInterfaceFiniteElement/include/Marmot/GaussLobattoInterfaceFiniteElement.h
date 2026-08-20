@@ -235,9 +235,47 @@ namespace Marmot::Elements {
 
     std::vector< QuadraturePoint > qps;
 
+    /**
+     * Quadrature over the 2D PARAMETRIC SURFACE of the element, (xi, eta).
+     *
+     * This is a DIFFERENT quadrature from the through-thickness one. The
+     * through-thickness direction is integrated by LobattoRule<NStations>
+     * inside the material and is NOT affected by this setting -- the two are
+     * deliberately kept separate, and the integration is nested:
+     *
+     *     for each surface point (xi, eta):        <-- selected here
+     *         for each through-thickness station:  <-- LobattoRule<NStations>
+     *
+     *   Gauss2x2   xi, eta = +/- 1/sqrt(3), weight 1   (the standard rule)
+     *   Lobatto2x2 xi, eta = +/- 1,         weight 1
+     *
+     * For a Q1 surface the Lobatto points coincide with the four surface
+     * NODES, so the shape functions collocate there (N_a = 1 at its own node,
+     * 0 at the others). Testing whether that changes the hydrostatic-stress
+     * oscillation is the entire point of the option; it is NOT assumed to be a
+     * stabilisation. Both rules integrate a constant exactly (sum of weights
+     * = 4 either way), so a constant-stress patch is unaffected.
+     *
+     * The Jacobian is re-evaluated at every surface point in both cases -- the
+     * mapping is not assumed constant just because the points moved.
+     */
+    enum class SurfaceIntegrationScheme {
+      Gauss2x2,  ///< standard 2x2 Gauss, xi,eta = +/- 1/sqrt(3)
+      Lobatto2x2 ///< 2x2 Gauss-Lobatto, xi,eta = +/- 1 (nodal collocation)
+    };
+
+    /** Surface quadrature points and weights for the requested scheme. */
+    static std::vector< FiniteElement::Quadrature::QuadraturePointInfo > surfaceQuadrature(
+      Marmot::FiniteElement::ElementShapes        shape,
+      FiniteElement::Quadrature::IntegrationTypes integrationType,
+      SurfaceIntegrationScheme                    scheme );
+
+    const SurfaceIntegrationScheme surfaceIntegrationScheme;
+
     GaussLobattoInterfaceFiniteElement( int                                         elementID,
                                         FiniteElement::Quadrature::IntegrationTypes integrationType,
-                                        SectionType sectionType = SectionType::Interface );
+                                        SectionType              sectionType   = SectionType::Interface,
+                                        SurfaceIntegrationScheme surfaceScheme = SurfaceIntegrationScheme::Gauss2x2 );
 
     int getNumberOfRequiredStateVars();
 
@@ -322,16 +360,58 @@ namespace Marmot::Elements {
   ///@{
 
   template < int nDim, int nNodes, int NStations >
+  std::vector< FiniteElement::Quadrature::QuadraturePointInfo > GaussLobattoInterfaceFiniteElement<
+    nDim,
+    nNodes,
+    NStations >::surfaceQuadrature( Marmot::FiniteElement::ElementShapes        shape,
+                                    FiniteElement::Quadrature::IntegrationTypes integrationType,
+                                    SurfaceIntegrationScheme                    scheme )
+  {
+    if ( scheme == SurfaceIntegrationScheme::Gauss2x2 ) {
+      const auto& gauss = FiniteElement::Quadrature::getGaussPointInfo( shape, integrationType );
+      return std::vector< FiniteElement::Quadrature::QuadraturePointInfo >( gauss.begin(), gauss.end() );
+    }
+
+    // Two-point Gauss-Lobatto in each surface direction: nodes of the interval,
+    // xi = {-1, +1}, weight 1 each. Tensor-producted over the nXi surface
+    // directions and ordered counter-clockwise so that surface point s
+    // coincides with surface node s of the Q1 midsurface.
+    constexpr int nXi = XiSized::RowsAtCompileTime;
+
+    std::vector< FiniteElement::Quadrature::QuadraturePointInfo > points;
+    if constexpr ( nXi == 2 ) {
+      const double corners[4][2] = { { -1.0, -1.0 }, { 1.0, -1.0 }, { 1.0, 1.0 }, { -1.0, 1.0 } };
+      for ( const auto& corner : corners ) {
+        Eigen::VectorXd xi( 2 );
+        xi << corner[0], corner[1];
+        points.push_back( { xi, 1.0 } );
+      }
+    }
+    else {
+      for ( const double corner : { -1.0, 1.0 } ) {
+        Eigen::VectorXd xi( 1 );
+        xi << corner;
+        points.push_back( { xi, 1.0 } );
+      }
+    }
+    return points;
+  }
+
+  template < int nDim, int nNodes, int NStations >
   GaussLobattoInterfaceFiniteElement< nDim, nNodes, NStations >::GaussLobattoInterfaceFiniteElement(
     int                                         elementID,
     FiniteElement::Quadrature::IntegrationTypes integrationType,
-    SectionType                                 sectionType )
+    SectionType                                 sectionType,
+    SurfaceIntegrationScheme                    surfaceScheme )
     : ParentGeometryElement(),
+      surfaceIntegrationScheme( surfaceScheme ),
       elementProperties( Eigen::Map< const Eigen::VectorXd >( nullptr, 0 ) ),
       elLabel( elementID ),
       sectionType( sectionType )
   {
-    const auto qpInfos = FiniteElement::Quadrature::getGaussPointInfo( this->shape, integrationType );
+    // ONLY the outer surface loop changes. The inner through-thickness loop
+    // (LobattoRule<NStations>, inside the material) is identical either way.
+    const auto qpInfos = surfaceQuadrature( this->shape, integrationType, surfaceScheme );
 
     for ( const auto& qpInfo : qpInfos ) {
       QuadraturePoint qp( qpInfo.xi, qpInfo.weight );

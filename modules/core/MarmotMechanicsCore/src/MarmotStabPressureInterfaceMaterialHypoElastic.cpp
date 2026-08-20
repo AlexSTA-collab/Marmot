@@ -13,6 +13,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <stdexcept>
 #include <vector>
 

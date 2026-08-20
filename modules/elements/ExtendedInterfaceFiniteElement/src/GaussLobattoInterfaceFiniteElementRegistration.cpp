@@ -48,4 +48,29 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           GaussLobattoInterfaceFiniteElement< 3, 8, 7 >::SectionType::Interface >() );
 
+  // ---------------------------------------------------------------------
+  // SURFACE-quadrature experiment (isolated): identical to GLIQUAD4/GLILINE2
+  // in every respect except the position of the outer surface integration
+  // points, xi,eta = +/-1/sqrt(3) -> +/-1. The through-thickness Lobatto rule,
+  // the material, the kinematics and the state layout are untouched, so the
+  // pair (GLIQUAD4, GLIQUAD4_SURFLOB) is a controlled comparison.
+  // ---------------------------------------------------------------------
+  template < class T, Marmot::FiniteElement::Quadrature::IntegrationTypes integrationType >
+  MarmotLibrary::MarmotElementFactory::elementFactoryFunction makeSurfaceLobattoFactoryFunction()
+  {
+    return []( int elementID ) -> MarmotElement* {
+      return new T( elementID, integrationType, T::SectionType::Interface, T::SurfaceIntegrationScheme::Lobatto2x2 );
+    };
+  }
+
+  const static bool GLILINE2_SURFLOB_isRegistered = MarmotElementFactory::
+    registerElement( "GLILINE2_SURFLOB",
+                     makeSurfaceLobattoFactoryFunction< GaussLobattoInterfaceFiniteElement< 2, 4 >,
+                                                        FullIntegration >() );
+
+  const static bool GLIQUAD4_SURFLOB_isRegistered = MarmotElementFactory::
+    registerElement( "GLIQUAD4_SURFLOB",
+                     makeSurfaceLobattoFactoryFunction< GaussLobattoInterfaceFiniteElement< 3, 8 >,
+                                                        FullIntegration >() );
+
 } // namespace Marmot::Elements::Registration

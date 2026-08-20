@@ -12,6 +12,8 @@ list(APPEND publicheaders
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotStabPressureInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotGaussLobattoInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotGaussLobattoBBarInterfaceMaterialHypoElastic.h"
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotWarpingInterfaceMaterialHypoElastic.h"
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotWarpingStabPressureInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotInterfaceMaterialHelperFunctions.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotWiechert.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotViscoelasticity.h"
