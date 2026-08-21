@@ -30,3 +30,9 @@ add_marmot_test("TestGaussLobattoSurfaceQuadrature" "${CURR_TEST_SOURCE_DIR}/Tes
 
 # Tests for WarpingStabPressureMiniInterfaceFiniteElement
 add_marmot_test("TestWarpingStabPressureMiniInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestWarpingStabPressureMiniInterfaceFiniteElement.cpp")
+
+# Tests for ZInterfaceFiniteElement (ZIQUAD4)
+add_marmot_test("TestZInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestZInterfaceFiniteElement.cpp")
+
+# Tests for ZStabPressureInterfaceFiniteElement (ZIQUAD4_STABP)
+add_marmot_test("TestZStabPressureInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestZStabPressureInterfaceFiniteElement.cpp")

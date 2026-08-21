@@ -9,6 +9,8 @@ list(APPEND publicheaders
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotXInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotEquilibratedXInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotPartialMixedInterfaceMaterialHypoElastic.h"
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotZInterfaceMaterialHypoElastic.h"
+    "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotZStabPressureInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotStabPressureInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotGaussLobattoInterfaceMaterialHypoElastic.h"
     "${CMAKE_CURRENT_LIST_DIR}/include/Marmot/MarmotGaussLobattoBBarInterfaceMaterialHypoElastic.h"
