@@ -69,9 +69,17 @@ Elements
      - Three-dimensional interface element between two bilinear quadrilaterals (4 bottom and 4 top nodes),
        full integration
 
-The class is a template in the spatial dimension and the number of nodes. Besides the registered
+The element is a template in the spatial dimension and the number of nodes. Besides the registered
 three-dimensional ``IQUAD4``, a two-dimensional instantiation embeds its quadrature-point state in the
 three-dimensional material layout.
+
+The element is built from two parts. ``InterfaceFiniteElementBase`` holds what all interface elements have in
+common: the geometry of the interface and of its quadrature points, the nodes, degrees of freedom and state
+variables, the assignment of the material and the kinematic increments at the quadrature points. A *formulation*
+supplies what differs between the elements: the interface material, the state variables stored at a quadrature
+point, and the evaluation of the material response together with the assembly of the residual and the tangent.
+``DisplacementJumpFormulation`` is the formulation described here, and ``InterfaceFiniteElement`` is the base with
+this formulation.
 
 Properties
 ----------
@@ -90,5 +98,8 @@ surface strains, followed by the state variables of the interface material (padd
 Implementation
 --------------
 
-.. doxygenclass:: Marmot::Elements::InterfaceFiniteElement
+.. doxygenclass:: Marmot::Elements::InterfaceFiniteElementBase
    :allow-dot-graphs:
+
+.. doxygenstruct:: Marmot::Elements::DisplacementJumpFormulation
+   :members:
