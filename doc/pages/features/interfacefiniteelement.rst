@@ -91,6 +91,12 @@ Elements
    * - ``YILINE2UL``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4UL``
+   * - ``GYIQUAD4UL``, ``GYIQUAD8UL``
+     - 8, 16
+     - As ``YIQUAD4UL`` and ``YIQUAD8UL``, with a nonlocal field on the nodes of the bottom side
+   * - ``GYILINE2UL``
+     - 4
+     - Two-dimensional counterpart of ``GYIQUAD4UL``
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
@@ -138,6 +144,22 @@ thickness of the layer. The force :math:`\mathbf{t} = (h/\ell)\, \mathbf{P}\math
 from the first Piola-Kirchhoff stress :math:`\mathbf{P}` of the bulk material and
 :math:`\mathbf{T} = \mathbf{I} - \mathbf{n}\otimes\mathbf{n}`.
 
+The ``GY`` elements use ``GradientEnhancedEquilibratedTwoSidedFormulation``. In addition to the displacements, they
+carry a nonlocal field :math:`\bar{N}` with one degree of freedom on each node of the bottom side, which is the
+midsurface of the layer, after the displacements in the vectors of the element. The bulk material is a
+gradient-enhanced finite-strain material, such as the
+:doc:`gradient-enhanced neo-Hookean damage material <gradientenhancedcompressibleneohookedamage>`. For a nonlocal
+radius :math:`l` above the thickness :math:`h` of the layer, the field is flat across it, and the nonlocal equation
+reduces to the midsurface,
+
+.. math::
+
+   h \left[ \mathbf{N}^\mathsf{T} \big( \bar{N} - \bar{L} \big) + l^2\, \nabla\mathbf{N}^\mathsf{T} \nabla\bar{N} \right] = 0,
+
+where :math:`\bar{L}` is the average of the local driving fields of the two faces. The residual and the tangent of the
+displacements, and of the nonlocal field, are coupled through the condensed derivatives of the
+:ref:`equilibrated finite-strain interface material <equilibratedinterfacematerialfinitestrain>`.
+
 Properties
 ----------
 
@@ -171,4 +193,7 @@ Implementation
    :members:
 
 .. doxygenstruct:: Marmot::Elements::FiniteStrainEquilibratedTwoSidedFormulation
+   :members:
+
+.. doxygenstruct:: Marmot::Elements::GradientEnhancedEquilibratedTwoSidedFormulation
    :members:

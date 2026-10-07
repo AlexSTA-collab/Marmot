@@ -1,3 +1,4 @@
+#include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotElementProperty.h"
@@ -96,9 +97,10 @@ namespace {
   template < class ElementType, int nDim, int nNodes >
   Evaluation evaluate( const Coordinates< nDim, nNodes >& coordinates,
                        const std::vector< double >&       materialProperties,
-                       const DofVector< nDim, nNodes >&   Q )
+                       const Eigen::VectorXd&             Q,
+                       const std::string&                 materialName = "COMPRESSIBLENEOHOOKE" )
   {
-    constexpr int nDofs = nDim * nNodes;
+    constexpr int nDofs = ElementType::sizeLoadVector;
 
     ElementType element( 3,
                          FiniteElement::Quadrature::IntegrationTypes::FullIntegration,
@@ -108,9 +110,7 @@ namespace {
     const std::array< double, 1 > thickness = { 1.0 };
     ElementProperties             properties( thickness.data(), 1 );
     element.assignProperty( properties );
-    element.assignMaterial( "COMPRESSIBLENEOHOOKE",
-                            materialProperties.data(),
-                            static_cast< int >( materialProperties.size() ) );
+    element.assignMaterial( materialName, materialProperties.data(), static_cast< int >( materialProperties.size() ) );
 
     std::vector< double > stateVars( element.getNumberOfRequiredStateVars(), 0.0 );
     element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
@@ -127,7 +127,8 @@ namespace {
 
     Evaluation evaluation;
     evaluation.residual = Eigen::Map< Eigen::VectorXd >( Pe.data(), nDofs );
-    evaluation.tangent  = Eigen::Map< Eigen::Matrix< double, nDofs, nDofs, Eigen::RowMajor > >( Ke.data() );
+    // the element tangent is stored column major, like the one of the element base
+    evaluation.tangent = Eigen::Map< Eigen::Matrix< double, nDofs, nDofs > >( Ke.data() );
     return evaluation;
   }
 
@@ -144,12 +145,13 @@ namespace {
   template < class ElementType, int nDim, int nNodes >
   void assertTangentMatchesFiniteDifference( const Coordinates< nDim, nNodes >& coordinates,
                                              const std::vector< double >&       materialProperties,
-                                             const DofVector< nDim, nNodes >&   Q,
-                                             const std::string&                 context )
+                                             const Eigen::VectorXd&             Q,
+                                             const std::string&                 context,
+                                             const std::string&                 materialName = "COMPRESSIBLENEOHOOKE" )
   {
-    constexpr int nDofs = nDim * nNodes;
+    constexpr int nDofs = ElementType::sizeLoadVector;
 
-    const auto base = evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, Q );
+    const auto base = evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, Q, materialName );
     throwExceptionOnFailure( base.residual.allFinite() && base.tangent.allFinite(), context + ": nan or inf." );
     throwExceptionOnFailure( base.residual.norm() > 0.0, context + ": the displacements must produce a residual." );
 
@@ -157,14 +159,15 @@ namespace {
     for ( int i = 0; i < nDofs; ++i ) {
       const double eps = 1e-6;
 
-      DofVector< nDim, nNodes > plus  = Q;
-      DofVector< nDim, nNodes > minus = Q;
+      Eigen::VectorXd plus  = Q;
+      Eigen::VectorXd minus = Q;
       plus( i ) += eps;
       minus( i ) -= eps;
 
       finiteDifference.col(
-        i ) = ( evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, plus ).residual -
-                evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, minus ).residual ) /
+        i ) = ( evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, plus, materialName ).residual -
+                evaluate< ElementType, nDim, nNodes >( coordinates, materialProperties, minus, materialName )
+                  .residual ) /
               ( 2.0 * eps );
     }
 
@@ -379,9 +382,181 @@ namespace {
                              "shift." );
   }
 
+  // bulk modulus, shear modulus, thickness, damage threshold, softening parameter, nonlocal radius, density
+  std::vector< double > gradientEnhancedProperties( double thickness )
+  {
+    return { 3500.0, 1500.0, thickness, 1.0e-3, 5.0e-3, 0.2, 1.0 };
+  }
+
+  const std::string gradientEnhancedMaterial = "GRADIENTENHANCEDCOMPRESSIBLENEOHOOKEDAMAGE";
+
+  /// The displacements and the nonlocal field of an element with a nonlocal field.
+  template < class ElementType >
+  Eigen::VectorXd makeDisplacementsAndNonlocalField( double scale, int pattern, double nonlocal )
+  {
+    Eigen::VectorXd Q = makeDisplacements< ElementType::sizeLoadVector >( scale, pattern );
+    Q.tail( ElementType::nExtraDofs ).setConstant( nonlocal );
+    for ( int i = 0; i < ElementType::nExtraDofs; ++i )
+      Q( ElementType::nDofDisplacement + i ) += 1.0e-4 * i;
+    return Q;
+  }
+
+  /// The element with the nonlocal field: the tangent over the displacements and the nonlocal field, with the damage
+  /// active.
+  void testGradientEnhancedElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Element3d8  = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+    using Element3d16 = GYInterfaceFiniteElementFiniteStrain< 3, 16 >;
+    using Element2d   = GYInterfaceFiniteElementFiniteStrain< 2, 4 >;
+
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              gradientEnhancedProperties( hn ),
+                                                              makeDisplacementsAndNonlocalField< Element3d8 >( 3e-3,
+                                                                                                               1,
+                                                                                                               3e-3 ),
+                                                              "GY 3D, inclined",
+                                                              gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d16, 3, 16 >( serendipityQuadrilateral( gap ),
+                                                                gradientEnhancedProperties( gap ),
+                                                                makeDisplacementsAndNonlocalField<
+                                                                  Element3d16 >( 3e-3, 2, 3e-3 ),
+                                                                "GY 3D, serendipity",
+                                                                gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element2d, 2, 4 >( inclinedLine( angle, gap ),
+                                                             gradientEnhancedProperties( hn ),
+                                                             makeDisplacementsAndNonlocalField< Element2d >( 5e-3,
+                                                                                                             3,
+                                                                                                             3e-3 ),
+                                                             "GY 2D, inclined",
+                                                             gradientEnhancedMaterial );
+  }
+
+  /// A rigid rotation of the element with no nonlocal field is stress free and has no local field to drive it.
+  void testGradientEnhancedElementIsObjective()
+  {
+    const double angle       = 10.0 * pi / 180.0;
+    const double gap         = 0.1;
+    const double theta       = 0.3;
+    const auto   coordinates = inclinedQuadrilateral( angle, gap );
+
+    using Element = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    Eigen::Matrix3d R;
+    R << std::cos( theta ), 0.0, std::sin( theta ), 0.0, 1.0, 0.0, -std::sin( theta ), 0.0, std::cos( theta );
+
+    Eigen::VectorXd Q = Eigen::VectorXd::Zero( Element::sizeLoadVector );
+    for ( int node = 0; node < 8; ++node ) {
+      const Eigen::Vector3d X( coordinates[3 * node], coordinates[3 * node + 1], coordinates[3 * node + 2] );
+      Q.segment< 3 >( 3 * node ) = ( R - Eigen::Matrix3d::Identity() ) * X;
+    }
+
+    const auto rotated   = evaluate< Element, 3, 8 >( coordinates,
+                                                    gradientEnhancedProperties( gap * std::cos( angle ) ),
+                                                    Q,
+                                                    gradientEnhancedMaterial );
+    const auto stretched = evaluate< Element, 3, 8 >( coordinates,
+                                                      gradientEnhancedProperties( gap * std::cos( angle ) ),
+                                                      makeDisplacementsAndNonlocalField< Element >( 1e-2, 1, 0.0 ),
+                                                      gradientEnhancedMaterial );
+
+    throwExceptionOnFailure( rotated.residual.norm() < 1e-9 * stretched.residual.norm(),
+                             "A rigid rotation must be stress free, residual " +
+                               std::to_string( rotated.residual.norm() ) );
+  }
+
+  /// The degrees of freedom of the nonlocal field sit on the nodes of the bottom side.
+  void testGradientEnhancedElementDofs()
+  {
+    using Element = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    Element element( 1, FiniteElement::Quadrature::IntegrationTypes::FullIntegration, Element::SectionType::Interface );
+
+    throwExceptionOnFailure( element.getNDofPerElement() == 8 * 3 + 4,
+                             "The element has the displacements and four nonlocal dofs." );
+
+    const auto fields = element.getNodeFields();
+    throwExceptionOnFailure( fields.size() == 8, "One list of fields per node." );
+    for ( size_t node = 0; node < fields.size(); ++node )
+      throwExceptionOnFailure( fields[node].size() == ( node < 4 ? 2u : 1u ),
+                               "Only the bottom nodes carry the nonlocal field." );
+    throwExceptionOnFailure( fields[0][1] == "nonlocal damage",
+                             "The nonlocal field is named like the one of the bulk element." );
+
+    // node by node: the four bottom nodes with [u, abar], then the four top nodes with [u]
+    auto permutation = element.getDofIndicesPermutationPattern();
+    throwExceptionOnFailure( permutation.size() == 28, "A place for every dof." );
+    throwExceptionOnFailure( permutation[0] == 0 && permutation[2] == 2 && permutation[3] == 4 &&
+                               permutation[12] == 16 && permutation[24] == 3 && permutation[27] == 15,
+                             "The permutation places the degrees of freedom node by node." );
+    std::sort( permutation.begin(), permutation.end() );
+    for ( int i = 0; i < 28; ++i )
+      throwExceptionOnFailure( permutation[i] == i, "The permutation is a bijection." );
+  }
+
+  /// A state of uniform strain and uniform nonlocal field balances in the nonlocal equation.
+  void testGradientEnhancedElementNamedState()
+  {
+    using Element = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    const auto coordinates = inclinedQuadrilateral( 0.0, 0.1 );
+
+    Element element( 1, FiniteElement::Quadrature::IntegrationTypes::FullIntegration, Element::SectionType::Interface );
+    element.assignNodeCoordinates( coordinates.data() );
+    const auto properties = gradientEnhancedProperties( 0.1 );
+    element.assignMaterial( gradientEnhancedMaterial, properties.data(), static_cast< int >( properties.size() ) );
+
+    std::vector< double > stateVars( element.getNumberOfRequiredStateVars(), 0.0 );
+    element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
+    element.initializeYourself();
+    element.setInitialConditions( MarmotElement::MarmotMaterialInitialization, nullptr );
+
+    throwExceptionOnFailure( element.getStateView( "localField", 0 ).stateSize == 1,
+                             "The local field is a named state." );
+    throwExceptionOnFailure( element.getStateView( "nonlocalField", 0 ).stateSize == 1,
+                             "The nonlocal field is a named state." );
+    throwExceptionOnFailure( element.getStateView( "topMaterialStateVars", 0 ).stateSize > 0,
+                             "The state of the material is reachable." );
+
+    // A uniform shift of the top side and a uniform nonlocal field: the nonlocal residual is the integral of
+    // h ( abar - Lbar ) over the midsurface, which has the area 1 here, and the gradient term does not contribute.
+    const double nonlocal = 2.0e-3;
+
+    Eigen::VectorXd Q = Eigen::VectorXd::Zero( Element::sizeLoadVector );
+    for ( int node = 4; node < 8; ++node )
+      Q.segment< 3 >( 3 * node ) = Eigen::Vector3d( 1.5e-3, -0.8e-3, 2.0e-3 );
+    Q.tail( Element::nExtraDofs ).setConstant( nonlocal );
+
+    std::vector< double > Pe( Element::sizeLoadVector, 0.0 ),
+      Ke( Element::sizeLoadVector * Element::sizeLoadVector, 0.0 );
+    element.computeKernels( Q.data(), Q.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+
+    const double localField = element.getStateView( "localField", 0 ).stateLocation[0];
+    throwExceptionOnFailure( localField > 0.0, "The shift strains the layer, which gives a local field." );
+
+    double nonlocalResidual = 0.0;
+    for ( int i = 0; i < Element::nExtraDofs; ++i )
+      nonlocalResidual += Pe[Element::nDofDisplacement + i];
+    throwExceptionOnFailure( std::abs( nonlocalResidual - 0.1 * ( nonlocal - localField ) ) < 1e-12,
+                             "The nonlocal residual is not the integral of h ( abar - Lbar )." );
+  }
+
   void testRegistration()
   {
-    for ( const std::string name : { "ILINE2UL", "IQUAD4UL", "IQUAD8UL", "YILINE2UL", "YIQUAD4UL", "YIQUAD8UL" } )
+    for ( const std::string name : { "ILINE2UL",
+                                     "IQUAD4UL",
+                                     "IQUAD8UL",
+                                     "YILINE2UL",
+                                     "YIQUAD4UL",
+                                     "YIQUAD8UL",
+                                     "GYILINE2UL",
+                                     "GYIQUAD4UL",
+                                     "GYIQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -393,6 +568,10 @@ int main()
 {
   std::vector< std::function< void() > > tests = { testTangentMatchesFiniteDifference,
                                                    testRigidRotationIsStressFree,
+                                                   testGradientEnhancedElement,
+                                                   testGradientEnhancedElementIsObjective,
+                                                   testGradientEnhancedElementDofs,
+                                                   testGradientEnhancedElementNamedState,
                                                    testEquilibratedElement,
                                                    testEquilibratedElementAgreesWithThePlainElementForAUniformShift,
                                                    testRigidTranslationIsStressFree,

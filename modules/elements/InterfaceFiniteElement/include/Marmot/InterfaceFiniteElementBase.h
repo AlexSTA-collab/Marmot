@@ -56,6 +56,25 @@
 namespace Marmot::Elements {
 
   /**
+   * @brief Number of degrees of freedom of the element in addition to the displacements.
+   *
+   * A formulation may carry further fields, for instance a nonlocal field, on the nodes of the element. It declares
+   * the number of these degrees of freedom of the element with a static member `nExtraDofs`, which is placed after the
+   * displacements in the vectors of the element; a formulation without the member has none.
+   *
+   * @tparam Formulation the formulation of the element
+   * @return the number of additional degrees of freedom
+   */
+  template < class Formulation >
+  constexpr int numberOfExtraDofs()
+  {
+    if constexpr ( requires { Formulation::nExtraDofs; } )
+      return Formulation::nExtraDofs;
+    else
+      return 0;
+  }
+
+  /**
    * @brief Embed a vector with one block of the interface quantity per side in the 3D layout of the materials.
    *
    * The interface materials are fixed to three dimensions. A two-dimensional element embeds its quantities of both
@@ -122,6 +141,9 @@ namespace Marmot::Elements {
    * - `initializeQuadraturePoint()`: a static function template that is called for every quadrature point once the
    *   geometry of the point has been evaluated, with the element and the point. It completes the geometry and
    *   fills the QuadraturePointData,
+   * - optionally `nExtraDofs`, a static member with the number of degrees of freedom in addition to the displacements,
+   *   which are placed after them in the vectors of the element, together with the static functions `nodeFields()` and
+   *   `dofIndicesPermutationPattern()` that describe their place on the nodes,
    * - `integrate()`: a static function template that evaluates the material at a quadrature point from the
    *   total nodal displacements of the element and the increments of the interface displacement and of the surface
    *   gradient, updates the state variables of the
@@ -142,7 +164,13 @@ namespace Marmot::Elements {
     static constexpr int nDofPerNodeU    = nDim;
     static constexpr int nInterfaceNodes = nNodes / 2;
 
-    static constexpr int sizeLoadVector = nNodes * nDim;
+    /// number of degrees of freedom of the displacements, the bottom side first
+    static constexpr int nDofDisplacement = nNodes * nDim;
+
+    /// number of degrees of freedom of the formulation in addition to the displacements, placed after them
+    static constexpr int nExtraDofs = numberOfExtraDofs< Formulation >();
+
+    static constexpr int sizeLoadVector = nDofDisplacement + nExtraDofs;
     static constexpr int nCoordinates   = nNodes * nDim;
 
     static constexpr int nSideDofs = nInterfaceNodes * nDim;
@@ -537,9 +565,14 @@ namespace Marmot::Elements {
     static vector< vector< string > > nodeFields;
 
     if ( nodeFields.empty() ) {
-      for ( int i = 0; i < nNodes; i++ ) {
-        nodeFields.push_back( vector< string >() );
-        nodeFields[i].push_back( "displacement" );
+      if constexpr ( requires { Formulation::nodeFields(); } ) {
+        nodeFields = Formulation::nodeFields();
+      }
+      else {
+        for ( int i = 0; i < nNodes; i++ ) {
+          nodeFields.push_back( vector< string >() );
+          nodeFields[i].push_back( "displacement" );
+        }
       }
     }
 
@@ -552,8 +585,13 @@ namespace Marmot::Elements {
     static std::vector< int > permutationPattern;
 
     if ( permutationPattern.empty() ) {
-      for ( int i = 0; i < nNodes * nDim; i++ )
-        permutationPattern.push_back( i );
+      if constexpr ( requires { Formulation::dofIndicesPermutationPattern(); } ) {
+        permutationPattern = Formulation::dofIndicesPermutationPattern();
+      }
+      else {
+        for ( int i = 0; i < nNodes * nDim; i++ )
+          permutationPattern.push_back( i );
+      }
     }
 
     return permutationPattern;

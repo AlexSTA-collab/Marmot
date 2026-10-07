@@ -1,3 +1,4 @@
+#include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotFiniteElement.h"
@@ -58,5 +59,23 @@ namespace Marmot::Elements::Registration {
                      makeFactoryFunction< YInterfaceFiniteElementFiniteStrain< 3, 16 >,
                                           FullIntegration,
                                           YInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
+
+  const static bool GYILINE2UL_isRegistered = MarmotElementFactory::
+    registerElement( "GYILINE2UL",
+                     makeFactoryFunction< GYInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                                          FullIntegration,
+                                          GYInterfaceFiniteElementFiniteStrain< 2, 4 >::SectionType::Interface >() );
+
+  const static bool GYIQUAD4UL_isRegistered = MarmotElementFactory::
+    registerElement( "GYIQUAD4UL",
+                     makeFactoryFunction< GYInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                                          FullIntegration,
+                                          GYInterfaceFiniteElementFiniteStrain< 3, 8 >::SectionType::Interface >() );
+
+  const static bool GYIQUAD8UL_isRegistered = MarmotElementFactory::
+    registerElement( "GYIQUAD8UL",
+                     makeFactoryFunction< GYInterfaceFiniteElementFiniteStrain< 3, 16 >,
+                                          FullIntegration,
+                                          GYInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
 
 } // namespace Marmot::Elements::Registration

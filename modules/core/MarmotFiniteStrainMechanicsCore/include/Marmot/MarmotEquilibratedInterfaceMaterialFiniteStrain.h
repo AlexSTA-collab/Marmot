@@ -28,13 +28,11 @@
 
 #pragma once
 
-#include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotEquilibratedInterfaceMaterialFiniteStrainBase.h"
 #include "Marmot/MarmotMaterialFiniteStrain.h"
-#include "Marmot/MarmotStateHelpers.h"
 
 #include <memory>
 #include <string>
-#include <vector>
 
 /**
  * Equilibrated two-sided interface material at finite strain.
@@ -77,27 +75,13 @@
  *
  * In contrast to the small-strain materials, this material receives the TOTAL displacements and surface gradients.
  */
-class MarmotEquilibratedInterfaceMaterialFiniteStrain {
+class MarmotEquilibratedInterfaceMaterialFiniteStrain : public MarmotEquilibratedInterfaceMaterialFiniteStrainBase {
 
 protected:
-  const double*         materialProperties;     ///< material properties [p0, p1, h, properties of the bulk law...]
-  const int             nMaterialProperties;    ///< number of material properties
-  const double          h;                      ///< thickness of the layer, the third material property
-  std::vector< double > baseMaterialProperties; ///< properties handed to the bulk materials
   std::unique_ptr< MarmotMaterialFiniteStrain > topMaterial;    ///< finite-strain material of the top face
   std::unique_ptr< MarmotMaterialFiniteStrain > bottomMaterial; ///< finite-strain material of the bottom face
 
 public:
-  using Tensor3d    = Marmot::FastorStandardTensors::Tensor3d;    ///< first order tensor in 3D
-  using Tensor33d   = Marmot::FastorStandardTensors::Tensor33d;   ///< second order tensor in 3D
-  using Tensor333d  = Marmot::FastorStandardTensors::Tensor333d;  ///< third order tensor in 3D
-  using Tensor3333d = Marmot::FastorStandardTensors::Tensor3333d; ///< fourth order tensor in 3D
-  using Tensor6d    = Marmot::FastorStandardTensors::Tensor6d;    ///< vector of six components, one block per side
-  using Tensor18d   = Marmot::FastorStandardTensors::Tensor18d;   ///< vector of 18 components, one block per side
-
-  /// number of the material
-  const int materialNumber;
-
   /**
    * @brief Construct the material from a registered finite-strain material.
    *
@@ -115,12 +99,6 @@ public:
                                                    int                nMaterialProperties_,
                                                    int                materialNumber_ );
 
-  /// Default destructor
-  virtual ~MarmotEquilibratedInterfaceMaterialFiniteStrain() = default;
-
-  /// Layout of the state variables
-  MarmotStateLayoutDynamic stateLayout;
-
   /**
    * Set the characteristic element length at the considered quadrature point.
    * It is needed for the regularization of materials with softening behavior, and is handed on to the bulk
@@ -129,47 +107,6 @@ public:
    * @param[in] length characteristic length
    */
   void setCharacteristicElementLength( double length );
-
-  /// Generalized stress conjugate to (w, A+, A-), based on the first Piola-Kirchhoff stress.
-  struct State {
-    Tensor3d  generalizedForce;   ///< conjugate to the jump w
-    Tensor33d surfaceStressPlus;  ///< conjugate to A+
-    Tensor33d surfaceStressMinus; ///< conjugate to A-
-    double*   stateVars;          ///< pointer to the state variables
-  };
-
-  /**
-   * @brief Full 3x3 block tangent over x = (w, A+, A-) after static condensation of z.
-   *
-   * No major symmetry is assumed and, in general, the cross blocks are nonzero. A block of a vector and a tensor is
-   * stored row major as a tensor of the next higher rank, for instance Q_wAp(i, j, k) = d(f_i)/d(A+_jk), which is a
-   * 3x9 matrix, and Q_Apw(i, j, k) = d(S+_ij)/d(w_k), which is a 9x3 matrix.
-   */
-  struct Tangents {
-    Tensor33d   Q_ww;   ///< d(f)/d(w), 3x3
-    Tensor333d  Q_wAp;  ///< d(f)/d(A+), 3x9
-    Tensor333d  Q_wAm;  ///< d(f)/d(A-), 3x9
-    Tensor333d  Q_Apw;  ///< d(S+)/d(w), 9x3
-    Tensor3333d Q_ApAp; ///< d(S+)/d(A+), 9x9
-    Tensor3333d Q_ApAm; ///< d(S+)/d(A-), 9x9
-    Tensor333d  Q_Amw;  ///< d(S-)/d(w), 9x3
-    Tensor3333d Q_AmAp; ///< d(S-)/d(A+), 9x9
-    Tensor3333d Q_AmAm; ///< d(S-)/d(A-), 9x9
-  };
-
-  /// Kinematics of the interface at a quadrature point.
-  struct Deformation {
-    Tensor6d  U;               ///< total displacements of the two interface sides, top first
-    Tensor18d surfaceGradient; ///< total surface gradients A+ and A- of the two interface sides
-    Tensor3d  normal;          ///< interface normal, pointing from the first to the second side
-    Tensor3d  connector;       ///< reference connector between the paired faces, X+ - X-
-  };
-
-  /// Time at the beginning of the increment and time increment.
-  struct TimeIncrement {
-    double timeOld; ///< time at the beginning of the increment
-    double dT;      ///< time increment
-  };
 
   /**
    * @brief Compute the generalized stress and the condensed tangent from the total kinematics of the interface.
@@ -185,25 +122,6 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
-
-  /**
-   * @brief Get a view to the state variables.
-   *
-   * @param stateName Name of the state variable.
-   * @param stateVars Pointer to the state variable array.
-   * @return StateView to access the requested state variable.
-   */
-  StateView getStateView( const std::string& stateName, double* stateVars ) const
-  {
-    return stateLayout.getStateView( stateVars, stateName );
-  }
-
-  /**
-   * @brief Get the total number of required state variables.
-   *
-   * @return Total number of required state variables.
-   */
-  virtual int getNumberOfRequiredStateVars() const { return stateLayout.totalSize(); }
 
   /**
    * @brief Initialize the state variables at a material point.

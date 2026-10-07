@@ -50,8 +50,25 @@ with its nonlocal field held at zero by ``MarmotMaterialFiniteStrainFromGradient
 the stress does not depend on the field at that value, which the adapter checks on every call, and it refuses the
 material otherwise. The nonlocal regularization itself is lost, because the interface carries no nonlocal field.
 
+Nonlocal field
+--------------
+
+``MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain`` drives both faces with a gradient-enhanced
+material and gives them one shared value :math:`\bar{N}` of the nonlocal field, which is exact for a nonlocal radius
+above the thickness of the layer. Besides the generalized stress, it returns the average local field
+:math:`\bar{L} = (L^{+} + L^{-})/2`, the nonlocal radius, and the derivatives of the generalized stress and of
+:math:`\bar{L}` with respect to the generalized strain and to :math:`\bar{N}`. All of them are condensed through
+:math:`\mathbf{z}`, because :math:`\mathbf{z}` solves the traction equilibrium for a given :math:`\bar{N}`. When the
+two faces have different histories, this path does not vanish.
+
 Implementation
 --------------
+
+.. doxygenclass:: MarmotEquilibratedInterfaceMaterialFiniteStrainBase
+   :members:
+
+.. doxygenclass:: MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain
+   :members:
 
 .. doxygenclass:: MarmotEquilibratedInterfaceMaterialFiniteStrain
    :members:

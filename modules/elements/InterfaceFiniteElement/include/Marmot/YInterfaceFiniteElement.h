@@ -145,6 +145,34 @@ namespace Marmot::Elements {
   }
 
   /**
+   * @brief Operator that maps the displacements of the element to the generalized strain (w, A+, A-) of a quadrature
+   * point.
+   *
+   * The momentum residual of a quadrature point is the transpose of this operator times the generalized stress, and
+   * its tangent is the transpose times the condensed tangent times the operator.
+   *
+   * @tparam nDim spatial dimension of the element
+   * @tparam nNodes number of nodes of the element
+   * @tparam QuadraturePoint type of the quadrature point
+   * @param[in] qp the quadrature point
+   * @return the operator, with the jump, the surface gradient of the top side and the one of the bottom side as rows
+   */
+  template < int nDim, int nNodes, class QuadraturePoint >
+  Eigen::Matrix< double, nDim + 2 * nDim * nDim, nNodes * nDim > generalizedStrainOperator( const QuadraturePoint& qp )
+  {
+    constexpr int nTensor  = nDim * nDim;
+    constexpr int nDofD    = nNodes * nDim;
+    constexpr int halfSize = nDofD / 2;
+
+    Eigen::Matrix< double, nDim + 2 * nTensor, nDofD > Bx = Eigen::Matrix< double, nDim + 2 * nTensor, nDofD >::Zero();
+
+    Bx.template block< nDim, nDofD >( 0, 0 )                    = qp.NmatJump;
+    Bx.template block< nTensor, halfSize >( nDim, halfSize )    = qp.BmatSide;
+    Bx.template block< nTensor, halfSize >( nDim + nTensor, 0 ) = qp.BmatSide;
+    return Bx;
+  }
+
+  /**
    * @brief Take the response of an equilibrated two-sided interface material, store it in the state of the
    * quadrature point and add the contributions of the quadrature point to the residual and to the tangent.
    *
@@ -161,8 +189,8 @@ namespace Marmot::Elements {
    * @param[in,out] qp quadrature point, whose generalized force and surface stresses are updated
    * @param[in] state response of the material
    * @param[in] tangents condensed block tangent of the material
-   * @param[in,out] Pe element residual, to which the contribution is added
-   * @param[in,out] Ke element tangent, to which the contribution is added
+   * @param[in,out] Pe residual of the displacements of the element, to which the contribution is added
+   * @param[in,out] Ke tangent of the displacements of the element, to which the contribution is added
    *
    * @details All nine blocks of the tangent are assembled: the cross blocks between the two surface gradients are
    * generally nonzero after the equilibrium condensation and must not be omitted.
@@ -177,8 +205,8 @@ namespace Marmot::Elements {
   void assembleTwoSidedResponse( QuadraturePoint&        qp,
                                  const MaterialState&    state,
                                  const MaterialTangents& tangents,
-                                 PeType&                 Pe,
-                                 KeType&                 Ke )
+                                 PeType&&                Pe,
+                                 KeType&&                Ke )
   {
     using namespace Marmot;
 
