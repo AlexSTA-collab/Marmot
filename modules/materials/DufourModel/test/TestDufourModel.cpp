@@ -1,0 +1,906 @@
+#include "Marmot/DufourModel.h"
+#include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotMath.h"
+#include "Marmot/MarmotTesting.h"
+#include <array>
+#include <cstdio>
+#include <functional>
+#include <string>
+#include <vector>
+
+using namespace Marmot::Testing;
+using namespace Marmot::Materials;
+using namespace Marmot::FastorStandardTensors;
+using namespace Marmot::FastorIndices;
+
+namespace {
+
+  // parameter card of an adhesive, order as read by DufourModel:
+  // K, G, ft, fc, Q1, Q2, b1, b2, b3, b4, b5, eta_VP, n, nuP+, nuP-, epsF, omegaMax, ld, m, density
+  const std::array< double, 20 > props   = { 1793.9, 828.0, 12.0,   21.6, 4051.0, 15.8, 552.0, 243.0, 0.0, 0.0,
+                                             15.4,   1e-6,  0.0435, 0.3,  0.5,    1.75, 0.99,  0.12,  1.0, 1.0 };
+  const int                      elLabel = 1;
+
+  // Evaluate the Kirchhoff-stress response (and, optionally, the analytic tangent) for a given
+  // deformation gradient F and nonlocal field A, always starting from a fresh (undeformed) state.
+
+  // ---- viscoelasticity cards -----------------------------------------------------------------
+  // Base 20 entries, then the damage-variant slots 20..26 switched OFF (cSW = 0, Xt = 0) so that
+  // ONLY the classical omega = 1 - exp(-alphaP_bar/epsF) law is active, then:
+  //   [27] nMaxwell, and per branch [28+3i] gammaG_i, [29+3i] gammaK_i, [30+3i] tau_i.
+  // 23 entries, indices 0..22:
+  //   0..19  K G ft fc Q1 Q2 b1 b2 b3 b4 b5 eta_VP n nuP+ nuP- epsF omegaMax ld m density
+  //   20 cSW ( 0 here, i.e. the driver OFF )   21 bSW   22 dF
+  const std::vector< double > propsBase = { 1793.9, 828.0, 12.0, 21.6, 4051.0, 15.8, 552.0, 243.0, 0.0, 0.0, 15.4, 1e-6,
+                                            0.0435, 0.3,   0.5,  1.75, 0.99,   0.12, 1.0,   1.0,   0.0, 1e6, 0.1 };
+
+  // two branches, deliberately unequal shear/bulk weights and well-separated relaxation times
+  std::vector< double > withMaxwell( std::vector< double > gammaGKTau )
+  {
+    std::vector< double > card = propsBase;
+    card.push_back( static_cast< double >( static_cast< int >( gammaGKTau.size() ) / 3 ) );
+    card.insert( card.end(), gammaGKTau.begin(), gammaGKTau.end() );
+    return card;
+  }
+
+  const std::vector< double > propsVisco = withMaxwell( { 0.30, 0.15, 0.5, 0.20, 0.10, 5.0 } );
+
+  // Advance the material by ONE increment, continuing from (and updating in place) the supplied
+  // state vector. An empty vector is sized and initialised first, i.e. starts from rest.
+  DufourModel::ConstitutiveResponse< 3 > step( std::vector< double >&               sv,
+                                               const Tensor33d&                     F,
+                                               double                               A,
+                                               double                               dT,
+                                               const std::vector< double >&         card,
+                                               DufourModel::AlgorithmicModuli< 3 >* tangentOut = nullptr )
+  {
+    DufourModel mat( card.data(), static_cast< int >( card.size() ), elLabel );
+
+    const bool fresh = sv.empty();
+    if ( fresh )
+      sv.assign( mat.getNumberOfRequiredStateVars(), 0.0 );
+    if ( fresh )
+      mat.initializeYourself( sv.data(), static_cast< int >( sv.size() ) );
+
+    DufourModel::Deformation< 3 >          def{ F, A };
+    DufourModel::TimeIncrement             timeInc{ 0.0, dT };
+    DufourModel::ConstitutiveResponse< 3 > response;
+    response.stateVars = sv.data();
+    DufourModel::AlgorithmicModuli< 3 > tangent;
+
+    mat.computeStress( response, tangent, def, timeInc );
+    if ( tangentOut )
+      *tangentOut = tangent;
+    return response;
+  }
+
+  // Central-difference dTau/dF of one increment taken from a FIXED starting history.
+  Tensor3333d finiteDifferenceTangent( const std::vector< double >& svStart,
+                                       const Tensor33d&             F0,
+                                       double                       dT,
+                                       const std::vector< double >& card,
+                                       double                       eps )
+  {
+    Tensor3333d fd( 0.0 );
+    for ( int k = 0; k < 3; k++ )
+      for ( int l = 0; l < 3; l++ ) {
+        Tensor33d Fp = F0, Fm = F0;
+        Fp( k, l ) += eps;
+        Fm( k, l ) -= eps;
+
+        std::vector< double > svp = svStart, svm = svStart;
+        const auto            rp = step( svp, Fp, 0.0, dT, card );
+        const auto            rm = step( svm, Fm, 0.0, dT, card );
+
+        for ( int i = 0; i < 3; i++ )
+          for ( int j = 0; j < 3; j++ )
+            fd( i, j, k, l ) = ( rp.tau( i, j ) - rm.tau( i, j ) ) / ( 2.0 * eps );
+      }
+    return fd;
+  }
+
+  DufourModel::ConstitutiveResponse< 3 > evaluate( const Tensor33d&                     F,
+                                                   double                               A,
+                                                   DufourModel::AlgorithmicModuli< 3 >* tangentOut = nullptr,
+                                                   const std::vector< double >&         cardIn     = {} )
+  {
+    const std::vector< double > card = cardIn.empty() ? std::vector< double >( props.begin(), props.end() ) : cardIn;
+    DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+    std::vector< double >       sv( mat.getNumberOfRequiredStateVars(), 0.0 );
+    mat.initializeYourself( sv.data(), static_cast< int >( sv.size() ) );
+
+    DufourModel::Deformation< 3 >          def{ F, A };
+    DufourModel::TimeIncrement             timeInc{ 0.0, 1.0 };
+    DufourModel::ConstitutiveResponse< 3 > response;
+    response.stateVars = sv.data();
+    DufourModel::AlgorithmicModuli< 3 > tangent;
+
+    mat.computeStress( response, tangent, def, timeInc );
+    if ( tangentOut )
+      *tangentOut = tangent;
+    return response;
+  }
+
+} // namespace
+
+// I-1: undeformed configuration -> zero Kirchhoff stress
+void testUndeformedResponse()
+{
+  const auto r = evaluate( Spatial3D::I, 0.0 );
+  throwExceptionOnFailure( checkIfEqual( r.tau, Tensor33d( 0.0 ), 1e-9 ),
+                           "DufourModel I-1: undeformed configuration must yield zero Kirchhoff stress in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// I-2: Kirchhoff stress must be symmetric under an arbitrary (small) deformation
+void testStressSymmetry()
+{
+  Tensor33d F = Spatial3D::I;
+  F( 0, 0 ) += 0.004;
+  F( 1, 1 ) -= 0.002;
+  F( 2, 2 ) += 0.003;
+  F( 0, 1 ) += 0.0015;
+  F( 1, 0 ) += 0.0015;
+  F( 0, 2 ) -= 0.0010;
+  F( 2, 0 ) -= 0.0010;
+
+  const auto r = evaluate( F, 0.0 );
+  for ( int i = 0; i < 3; i++ )
+    for ( int j = 0; j < 3; j++ )
+      throwExceptionOnFailure( checkIfEqual( r.tau( i, j ), r.tau( j, i ), 1e-9 ),
+                               "DufourModel I-2: Kirchhoff stress must be symmetric in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// I-3: pure rigid-body rotation -> zero stress (frame indifference)
+void testPureRotation()
+{
+  for ( int phi_deg = 0; phi_deg <= 180; phi_deg += 30 ) {
+    const double phi = Marmot::Math::degToRad( phi_deg );
+    Tensor33d    F( 0.0 );
+    F( 0, 0 ) = cos( phi );
+    F( 0, 1 ) = -sin( phi );
+    F( 1, 0 ) = sin( phi );
+    F( 1, 1 ) = cos( phi );
+    F( 2, 2 ) = 1.0;
+
+    const auto r = evaluate( F, 0.0 );
+    throwExceptionOnFailure( checkIfEqual( r.tau, Tensor33d( 0.0 ), 1e-8 ),
+                             "DufourModel I-3: pure rotation (phi_deg=" + std::to_string( phi_deg ) +
+                               ") must yield zero stress in " + std::string( __PRETTY_FUNCTION__ ) );
+  }
+}
+
+// I-4: analytic dTau/dF must match central finite differences (elastic regime)
+void testAlgorithmicTangent()
+{
+  Tensor33d F0 = Spatial3D::I;
+  F0( 0, 0 ) += 0.0004;
+  F0( 1, 1 ) += 0.0002;
+  F0( 2, 2 ) -= 0.0001;
+  F0( 0, 1 ) += 0.0003;
+  F0( 1, 0 ) += 0.0003;
+
+  DufourModel::AlgorithmicModuli< 3 > tangent;
+  evaluate( F0, 0.0, &tangent );
+
+  const double eps = 1e-6;
+  Tensor3333d  dTau_dF_fd( 0.0 );
+  for ( int k = 0; k < 3; k++ )
+    for ( int l = 0; l < 3; l++ ) {
+      Tensor33d Fp = F0, Fm = F0;
+      Fp( k, l ) += eps;
+      Fm( k, l ) -= eps;
+      const auto rp = evaluate( Fp, 0.0 );
+      const auto rm = evaluate( Fm, 0.0 );
+      for ( int i = 0; i < 3; i++ )
+        for ( int j = 0; j < 3; j++ )
+          dTau_dF_fd( i, j, k, l ) = ( rp.tau( i, j ) - rm.tau( i, j ) ) / ( 2.0 * eps );
+    }
+
+  throwExceptionOnFailure( checkIfEqual( tangent.dTau_dF, dTau_dF_fd, 1e-3 ),
+                           "DufourModel I-4: analytic dTau/dF must match central finite differences in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// V-1: with the generalized Maxwell chain ACTIVE, the analytic dTau/dF must match central finite
+// differences on the FIRST increment (branch states still at rest).
+void testViscoelasticTangentFirstIncrement()
+{
+  Tensor33d F0 = Spatial3D::I;
+  F0( 0, 0 ) += 0.0004;
+  F0( 1, 1 ) += 0.0002;
+  F0( 2, 2 ) -= 0.0001;
+  F0( 0, 1 ) += 0.0003;
+  F0( 1, 0 ) += 0.0003;
+  const double dT = 0.5;
+
+  std::vector< double >               sv;
+  DufourModel::AlgorithmicModuli< 3 > tangent;
+  const auto                          r0 = step( sv, F0, 0.0, dT, propsVisco, &tangent );
+
+  // Guard against a vacuous check: relaxation must actually move the stress.
+  std::vector< double > svNoVE;
+  const auto            rNoVE = step( svNoVE, F0, 0.0, dT, propsBase );
+  if ( std::abs( r0.tau( 0, 0 ) - rNoVE.tau( 0, 0 ) ) < 1e-6 * std::abs( rNoVE.tau( 0, 0 ) ) )
+    throw std::runtime_error( "DufourModel V-1: viscoelasticity is NOT active - "
+                              "the tangent check would be vacuous" );
+
+  const std::vector< double > svRest( sv.size(), 0.0 );
+  const Tensor3333d           fd = finiteDifferenceTangent( {}, F0, dT, propsVisco, 1e-6 );
+
+  throwExceptionOnFailure( checkIfEqual( tangent.dTau_dF, fd, 1e-3 ),
+                           "DufourModel V-1: analytic dTau/dF with viscoelasticity must match "
+                           "central finite differences in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// V-2: the RECURSIVE path. Take one increment first so the Maxwell branches carry a non-zero
+// history, then verify the tangent of the SECOND increment against finite differences taken from
+// that same history. This is what catches a mishandled commit/scratch split of the branch states.
+void testViscoelasticTangentSecondIncrement()
+{
+  Tensor33d F1 = Spatial3D::I;
+  F1( 0, 0 ) += 0.0004;
+  F1( 1, 1 ) += 0.0002;
+  F1( 0, 1 ) += 0.0002;
+  F1( 1, 0 ) += 0.0002;
+
+  Tensor33d F2 = Spatial3D::I;
+  F2( 0, 0 ) += 0.0009;
+  F2( 1, 1 ) += 0.0005;
+  F2( 2, 2 ) -= 0.0002;
+  F2( 0, 1 ) += 0.0006;
+  F2( 1, 0 ) += 0.0006;
+
+  const double dT = 0.5;
+
+  // increment 1 -- commits a non-zero Maxwell history
+  std::vector< double > svBase;
+  step( svBase, F1, 0.0, dT, propsVisco );
+
+  // Guard: the committed history must actually influence increment 2, otherwise this test is
+  // no stronger than V-1.
+  std::vector< double >               svCont = svBase, svFresh;
+  DufourModel::AlgorithmicModuli< 3 > tangent;
+  const auto                          rCont  = step( svCont, F2, 0.0, dT, propsVisco, &tangent );
+  const auto                          rFresh = step( svFresh, F2, 0.0, dT, propsVisco );
+  if ( std::abs( rCont.tau( 0, 0 ) - rFresh.tau( 0, 0 ) ) < 1e-6 * std::abs( rFresh.tau( 0, 0 ) ) )
+    throw std::runtime_error( "DufourModel V-2: the Maxwell history does not affect the second "
+                              "increment - the recursive tangent check would be vacuous" );
+
+  const Tensor3333d fd = finiteDifferenceTangent( svBase, F2, dT, propsVisco, 1e-6 );
+
+  throwExceptionOnFailure( checkIfEqual( tangent.dTau_dF, fd, 1e-3 ),
+                           "DufourModel V-2: analytic dTau/dF on the second increment (non-zero "
+                           "Maxwell history) must match central finite differences in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// V-3: the model must reduce EXACTLY to the current one when the chain is switched off, both by
+// omitting the entries altogether and by declaring branches with zero relative moduli.
+void testViscoelasticReducesToBaseModel()
+{
+  Tensor33d F = Spatial3D::I;
+  F( 0, 0 ) += 0.0006;
+  F( 1, 1 ) -= 0.0002;
+  F( 0, 1 ) += 0.0004;
+  F( 1, 0 ) += 0.0004;
+  const double dT = 0.5;
+
+  std::vector< double > svRef;
+  const auto            ref = step( svRef, F, 0.0, dT, propsBase );
+
+  // (a) branches declared but with G_i = K_i = 0
+  const std::vector< double > propsZeroGamma = withMaxwell( { 0.0, 0.0, 0.5, 0.0, 0.0, 5.0 } );
+  std::vector< double >       svZero;
+  const auto                  rZero = step( svZero, F, 0.0, dT, propsZeroGamma );
+
+  // (b) nMaxwell = 0
+  const std::vector< double > propsNoBranch = withMaxwell( {} );
+  std::vector< double >       svNone;
+  const auto                  rNone = step( svNone, F, 0.0, dT, propsNoBranch );
+
+  for ( int i = 0; i < 3; i++ )
+    for ( int j = 0; j < 3; j++ ) {
+      throwExceptionOnFailure( checkIfEqual( rZero.tau( i, j ), ref.tau( i, j ), 1e-12 ),
+                               "DufourModel V-3: G_i = K_i = 0 must reproduce the base model in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+      throwExceptionOnFailure( checkIfEqual( rNone.tau( i, j ), ref.tau( i, j ), 1e-12 ),
+                               "DufourModel V-3: nMaxwell = 0 must reproduce the base model in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+    }
+}
+
+// V-4: physical limits of the relaxation. With one branch of weight g applied equally to the
+// deviatoric and volumetric parts, a step taken in dt << tau must retain essentially the full
+// instantaneous stiffness, while dt >> tau must relax onto the equilibrium fraction (1 - g).
+void testViscoelasticRelaxationLimits()
+{
+  Tensor33d F = Spatial3D::I;
+  F( 0, 0 ) += 0.0005;
+  F( 1, 1 ) -= 0.0002;
+
+  const double                g    = 0.4;
+  const double                tau  = 1.0;
+  const std::vector< double > card = withMaxwell( { g, g, tau } );
+
+  std::vector< double > svRef;
+  const auto            ref = step( svRef, F, 0.0, 1e-4, propsBase );
+
+  std::vector< double > svFast, svSlow;
+  const auto            fast = step( svFast, F, 0.0, 1e-4 * tau, card ); // dt << tau
+  const auto            slow = step( svSlow, F, 0.0, 1e4 * tau, card );  // dt >> tau
+
+  throwExceptionOnFailure( checkIfEqual( fast.tau( 0, 0 ), ref.tau( 0, 0 ), 1e-3 ),
+                           "DufourModel V-4: dt << tau must retain the instantaneous stiffness in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( checkIfEqual( slow.tau( 0, 0 ), ( 1.0 - g ) * ref.tau( 0, 0 ), 1e-3 ),
+                           "DufourModel V-4: dt >> tau must relax onto the equilibrium fraction in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// ---------------------------------------------------------------------------------------------
+// G-1..G-3: the CUBIC-EXPONENT Rice-Tracey weight of the SWDFM driver (HANDOFF S8.4).
+//
+//   g(T) = exp( c1 T + c2 T^2 + c3 T^3 ),   ( c1, c2, c3 ) = ( 3.75, -5.75, 3.50 )
+//
+// The coefficients sit AFTER the Prony triplets. The reference values below are those of a fit of the
+// weight g(T) done outside of the finite element code, so that a drift between the fit and the C++
+// that is integrated shows up here.
+// ---------------------------------------------------------------------------------------------
+
+// Append the ( c2, c3, c1 ) shape entries to a 7-branch Prony card.
+std::vector< double > withProny()
+{
+  std::vector< double > card = withMaxwell( { 0.121756, 0.121756, 100.0,    0.058253, 0.058253, 17.78,    0.054825,
+                                              0.054825, 3.1623,   0.038975, 0.038975, 0.5623,   0.030845, 0.030845,
+                                              0.1,      0.020811, 0.020811, 0.0178,   0.018788, 0.018788, 0.0032 } );
+  card[20]                   = 1.797; // cSW, the centring constant of the same fit
+  return card;
+}
+
+// ---------------------------------------------------------------------------------------------
+// G-4..G-7: the MONOTONE-BY-CONSTRUCTION exponent and the RATE-DEPENDENT T-sensitivity (S9.10).
+//
+//   g(T, kdot) = exp( E(T) * (kdot/kdot_ref)^(-s) ),   E' = (b0 + b1 T + b2 T^2)^2
+//   ( b0, b1, b2 ) = ( 1.798, -0.702, -3.172 ),  kdot_ref = 20,  s < 0 -> s = n
+//
+// The reference values come from a fit done outside of the finite element code, so that a drift
+// between the fit and the C++ that is integrated shows up here.
+// ---------------------------------------------------------------------------------------------
+std::vector< double > withMonotoneG( double b0, double b1, double b2, double kdotRef, double s )
+{
+  std::vector< double > card = withProny();
+  card[20]                   = 2.006; // cSW of the same fit
+  card.push_back( b0 );
+  card.push_back( b1 );
+  card.push_back( b2 );
+  card.push_back( kdotRef );
+  card.push_back( s );
+  return card;
+}
+
+// G-1: the exponent reproduces the fitted g(T) at the tabulated triaxialities, and is monotone
+// increasing over the calibrated range.
+void testMonotoneRiceTraceyWeight()
+{
+  // b0 = sqrt( 1.3 ) is fixed by the Rice-Tracey slope.
+  const std::vector< double > card = withMonotoneG( 1.1402, -0.4450, 0.9725, 0.0, 0.0 );
+  DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+
+  // E'( 0 ) must equal the Rice-Tracey slope of the T <= 0 branch, so E is C1 at T = 0.
+  const double h   = 1e-6;
+  const double dEp = ( mat.swdfmLogG( h ) - mat.swdfmLogG( 0.0 ) ) / h;
+  const double dEm = ( mat.swdfmLogG( 0.0 ) - mat.swdfmLogG( -h ) ) / h;
+  throwExceptionOnFailure( checkIfEqual( dEp, dEm, 1e-4 ),
+                           "DufourModel G-1: E is not C1 at T = 0; b0 must be sqrt( 1.3 ) in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( checkIfEqual( dEp, 1.3, 1e-4 ),
+                           "DufourModel G-1: E'( 0 ) must be the Rice-Tracey 1.3 in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // g( 0 ) = 1 exactly.
+  throwExceptionOnFailure( checkIfEqual( std::exp( mat.swdfmLogG( 0.0 ) ), 1.0, 1e-14 ),
+                           "DufourModel G-1: g( 0 ) must be 1 in " + std::string( __PRETTY_FUNCTION__ ) );
+
+  // The two calibration points: E must reproduce the values that the fit was built on.
+  throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( 0.816 ), 1.1330, 2e-3 ),
+                           "DufourModel G-1: E( 0.816 ) must be the fitted 45 deg value in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( 1.174 ), 2.1407, 2e-3 ),
+                           "DufourModel G-1: E( 1.174 ) must be the fitted 0 deg value in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // admissibility: a void-growth weight must not decrease with triaxiality
+  double prev = mat.swdfmLogG( 0.0 );
+  for ( int k = 1; k <= 1300; k++ ) {
+    const double cur = mat.swdfmLogG( 1.3 * k / 1300.0 );
+    throwExceptionOnFailure( cur > prev,
+                             "DufourModel G-1: E(T) is not monotone increasing on T = 0..1.3 in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+    prev = cur;
+  }
+}
+
+// G-2: an absent (or all-zero) shape tail must reproduce the published single-branch exp( 1.3 T )
+// bit for bit, so that every deck without the tail is unaffected by this change.
+void testCardWithoutExponentShapeIsRefused()
+{
+  // With no shape the exponent is identically zero, so g = 1 at every positive triaxiality and
+  // the stress-state dependence is silently absent. Refuse it while the driver is active.
+  std::vector< double > card    = withMonotoneG( 0.0, 0.0, 0.0, 0.0, 0.0 );
+  bool                  refused = false;
+  try {
+    DufourModel mat( card.data(), static_cast< int >( card.size() ), elLabel );
+  }
+  catch ( const std::invalid_argument& ) {
+    refused = true;
+  }
+  throwExceptionOnFailure( refused,
+                           "DufourModel G-2: a card with cSW != 0 and no exponent shape "
+                           "( b0, b1, b2 ) must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// G-3: a card of an older layout must be REFUSED, not silently re-read. The old card had 60
+// entries and carried dF at [23]; [23] is now nMaxwell, so an old card would read as ZERO Maxwell
+// branches and switch viscoelasticity off without a word.
+void testPreRenumberCardIsRefused()
+{
+  auto refuses = []( const std::vector< double >& c ) {
+    try {
+      DufourModel mat( c.data(), static_cast< int >( c.size() ), elLabel );
+    }
+    catch ( const std::invalid_argument& ) {
+      return true;
+    }
+    return false;
+  };
+
+  // The production card as it stood before the renumbering: 60 entries, dF = 0.1 at [23],
+  // nMaxwell = 7 at [27], the cubic ( c2, c3, c1 ) at [49..51].
+  const std::vector< double > old60 = { 1793.9,   828.0,    12.0,     21.6,     4051.0,   13.65,    552.0,    243.0,
+                                        0.0,      0.0,      22.13,    1e-6,     0.0435,   0.3,      0.5,      1.75,
+                                        0.99,     0.09,     1.0,      1.0,      1.797,    1e6,      0.0,      0.1,
+                                        0.0,      0.0,      0.0,      7.0,      0.121756, 0.121756, 100.0,    0.058253,
+                                        0.058253, 17.78,    0.054825, 0.054825, 3.1623,   0.038975, 0.038975, 0.5623,
+                                        0.030845, 0.030845, 0.1,      0.020811, 0.020811, 0.0178,   0.018788, 0.018788,
+                                        0.0032,   -5.75,    3.5,      3.75,     0.0,      0.0,      0.0,      20.0,
+                                        -1.0,     0.0,      0.0,      0.0 };
+  throwExceptionOnFailure( refuses( old60 ),
+                           "DufourModel G-3: a 60-entry pre-renumber card was ACCEPTED. It would "
+                           "read dF = 0.1 as nMaxwell and switch viscoelasticity off in silence, in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // A card whose [23] is not an integer branch count must be refused for the same reason.
+  std::vector< double > bad = withProny();
+  bad[23]                   = 2.5;
+  throwExceptionOnFailure( refuses( bad ),
+                           "DufourModel G-3: a non-integer nMaxwell at [23] was accepted in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // And the correct 51-entry card must be ACCEPTED.
+  const std::vector< double > good = withMonotoneG( 1.1402, -0.4450, 0.9725, 20.0, -1.0 );
+  throwExceptionOnFailure( !refuses( good ),
+                           "DufourModel G-3: the renumbered 51-entry card was refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// G-4: E(T) matches the expanded quintic, and is monotone for ARBITRARY b -- the whole point of
+// writing E' as a perfect square is that no parameter choice can break it.
+void testMonotoneExponentIsMonotoneForAnyB()
+{
+  const double bs[5][3] = { { 1.798, -0.702, -3.172 },
+                            { -1.559, -0.514, 4.078 },
+                            { 0.0, 3.0, -4.0 },
+                            { -5.0, 5.0, 5.0 },
+                            { 2.0, -9.0, 1.0 } };
+  for ( const auto& b : bs ) {
+    const std::vector< double > card = withMonotoneG( b[0], b[1], b[2], 0.0, 0.0 );
+    DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+    double                      prev = mat.swdfmLogG( -0.35 );
+    for ( int k = 1; k <= 1700; k++ ) {
+      const double cur = mat.swdfmLogG( -0.35 + 1.70 * k / 1700.0 );
+      throwExceptionOnFailure( cur >= prev - 1e-12,
+                               "DufourModel G-4: E(T) is not monotone for b = " + std::to_string( b[0] ) + ", " +
+                                 std::to_string( b[1] ) + ", " + std::to_string( b[2] ) + " in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+      prev = cur;
+    }
+  }
+
+  // and the closed form itself, against E(T) = 3.233 T -1.262 T^2 -3.638 T^3 +1.113 T^4 +2.012 T^5
+  const std::vector< double > card = withMonotoneG( 1.798, -0.702, -3.172, 0.0, 0.0 );
+  DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+  for ( double T : { 0.2, 0.6, 1.0, 1.077 } ) {
+    const double ref = 3.23280 * T - 1.26220 * T * T - 3.63838 * T * T * T + 1.11337 * T * T * T * T +
+                       2.01234 * T * T * T * T * T;
+    throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( T ), ref, 1e-3 ),
+                             "DufourModel G-4: E(T) does not match the expanded quintic at T = " + std::to_string( T ) +
+                               " in " + std::string( __PRETTY_FUNCTION__ ) );
+  }
+}
+
+// G-5: the rate factor is MULTIPLICATIVE ON g, therefore ADDITIVE on the exponent:
+//
+//     swdfmLogG( T, kdot ) - swdfmLogG( T, kdotRef ) = -s ln( kdot / kdotRef ) = ln w
+//
+// so the offset is the SAME at every triaxiality, including on the T <= 0 branch. It was
+// multiplicative on E in an earlier form, i.e. g = exp( E w ), which gives absurd values at a large
+// rate ratio. This test pins the placement, not just the magnitude.
+void testRateFactorAndSentinel()
+{
+  const std::vector< double > card = withMonotoneG( 1.798, -0.702, -3.172, 20.0, -1.0 );
+  DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+  const double                s = props[12]; // the s < 0 sentinel ties the exponent to the card's n
+
+  const std::array< double, 4 > kdot = { 1.051e-3, 2.0, 20.0, 200.0 };
+  for ( double T : { -0.30, 0.0, 0.6, 1.10 } ) {
+    const double E1 = mat.swdfmLogG( T, 20.0 ); // at the reference rate ln w = 0 exactly
+    for ( size_t i = 0; i < kdot.size(); i++ ) {
+      const double lnw = -s * std::log( kdot[i] / 20.0 );
+      throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( T, kdot[i] ) - E1, lnw, 1e-12 ),
+                               "DufourModel G-5: the rate offset is not additive on the exponent at T = " +
+                                 std::to_string( T ) + ", kdot = " + std::to_string( kdot[i] ) + " in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+    }
+  }
+
+  // and the offset must be INDEPENDENT of T: that is what "multiplicative on g" means.
+  const double off0 = mat.swdfmLogG( -0.30, 1.051e-3 ) - mat.swdfmLogG( -0.30, 20.0 );
+  const double off1 = mat.swdfmLogG( 1.10, 1.051e-3 ) - mat.swdfmLogG( 1.10, 20.0 );
+  throwExceptionOnFailure( checkIfEqual( off0, off1, 1e-12 ),
+                           "DufourModel G-5: the rate offset depends on T, so the factor is still "
+                           "inside the exponential, in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // the reported rate sensitivity must be the CONSTANT -s, not -s E as the old form gave
+  double dLogG = 0.0;
+  mat.swdfmLogG( 0.6, 2.0, &dLogG );
+  throwExceptionOnFailure( checkIfEqual( dLogG, -s, 1e-12 ),
+                           "DufourModel G-5: kdot dLogG/dkdot must be the constant -s in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // the sentinel must reproduce s given EXPLICITLY as n
+  const std::vector< double > cardExplicit = withMonotoneG( 1.798, -0.702, -3.172, 20.0, props[12] );
+  DufourModel                 matE( cardExplicit.data(), static_cast< int >( cardExplicit.size() ), elLabel );
+  throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( 0.6, 1.051e-3 ), matE.swdfmLogG( 0.6, 1.051e-3 ), 1e-12 ),
+                           "DufourModel G-5: the s < 0 sentinel does not equal s = n in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // kdot = 0 (an elastic increment) must stay FINITE -- it is floored, not divided by
+  throwExceptionOnFailure( std::isfinite( mat.swdfmLogG( 0.6, 0.0 ) ),
+                           "DufourModel G-5: kdot = 0 produced a non-finite exponent in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// G-6: with no reference rate the form must be rate-INDEPENDENT, so that a card carrying only
+// ( b0, b1, b2 ) behaves identically at every rate.
+void testNoReferenceRateMeansNoRateDependence()
+{
+  const std::vector< double > card = withMonotoneG( 1.798, -0.702, -3.172, 0.0, 0.0 );
+  DufourModel                 mat( card.data(), static_cast< int >( card.size() ), elLabel );
+  for ( double kd : { 0.0, 1e-3, 1.0, 1e3 } )
+    throwExceptionOnFailure( checkIfEqual( mat.swdfmLogG( 0.8, kd ), mat.swdfmLogG( 0.8, 20.0 ), 1e-14 ),
+                             "DufourModel G-6: the exponent moved with kdot although no reference "
+                             "rate was given, in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// G-7: the two ambiguous cards must be REFUSED -- a rate exponent with no reference rate (inert),
+// and both exponent forms at once (the quintic would silently win).
+// G-8: the tangent in the regime that actually kills simulations -- damage ACTIVE (D > 1) and
+// the RATE factor on. The three existing finite-difference tangent checks (V-1, V-2, and the
+// elastic one) all run with g's rate term effectively inert, so the d(logG)/d(kdot) contribution
+// added to dD/dAlphaPBar is verified against finite differences here. An inconsistent tangent in
+// exactly this regime makes a simulation diverge with a failing cutback.
+double damagingTangentError( double sVal, bool rateOn )
+{
+  // A rate-dependent card with an explicit s well above the sentinel value.
+  std::vector< double > card = propsVisco;
+  // swdfmExtra tail starts at 28 + 3 nMaxwell, with nMaxwell held at index 27. Derive it, never
+  // count backwards from the end -- the tail length varies with how many extras a deck supplies.
+  const size_t base = 24 + 3 * static_cast< size_t >( card[23] ); // idxPronyBase + 3 nMaxwell
+  if ( card.size() < base + 6 )
+    card.resize( base + 6, 0.0 );
+  card[18] = 0.0;                       // m = 0: drive the driver from the LOCAL alphaP. A material-point test
+                                        // supplies no nonlocal field (step() passes A = 0), so with m = 1 the
+                                        // weighted alphaP is identically zero and the driver can never move.
+  card[20]       = 1.797;               // cSW -- propsBase ships 0.0, i.e. the driver switched OFF
+  card[base + 3] = rateOn ? 20.0 : 0.0; // swdfmKdotRef; 0 switches the rate term OFF
+  card[base + 4] = rateOn ? sVal : 0.0; // swdfmS
+  // propsVisco carries no swdfmExtra tail, so the exponent shape must be supplied here. Without
+  // it the constructor refuses the card: a shapeless exponent means g = 1 at every T > 0.
+  card[base + 0] = 1.1402;  // swdfmB0 = sqrt( 1.3 ), fixed by Rice-Tracey
+  card[base + 1] = -0.4450; // swdfmB1
+  card[base + 2] = 0.9725;  // swdfmB2
+
+  // Drive it hard enough to push the driver past D = 1, in a few committed increments.
+  const double          dT = 0.02;
+  std::vector< double > sv;
+  Tensor33d             F     = Spatial3D::I;
+  double                lastD = 0.0;
+  int                   n     = 0;
+  // Drive to a FIXED DEFORMATION STATE, identical for every s, so that s is the only thing that
+  // varies. Stopping on a D threshold instead would reach it at a different kappa_bar for each s
+  // and confound the rate exponent with the state.
+  for ( ; n < 400; n++ ) {
+    F( 0, 0 ) += 0.004;
+    F( 1, 1 ) -= 0.0012;
+    F( 2, 2 ) -= 0.0012;
+    step( sv, F, 0.0, dT, card );
+    // layout: Fp occupies 0..8, then alphaP 9, omega 10, damageDriver 11, alphaPBar 12
+    lastD = sv[11];
+    if ( sv[12] > 0.60 )
+      break;
+  }
+  if ( !( lastD > 1.0 ) )
+    throw std::runtime_error( "DufourModel G-8: could not drive the damage driver past D = 1, so "
+                              "the damaging-regime tangent check would be vacuous" );
+
+  // One more increment from that committed, damaging state: analytic vs central differences.
+  Tensor33d Fnext = F;
+  Fnext( 0, 0 ) += 0.004;
+  Fnext( 1, 1 ) -= 0.0012;
+  Fnext( 2, 2 ) -= 0.0012;
+
+  std::vector< double >               svCont = sv;
+  DufourModel::AlgorithmicModuli< 3 > tangent;
+  step( svCont, Fnext, 0.0, dT, card, &tangent );
+
+  const Tensor3333d fd = finiteDifferenceTangent( sv, Fnext, dT, card, 1e-7 );
+
+  double num = 0.0, den = 0.0;
+  for ( int i = 0; i < 3; i++ )
+    for ( int j = 0; j < 3; j++ )
+      for ( int k = 0; k < 3; k++ )
+        for ( int l = 0; l < 3; l++ ) {
+          const double d = tangent.dTau_dF( i, j, k, l ) - fd( i, j, k, l );
+          num += d * d;
+          den += fd( i, j, k, l ) * fd( i, j, k, l );
+        }
+  return std::sqrt( num / std::max( den, 1e-30 ) );
+}
+
+void testDamagingRateTangent()
+{
+  // The analytic tangent must match central differences with damage ACTIVE, at every rate
+  // exponent. The three pre-existing finite-difference checks are elastic/viscoelastic only, so
+  // the d(logG)/d(kdot) contribution to dD/dAlphaPBar was previously unverified.
+  //
+  // Compare at a FIXED deformation state. An earlier version of this test stopped on a D
+  // threshold, which reaches that threshold at a different kappa_bar for every s (0.570 down to
+  // 0.364) and lands the check near the elastic-plastic transition for large s, where the FINITE
+  // DIFFERENCE is inaccurate. That produced a spurious "error grows with s" signal (up to 0.019)
+  // and a false report of a tangent defect. Held at one state, the tangent is exact for every s.
+  // The large exponents are covered as well, since the rate term acts on g and the reported sensitivity is -s.
+  for ( double sVal : { 0.0, 0.0435, 0.075, 0.114, 0.15, 0.22, 0.30 } ) {
+    const bool   rateOn = sVal > 0.0;
+    const double err    = damagingTangentError( sVal, rateOn );
+    throwExceptionOnFailure( err < 1e-3,
+                             "DufourModel G-8: analytic dTau/dF with damage active" +
+                               std::string( rateOn ? " and the rate factor on at s = " + std::to_string( sVal )
+                                                   : " and the rate term off" ) +
+                               " must match central finite differences in " + std::string( __PRETTY_FUNCTION__ ) );
+  }
+}
+
+// G-12: the POSTPROCESSING state variables. omegaS, omegaF and lode were added so that a finished
+// run never has to be repeated because a field was missing. They must be exposed by name, the
+// split must reconstruct omega exactly, and the Lode parameter must hit its three known values.
+void testPostprocessingStateVars()
+{
+  std::vector< double > card = withMonotoneG( 1.1402, -0.4450, 0.9725, 20.0, -1.0 );
+  card[18]                   = 0.0;   // m = 0, so the LOCAL alphaP drives the driver at a material point
+  card[20]                   = 1.797; // cSW as calibrated, so the drive below actually passes D = 1
+  DufourModel mat( card.data(), static_cast< int >( card.size() ), elLabel );
+
+  // (a) the three known Lode states. zeta = +1 axisymmetric tension, 0 pure shear,
+  //     -1 axisymmetric compression. Superposed pressure must not change any of them.
+  auto zetaOf = []( double a, double b, double c, double p ) {
+    Tensor33d t;
+    t.zeros();
+    t( 0, 0 ) = a + p;
+    t( 1, 1 ) = b + p;
+    t( 2, 2 ) = c + p;
+    return DufourModel::lodeParameter( t );
+  };
+  for ( double p : { 0.0, 37.0, -37.0 } ) {
+    throwExceptionOnFailure( checkIfEqual( zetaOf( 2.0, -1.0, -1.0, p ), 1.0, 1e-12 ),
+                             "DufourModel G-12: axisymmetric tension must give the Lode parameter +1 in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+    throwExceptionOnFailure( checkIfEqual( zetaOf( 1.0, -2.0, 1.0, p ), -1.0, 1e-12 ),
+                             "DufourModel G-12: axisymmetric compression must give the Lode parameter -1 in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+    throwExceptionOnFailure( checkIfEqual( zetaOf( 1.0, 0.0, -1.0, p ), 0.0, 1e-12 ),
+                             "DufourModel G-12: pure shear must give the Lode parameter 0 in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+  }
+  // an unstressed point must not produce a NaN
+  Tensor33d zero;
+  zero.zeros();
+  throwExceptionOnFailure( std::isfinite( DufourModel::lodeParameter( zero ) ),
+                           "DufourModel G-12: an unstressed point gave a non-finite Lode parameter in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // (b) the names must be reachable, and omegaS / omegaF must rebuild omega exactly.
+  std::vector< double > sv( mat.getNumberOfRequiredStateVars(), 0.0 );
+  mat.initializeYourself( sv.data(), static_cast< int >( sv.size() ) );
+  for ( const auto& nm : { "omegaS", "omegaF", "lode", "triax", "omega" } ) {
+    bool ok = true;
+    try {
+      ok = mat.getStateView( nm, sv.data() ).stateLocation != nullptr;
+    }
+    catch ( const std::exception& ) {
+      ok = false;
+    }
+    throwExceptionOnFailure( ok,
+                             "DufourModel G-12: state variable '" + std::string( nm ) +
+                               "' is not exposed by getStateView in " + std::string( __PRETTY_FUNCTION__ ) );
+  }
+
+  Tensor33d F  = Spatial3D::I;
+  double    dT = 1.0;
+  for ( int k = 0; k < 400; k++ ) {
+    F( 0, 0 ) += 0.004;
+    F( 1, 1 ) -= 0.0012;
+    F( 2, 2 ) -= 0.0012;
+    step( sv, F, 0.0, dT, card );
+    const double om  = *mat.getStateView( "omega", sv.data() ).stateLocation;
+    const double oms = *mat.getStateView( "omegaS", sv.data() ).stateLocation;
+    const double omf = *mat.getStateView( "omegaF", sv.data() ).stateLocation;
+    // omega is CAPPED at omegaMax, so compare the split only below the cap
+    if ( om < 0.98 )
+      throwExceptionOnFailure( checkIfEqual( om, 1.0 - ( 1.0 - oms ) * ( 1.0 - omf ), 1e-12 ),
+                               "DufourModel G-12: omegaS and omegaF do not rebuild omega in " +
+                                 std::string( __PRETTY_FUNCTION__ ) );
+  }
+  // the drive above must actually have engaged the failure variable, else the check is vacuous
+  throwExceptionOnFailure( *mat.getStateView( "omegaF", sv.data() ).stateLocation > 0.0,
+                           "DufourModel G-12: omegaF never left zero, so the split check was vacuous in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+void testRateExponentWithoutReferenceRateIsRefused()
+{
+  auto refuses = []( const std::vector< double >& c ) {
+    try {
+      DufourModel mat( c.data(), static_cast< int >( c.size() ), elLabel );
+    }
+    catch ( const std::invalid_argument& ) {
+      return true;
+    }
+    return false;
+  };
+
+  // A rate exponent with no reference rate is silently inert: w would never be applied.
+  throwExceptionOnFailure( refuses( withMonotoneG( 1.798, -0.702, -3.172, 0.0, 0.05 ) ),
+                           "DufourModel G-7: a rate exponent with no reference rate was accepted in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// G-10: the COMPRESSION BRANCH. g must be < 1 and FALLING for T < 0, whatever the tension
+// coefficients do. Without it a single polynomial gives g(-0.29) = 16.6.
+// G-11: the material must ASK for a smaller step instead of letting D leap past the threshold.
+// The limit is 0.10. The element catches the Marmot::StressUpdateFailed of the material and asks
+// the solver to retake the increment with a smaller time step.
+void testLargeDamageIncrementRequestsCutback()
+{
+  std::vector< double > card = withMonotoneG( 1.1402, -0.4450, 0.9725, 20.0, -1.0 );
+  card[18]                   = 0.0;   // m = 0, so the LOCAL alphaP drives the driver at a material point
+  card[20]                   = 200.0; // cSW absurdly large, so one increment must overshoot the limit
+
+  // A single large increment from rest. dD = cSW g dAlphaPBar must exceed 0.10 and throw.
+  Tensor33d F = Spatial3D::I;
+  F( 0, 0 ) += 0.05;
+  F( 1, 1 ) -= 0.015;
+  F( 2, 2 ) -= 0.015;
+
+  bool threw = false;
+  try {
+    std::vector< double > sv;
+    step( sv, F, 0.0, 0.02, card );
+  }
+  catch ( const std::runtime_error& ) {
+    threw = true;
+  }
+  throwExceptionOnFailure( threw,
+                           "DufourModel G-11: a damage increment past dDMaxPerIncrement did NOT "
+                           "throw, so the solver was never asked to cut back, in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // And the same step with a small cSW must NOT throw: the limiter may not fire spuriously.
+  card[20]    = 1.797;
+  bool threw2 = false;
+  try {
+    std::vector< double > sv2;
+    step( sv2, F, 0.0, 0.02, card );
+  }
+  catch ( const std::runtime_error& ) {
+    threw2 = true;
+  }
+  throwExceptionOnFailure( !threw2,
+                           "DufourModel G-11: the limiter fired on a normal increment at the "
+                           "calibrated cSW, which would make every run crawl, in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+void testCompressionBranchDecays()
+{
+  // The T <= 0 branch is E = 1.3 T, independent of the tension shape. Use the calibrated
+  // monotone card.
+  const std::vector< double > c = withMonotoneG( 1.1402, -0.4450, 0.9725, 0.0, 0.0 );
+  DufourModel                 mat( c.data(), static_cast< int >( c.size() ), elLabel );
+
+  // compression: strictly below 1 and monotonically falling as T decreases
+  double prev = 1.0;
+  for ( double T : { -0.02, -0.05, -0.10, -0.20, -0.29, -0.35 } ) {
+    const double g = std::exp( mat.swdfmLogG( T ) );
+    throwExceptionOnFailure( g < 1.0 && g < prev,
+                             "DufourModel G-10: g must be < 1 and falling in compression, got " + std::to_string( g ) +
+                               " at T = " + std::to_string( T ) + " in " + std::string( __PRETTY_FUNCTION__ ) );
+    prev = g;
+  }
+  // the failure mode that the split of the branches prevents: an unsplit polynomial
+  // gives g( -0.29 ) = 16.6, i.e. damage 17x faster in compression than in shear
+  throwExceptionOnFailure( std::exp( mat.swdfmLogG( -0.29 ) ) < 0.8,
+                           "DufourModel G-10: g(-0.29) should be ~0.69, not the 16.6 the unsplit "
+                           "polynomial gives, in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  // continuity at T = 0 from both sides
+  throwExceptionOnFailure( checkIfEqual( std::exp( mat.swdfmLogG( -1e-9 ) ), 1.0, 1e-8 ) &&
+                             checkIfEqual( std::exp( mat.swdfmLogG( 1e-9 ) ), 1.0, 1e-8 ),
+                           "DufourModel G-10: g must be continuous and equal 1 at T = 0 in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  // NO tension inversion. The retired cubic ( 20.228, -41.044, 0.165 ) had g( 0.584 ) > g( 0.806 ).
+  // The monotone form cannot, for any b0, b1, b2. That is the reason it replaced the cubic.
+  throwExceptionOnFailure( mat.swdfmLogG( 0.584 ) < mat.swdfmLogG( 0.806 ),
+                           "DufourModel G-10: the monotone form must NOT invert in tension in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// V-5: pin the persistent state layout. The viscoelastic block is sized for nMaxwellMax = 7
+// branches unconditionally, so that the layout is independent of the card:
+//   base    Fp(9) + alphaP + omega + damageDriver + alphaPBar                          = 13
+//   visco   PK2Ref(9) + veDev(7 x 9) + veVol(7 x 1)                                    = 79
+//   triax   the clamped triaxiality the driver used                                    =  1
+//   post    omegaS + omegaF + lode, output variables                                   =  3
+void testStateVarLayout()
+{
+  DufourModel mat( propsVisco.data(), static_cast< int >( propsVisco.size() ), elLabel );
+  throwExceptionOnFailure( checkIfEqual( static_cast< double >( mat.getNumberOfRequiredStateVars() ), 96.0, 1e-12 ),
+                           "DufourModel V-5: unexpected number of required state vars, got " +
+                             std::to_string( mat.getNumberOfRequiredStateVars() ) + " in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+int main()
+{
+  auto tests = std::vector< std::function< void() > >{
+    testUndeformedResponse,
+    testStressSymmetry,
+    testPureRotation,
+    testAlgorithmicTangent,
+    testViscoelasticTangentFirstIncrement,
+    testViscoelasticTangentSecondIncrement,
+    testViscoelasticReducesToBaseModel,
+    testViscoelasticRelaxationLimits,
+    testStateVarLayout,
+    testMonotoneRiceTraceyWeight,
+    testCardWithoutExponentShapeIsRefused,
+    testPreRenumberCardIsRefused,
+    testMonotoneExponentIsMonotoneForAnyB,
+    testRateFactorAndSentinel,
+    testNoReferenceRateMeansNoRateDependence,
+    testRateExponentWithoutReferenceRateIsRefused,
+    testCompressionBranchDecays,
+    testLargeDamageIncrementRequestsCutback,
+    testDamagingRateTangent,
+    testPostprocessingStateVars,
+  };
+
+  executeTestsAndCollectExceptions( tests );
+
+  return 0;
+}

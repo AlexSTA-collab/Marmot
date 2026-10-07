@@ -27,4 +27,5 @@ This section contains the ready to use available material models.
   hugheswinget
   gradientenhancedhugheswinget
   gradientenhancedcompressibleneohookedamage
+  dufourmodel
   gradientenhancedfinitestraindruckerprager

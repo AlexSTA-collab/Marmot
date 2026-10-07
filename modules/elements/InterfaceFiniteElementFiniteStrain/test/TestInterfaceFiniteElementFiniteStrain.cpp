@@ -546,6 +546,56 @@ namespace {
                              "The nonlocal residual is not the integral of h ( abar - Lbar )." );
   }
 
+  /// the card of the interface element with the Dufour model: K, G, the thickness, and the other properties of the
+  /// model
+  std::vector< double > dufourProperties( double thickness )
+  {
+    return { 1793.9, 828.0, thickness, 12.0, 21.6, 4051.0, 15.8, 552.0, 243.0, 0.0, 0.0,
+             15.4,   1e-6,  0.0435,    0.3,  0.5,  1.75,   0.99, 0.12,  1.0,   1.0 };
+  }
+
+  /// The element with the viscoplastic damage model: the return map and the damage are active, and the tangent over the
+  /// displacements and the nonlocal field has to match the finite differences of the residual.
+  void testGradientEnhancedElementWithTheDufourModel()
+  {
+    using Element = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    const Eigen::VectorXd Q = makeDisplacementsAndNonlocalField< Element >( 6e-3, 1, 0.05 );
+
+    // the state must be plastic, otherwise the test would not cover the return map
+    const auto coordinates = inclinedQuadrilateral( angle, gap );
+    {
+      Element element( 1,
+                       FiniteElement::Quadrature::IntegrationTypes::FullIntegration,
+                       Element::SectionType::Interface );
+      element.assignNodeCoordinates( coordinates.data() );
+      const auto properties = dufourProperties( gap * std::cos( angle ) );
+      element.assignMaterial( "DUFOURMODEL", properties.data(), static_cast< int >( properties.size() ) );
+
+      std::vector< double > stateVars( element.getNumberOfRequiredStateVars(), 0.0 );
+      element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
+      element.initializeYourself();
+      element.setInitialConditions( MarmotElement::MarmotMaterialInitialization, nullptr );
+
+      std::vector< double > Pe( Element::sizeLoadVector, 0.0 ),
+        Ke( Element::sizeLoadVector * Element::sizeLoadVector, 0.0 );
+      element.computeKernels( Q.data(), Q.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+
+      const double* topState = element.getStateView( "topMaterialStateVars", 0 ).stateLocation;
+      // alphaP is the tenth entry of the state of the model
+      throwExceptionOnFailure( topState[9] > 0.0, "The Dufour model should be plastic in this test." );
+    }
+
+    assertTangentMatchesFiniteDifference< Element, 3, 8 >( coordinates,
+                                                           dufourProperties( gap * std::cos( angle ) ),
+                                                           Q,
+                                                           "GY with the Dufour model",
+                                                           "DUFOURMODEL" );
+  }
+
   void testRegistration()
   {
     for ( const std::string name : { "ILINE2UL",
@@ -572,6 +622,7 @@ int main()
                                                    testGradientEnhancedElementIsObjective,
                                                    testGradientEnhancedElementDofs,
                                                    testGradientEnhancedElementNamedState,
+                                                   testGradientEnhancedElementWithTheDufourModel,
                                                    testEquilibratedElement,
                                                    testEquilibratedElementAgreesWithThePlainElementForAUniformShift,
                                                    testRigidTranslationIsStressFree,

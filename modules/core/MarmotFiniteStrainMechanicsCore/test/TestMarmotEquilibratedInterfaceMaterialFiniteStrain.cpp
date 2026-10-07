@@ -345,6 +345,53 @@ void TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial()
                            "A gradient-enhanced material at fixed field must give the tangent of the local material." );
 }
 
+void TestEquilibratedFiniteStrainInterfaceTangentWithDufour()
+{
+  std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceTangentWithDufour ---\n";
+
+  const Geometry geometry = inclinedGeometry( 0.0 );
+
+  // The card of the Dufour model as an interface card [ p0, p1, h, ... ], with the weight m = 0 of the nonlocal field,
+  // so that the model is local and the adapter of the gradient-enhanced material is exact.
+  const std::vector< double > card =
+    { 1793.9, 828.0, geometry.hNormal, 12.0, 21.6, 4051.0, 15.8, 552.0, 243.0, 0.0, 0.0,
+      15.4,   1e-6,  0.0435,           0.3,  0.5,  1.75,   0.99, 0.12,  0.0,   1.0 };
+
+  for ( const double amplitude : { 0.01, 1.0 } ) {
+    Vector21d x;
+    x.setZero();
+    x( 0 ) = amplitude * 0.006;
+    x( 2 ) = amplitude * 0.003;
+    x( 3 ) = amplitude * 0.002;
+
+    const auto base = evaluate( "DUFOURMODEL", card, geometry, x );
+
+    Matrix21d finiteDifference;
+    finiteDifference.setZero();
+
+    const double eps = 1e-7;
+
+    for ( int j = 0; j < 21; ++j ) {
+      Vector21d plus  = x;
+      Vector21d minus = x;
+      plus( j ) += eps;
+      minus( j ) -= eps;
+      finiteDifference.col( j ) = ( evaluate( "DUFOURMODEL", card, geometry, plus ).p -
+                                    evaluate( "DUFOURMODEL", card, geometry, minus ).p ) /
+                                  ( 2.0 * eps );
+    }
+
+    const double error = ( base.tangent - finiteDifference ).lpNorm< Eigen::Infinity >();
+    const double scale = std::max( 1.0, finiteDifference.lpNorm< Eigen::Infinity >() );
+
+    std::cout << "  amplitude " << amplitude << ": |z| = " << base.z.norm()
+              << ", relative tangent error = " << error / scale << "\n";
+
+    throwExceptionOnFailure( error / scale < 1e-6,
+                             "The condensed Dufour tangent is not the derivative of the generalized stress." );
+  }
+}
+
 void TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards()
 {
   std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards ---\n";
@@ -375,6 +422,7 @@ int main()
     TestEquilibratedFiniteStrainInterfaceEquilibratesTheNominalTraction,
     TestEquilibratedFiniteStrainInterfaceCarriesARateMaterial,
     TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial,
+    TestEquilibratedFiniteStrainInterfaceTangentWithDufour,
     TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards,
   };
 
