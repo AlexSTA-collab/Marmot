@@ -101,7 +101,8 @@ public:
   /**
    * @brief Construct the material from a registered finite-strain material.
    *
-   * @param[in] materialName name of the bulk material, registered in the MarmotMaterialFiniteStrainFactory
+   * @param[in] materialName name of the bulk material, registered as a finite-strain or as a gradient-enhanced
+   * material, see MarmotLibrary::createFiniteStrainMaterialAllowingGradientEnhanced
    * @param[in] matProperties_ material properties [p0, p1, h, ...]
    * @param[in] nMaterialProperties_ number of material properties, at least three
    * @param[in] materialNumber_ number of the material

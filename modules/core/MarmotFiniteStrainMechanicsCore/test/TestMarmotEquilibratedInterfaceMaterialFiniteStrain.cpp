@@ -318,6 +318,55 @@ void TestEquilibratedFiniteStrainInterfaceCarriesARateMaterial()
   }
 }
 
+void TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial()
+{
+  std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial ---\n";
+
+  const Geometry geometry = inclinedGeometry( 10.0 * pi / 180.0 );
+
+  // below the damage threshold, a gradient-enhanced neo-Hookean material with its nonlocal field held at zero is the
+  // neo-Hookean material
+  const std::vector< double > localCard        = { K, G, geometry.hNormal };
+  const std::vector< double > gradientEnhanced = { K, G, geometry.hNormal, 1.0e-3, 5.0e-3, 0.1, 1.0 };
+
+  Vector21d x = rigidRotationStrain( geometry, Vector3d( 0.0, 1.0, 0.0 ), 0.1 );
+  x( 0 ) += 0.004;
+  x( 3 ) += 0.021;
+  x( 12 ) -= 0.017;
+
+  const auto local    = evaluate( "COMPRESSIBLENEOHOOKE", localCard, geometry, x );
+  const auto enhanced = evaluate( "GRADIENTENHANCEDCOMPRESSIBLENEOHOOKEDAMAGE", gradientEnhanced, geometry, x );
+
+  throwExceptionOnFailure( local.p.norm() > 0.0, "The state should load the layer." );
+  throwExceptionOnFailure( ( local.p - enhanced.p ).norm() < 1e-12 * local.p.norm(),
+                           "A gradient-enhanced material at fixed field must give the response of the local "
+                           "material." );
+  throwExceptionOnFailure( ( local.tangent - enhanced.tangent ).norm() < 1e-10 * local.tangent.norm(),
+                           "A gradient-enhanced material at fixed field must give the tangent of the local material." );
+}
+
+void TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards()
+{
+  std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards ---\n";
+
+  const auto rejects = []( const std::string& name, const std::vector< double >& card ) {
+    try {
+      MarmotEquilibratedInterfaceMaterialFiniteStrain material( name,
+                                                                card.data(),
+                                                                static_cast< int >( card.size() ),
+                                                                1 );
+    }
+    catch ( const std::invalid_argument& ) {
+      return true;
+    }
+    return false;
+  };
+
+  throwExceptionOnFailure( rejects( "COMPRESSIBLENEOHOOKE", { K, G } ), "A card without the thickness is rejected." );
+  throwExceptionOnFailure( rejects( "COMPRESSIBLENEOHOOKE", { K, G, 0.0 } ), "A zero thickness is rejected." );
+  throwExceptionOnFailure( rejects( "NOSUCHMATERIAL", { K, G, 0.1 } ), "An unknown bulk material is rejected." );
+}
+
 int main()
 {
   auto tests = std::vector< std::function< void() > >{
@@ -325,6 +374,8 @@ int main()
     TestEquilibratedFiniteStrainInterfaceTangentIsConsistent,
     TestEquilibratedFiniteStrainInterfaceEquilibratesTheNominalTraction,
     TestEquilibratedFiniteStrainInterfaceCarriesARateMaterial,
+    TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial,
+    TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards,
   };
 
   executeTestsAndCollectExceptions( tests );

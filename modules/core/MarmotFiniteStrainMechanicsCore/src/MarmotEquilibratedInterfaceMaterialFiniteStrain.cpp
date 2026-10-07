@@ -29,7 +29,7 @@
 #include "Marmot/MarmotEquilibratedInterfaceMaterialFiniteStrain.h"
 
 #include "Marmot/MarmotExceptions.h"
-#include "Marmot/MarmotMaterialFiniteStrainFactory.h"
+#include "Marmot/MarmotMaterialFiniteStrainFromGradientEnhanced.h"
 #include "Marmot/MarmotUtils.h"
 
 #include <Eigen/Dense>
@@ -232,17 +232,14 @@ MarmotEquilibratedInterfaceMaterialFiniteStrain::MarmotEquilibratedInterfaceMate
                                  materialProperties + 3,
                                  materialProperties + nMaterialProperties );
 
+  // A gradient-enhanced material is accepted too, with its nonlocal field held fixed. The adapter refuses a material
+  // whose stress depends on the field, so the substitution is never silent.
   const auto createBulkMaterial = [&]() {
-    std::unique_ptr< MarmotMaterialFiniteStrain > material(
-      MarmotLibrary::MarmotMaterialFiniteStrainFactory::createMaterial( materialName,
-                                                                        baseMaterialProperties.data(),
-                                                                        static_cast< int >(
-                                                                          baseMaterialProperties.size() ),
-                                                                        materialNumber ) );
-    if ( !material )
-      throw std::invalid_argument( "Unknown base material for MarmotEquilibratedInterfaceMaterialFiniteStrain: " +
-                                   materialName );
-    return material;
+    return MarmotLibrary::createFiniteStrainMaterialAllowingGradientEnhanced( materialName,
+                                                                              baseMaterialProperties.data(),
+                                                                              static_cast< int >(
+                                                                                baseMaterialProperties.size() ),
+                                                                              materialNumber );
   };
 
   topMaterial    = createBulkMaterial();

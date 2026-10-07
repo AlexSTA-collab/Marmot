@@ -44,8 +44,17 @@ Properties
 The material properties are ``[p0, p1, h, ...]``: the first two properties of the bulk material, the thickness of
 the layer normal to the interface, and the remaining properties of the bulk material.
 
+The bulk material may also be a gradient-enhanced finite-strain material, such as the
+:doc:`gradient-enhanced neo-Hookean damage material <gradientenhancedcompressibleneohookedamage>`. It is then driven
+with its nonlocal field held at zero by ``MarmotMaterialFiniteStrainFromGradientEnhanced``. This is exact as long as
+the stress does not depend on the field at that value, which the adapter checks on every call, and it refuses the
+material otherwise. The nonlocal regularization itself is lost, because the interface carries no nonlocal field.
+
 Implementation
 --------------
 
 .. doxygenclass:: MarmotEquilibratedInterfaceMaterialFiniteStrain
+   :members:
+
+.. doxygenclass:: MarmotMaterialFiniteStrainFromGradientEnhanced
    :members:
