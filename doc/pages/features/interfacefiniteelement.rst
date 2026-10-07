@@ -78,6 +78,12 @@ Elements
    * - ``YIQUAD8``
      - 16
      - As ``IQUAD8``, with the equilibrated two-sided interface material
+   * - ``IQUAD4UL``, ``IQUAD8UL``
+     - 8, 16
+     - As ``IQUAD4`` and ``IQUAD8`` at finite strain, with the finite-strain interface material
+   * - ``ILINE2UL``
+     - 4
+     - Two-dimensional counterpart of ``IQUAD4UL`` between two linear lines
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
@@ -108,6 +114,23 @@ normal are rejected when the element is initialized. The residual and the tangen
 with the tangent assembled from the nine blocks of the condensed material tangent over
 :math:`(\mathbf{w}, \mathbf{A}^{+}, \mathbf{A}^{-})`.
 
+The ``UL`` elements use ``FiniteStrainDisplacementJumpFormulation``. The interface material receives the *total*
+displacements and surface gradients of the two sides and the connector between the paired faces, and evaluates a bulk
+material of finite strain for the deformation gradient of the layer,
+
+.. math::
+
+   \mathbf{F} = \mathbf{I} + \langle\nabla_s \mathbf{u}\rangle
+     + \frac{1}{\ell}\big( [\![\mathbf{u}]\!] - \langle\nabla_s \mathbf{u}\rangle\, \mathbf{d}_\tau \big)
+     \otimes \mathbf{n}, \qquad \mathbf{X}^{+} - \mathbf{X}^{-} = \ell\, \mathbf{n} + \mathbf{d}_\tau .
+
+The tangential part :math:`\mathbf{d}_\tau` of the connector keeps the layer free of stresses under a rigid rotation
+of an inclined interface. The material properties are ``[h, properties of the bulk material...]``, where ``h`` is the
+thickness of the layer. The force :math:`\mathbf{t} = (h/\ell)\, \mathbf{P}\mathbf{n}` and the surface stress
+:math:`\mathbf{s} = h\, \mathbf{P}\mathbf{T} - (h/\ell)\, (\mathbf{P}\mathbf{n}) \otimes \mathbf{d}_\tau` follow
+from the first Piola-Kirchhoff stress :math:`\mathbf{P}` of the bulk material and
+:math:`\mathbf{T} = \mathbf{I} - \mathbf{n}\otimes\mathbf{n}`.
+
 Properties
 ----------
 
@@ -132,4 +155,10 @@ Implementation
    :members:
 
 .. doxygenstruct:: Marmot::Elements::EquilibratedTwoSidedFormulation
+   :members:
+
+.. doxygenstruct:: Marmot::Elements::FiniteStrainDisplacementJumpFormulation
+   :members:
+
+.. doxygenclass:: MarmotInterfaceMaterialFiniteStrain
    :members:

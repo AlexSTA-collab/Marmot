@@ -56,6 +56,43 @@
 namespace Marmot::Elements {
 
   /**
+   * @brief Embed a vector with one block of the interface quantity per side in the 3D layout of the materials.
+   *
+   * The interface materials are fixed to three dimensions. A two-dimensional element embeds its quantities of both
+   * interface sides, which are stored side after side, in the 3D layout: each block is expanded with expandTo3D().
+   *
+   * @tparam nDim spatial dimension of the element, 2 or 3
+   * @tparam rank 1 for a vector per side (jump), 2 for a second-order tensor per side (surface gradient)
+   * @param[in] sides the blocks of the bottom and the top side, each holding nDim^rank entries
+   * @return the expanded blocks, each holding 3^rank entries
+   */
+  template < int nDim, int rank >
+  Eigen::Matrix< double, 2 * ( rank == 1 ? 3 : 9 ), 1 > expandSidesTo3D(
+    const Eigen::Matrix< double, 2 * ( rank == 1 ? nDim : nDim * nDim ), 1 >& sides )
+  {
+    constexpr int nSide3d = rank == 1 ? 3 : 9;
+    constexpr int nSide   = rank == 1 ? nDim : nDim * nDim;
+
+    Eigen::Matrix< double, 2 * nSide3d, 1 > expanded = Eigen::Matrix< double, 2 * nSide3d, 1 >::Zero();
+
+    for ( int side = 0; side < 2; ++side ) {
+      if constexpr ( rank == 1 ) {
+        const Fastor::Tensor< double, 3 > block = expandTo3D(
+          Fastor::Tensor< double, nDim >( sides.data() + side * nSide ) );
+        expanded.template segment< nSide3d >(
+          side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
+      }
+      else {
+        const Fastor::Tensor< double, 3, 3 > block = expandTo3D(
+          Fastor::Tensor< double, nDim, nDim >( sides.data() + side * nSide ) );
+        expanded.template segment< nSide3d >(
+          side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
+      }
+    }
+    return expanded;
+  }
+
+  /**
    * @class InterfaceFiniteElementBase
    * @tparam nDim Spatial embedding dimension.
    * @tparam nNodes Number of element nodes.
@@ -81,7 +118,8 @@ namespace Marmot::Elements {
    *   geometry of the point has been evaluated, with the element and the point. It completes the geometry and
    *   fills the QuadraturePointData,
    * - `integrate()`: a static function template that evaluates the material at a quadrature point from the
-   *   increments of the interface displacement and of the surface gradient, updates the state variables of the
+   *   total nodal displacements of the element and the increments of the interface displacement and of the surface
+   *   gradient, updates the state variables of the
    *   quadrature point, and adds the contributions to the residual and the tangent of the element, see
    *   DisplacementJumpFormulation and EquilibratedTwoSidedFormulation.
    */
@@ -565,8 +603,7 @@ namespace Marmot::Elements {
                                                                                 double        time,
                                                                                 double        dT )
   {
-    (void)QTotal_;
-
+    Eigen::Map< const RhsSized > QTotal( QTotal_ );
     Eigen::Map< const RhsSized > dQ( dQ_ );
     Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
     Eigen::Map< RhsSized >       Pe( Pe_ );
@@ -592,7 +629,7 @@ namespace Marmot::Elements {
       // THIS point has to be installed before every evaluation
       material->setCharacteristicElementLength( qp.characteristicLength );
 
-      Formulation::integrate( *this, qp, dU_GPs, dSurface_strain_GPs, time, dT, Pe, Ke );
+      Formulation::integrate( *this, qp, QTotal, dU_GPs, dSurface_strain_GPs, time, dT, Pe, Ke );
     }
   }
 

@@ -161,6 +161,7 @@ namespace Marmot::Elements {
      * @tparam KeType type of the element tangent
      * @param[in] element the element, which holds the material
      * @param[in,out] qp quadrature point, whose state variables are updated
+     * @param[in] QTotal total nodal displacements of the element, which this formulation does not need
      * @param[in] dU_GPs increment of the displacements of both interface sides at the quadrature point
      * @param[in] dSurface_strain_GPs increment of the surface gradient of both interface sides at the quadrature
      * point
@@ -169,9 +170,10 @@ namespace Marmot::Elements {
      * @param[in,out] Pe element residual, to which the contribution is added
      * @param[in,out] Ke element tangent, to which the contribution is added
      */
-    template < class Element, class QuadraturePoint, class PeType, class KeType >
+    template < class Element, class QuadraturePoint, class QType, class PeType, class KeType >
     static void integrate( Element&                         element,
                            QuadraturePoint&                 qp,
+                           const QType&                     QTotal,
                            const InterfaceDisplSized&       dU_GPs,
                            const InterfaceSurfaceGradSized& dSurface_strain_GPs,
                            double                           time,
@@ -179,6 +181,8 @@ namespace Marmot::Elements {
                            PeType&                          Pe,
                            KeType&                          Ke )
     {
+      (void)QTotal;
+
       const auto& Njump    = qp.NmatJump;
       const auto& Bavg     = qp.BmatAverage;
       auto&       material = element.material;
@@ -232,20 +236,8 @@ namespace Marmot::Elements {
         Fastor::Tensor< double, 3, 3 > surfaceStress3d = expandTo3D(
           Fastor::Tensor< double, 2, 2 >( surface_stress.data() ) );
 
-        // the jump and surface-gradient buffers carry one block per interface side
-        Eigen::Matrix< double, 6, 1 >  dU3d             = Eigen::Matrix< double, 6, 1 >::Zero();
-        Eigen::Matrix< double, 18, 1 > dSurfaceStrain3d = Eigen::Matrix< double, 18, 1 >::Zero();
-
-        for ( int side = 0; side < 2; ++side ) {
-          const Fastor::Tensor< double, 3 > dUSide3d = expandTo3D(
-            Fastor::Tensor< double, 2 >( dU_GPs.data() + side * nDim ) );
-          const Fastor::Tensor< double, 3, 3 > dSurfaceStrainSide3d = expandTo3D(
-            Fastor::Tensor< double, 2, 2 >( dSurface_strain_GPs.data() + side * nTensor ) );
-
-          dU3d.template segment< 3 >( side * 3 ) = Eigen::Map< const Eigen::Matrix< double, 3, 1 > >( dUSide3d.data() );
-          dSurfaceStrain3d.template segment< 9 >( side * 9 ) = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >(
-            dSurfaceStrainSide3d.data() );
-        }
+        const Eigen::Matrix< double, 6, 1 >  dU3d             = expandSidesTo3D< nDim, 1 >( dU_GPs );
+        const Eigen::Matrix< double, 18, 1 > dSurfaceStrain3d = expandSidesTo3D< nDim, 2 >( dSurface_strain_GPs );
 
         Material::State       materialState{ force3d, surfaceStress3d, qp.managedStateVars->materialStateVars.data() };
         Material::Tangents    materialTangents{ Material::Tensor33d( 0.0 ),
