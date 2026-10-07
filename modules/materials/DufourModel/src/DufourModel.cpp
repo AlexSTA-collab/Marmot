@@ -624,6 +624,7 @@ namespace Marmot::Materials {
     double&         alphaP       = stateLayout.getAs< double& >( ctx.stateVars, "alphaP" );
     const double    alphaPOld    = alphaP;
     double&         omega        = stateLayout.getAs< double& >( ctx.stateVars, "omega" );
+    const double    omegaOld     = omega;
     double&         driver       = stateLayout.getAs< double& >( ctx.stateVars, "damageDriver" );
     const double    driverOld    = driver;
     double&         alphaPBar    = stateLayout.getAs< double& >( ctx.stateVars, "alphaPBar" );
@@ -713,7 +714,7 @@ namespace Marmot::Materials {
       triax = std::min( std::max( triaxiality( tau_eff ), etaMin ), etaMax );
 
       response.tau                  = tau_eff * ( 1.0 - omega );
-      response.elasticEnergyDensity = psi_;
+      response.elasticEnergyDensity = ( 1.0 - omega ) * psi_;
 
       // tangent operator
       using mM9d = Eigen::Map< Eigen::Matrix< double, 9, 9 > >;
@@ -736,6 +737,13 @@ namespace Marmot::Materials {
       const double f_c                = std::get< 0 >( yieldFunctionFromStress( mandel_c, betaP_c, J ) );
       const double betaP_cap_c        = std::max( betaP_c, 1e-12 );
       const double ratio_conv         = Math::macauly( f_c + betaP_cap_c ) / betaP_cap_c;
+
+      // Dissipation: the plastic work of the effective Mandel stress on the plastic increment, which the damage scales
+      // by the undamaged fraction, and the energy that the damage increment releases. The value is cumulative: the host
+      // carries the dissipation of the previous increments in.
+      const Tensor33d dEp = X( 10 ) * std::get< 3 >( yieldFunctionFromStress( mandel_c, betaP_c, J ) );
+      response.dissipation += ( 1.0 - omega ) * Fastor::inner( mandel_c, dEp ) +
+                              psi_ * std::max( omega - omegaOld, 0.0 );
 
       dYdDeformation.block< 1, 9 >( idxF, 0 ) = ratio_conv * mV9d( Finv_T.data() ).transpose();
 
@@ -787,8 +795,11 @@ namespace Marmot::Materials {
       triax = std::min( std::max( triaxiality( tau_eff ), etaMin ), etaMax );
 
       response.tau                  = tau_eff * ( 1.0 - omega );
-      response.elasticEnergyDensity = psi_;
+      response.elasticEnergyDensity = ( 1.0 - omega ) * psi_;
       response.L                    = alphaP;
+
+      // elastic step: only the damage dissipates, see above
+      response.dissipation += psi_ * std::max( omega - omegaOld, 0.0 );
 
       // tangent operator
       Tensor3333d dPK2_dFe    = einsum< ijKL, KLMN >( dPK2_dCe_eff, dCe_dFe );

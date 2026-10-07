@@ -964,6 +964,96 @@ void testNegativeWeightedPlasticStrainCausesNoDamage()
                              std::string( __PRETTY_FUNCTION__ ) );
 }
 
+// E-1: the energy balance. The work of the stress along a path is the stored energy plus the dissipation, with the
+// damage scaling both. The work is integrated with the trapezoidal rule, so that the balance holds up to the
+// error of the increments.
+void testEnergyBalance()
+{
+  std::vector< double > card( props.begin(), props.end() );
+  card[18] = 0.0; // local damage: the damage then follows the plastic strain of the point
+
+  DufourModel           mat( card.data(), static_cast< int >( card.size() ), elLabel );
+  std::vector< double > sv( mat.getNumberOfRequiredStateVars(), 0.0 );
+  mat.initializeYourself( sv.data(), static_cast< int >( sv.size() ) );
+
+  const int nIncrements = 400;
+
+  const auto deformationGradient = [&]( int k ) {
+    const double t = static_cast< double >( k ) / nIncrements;
+    Tensor33d    F;
+    F.eye();
+    F( 0, 0 ) += 0.20 * t;
+    F( 0, 1 ) += 0.90 * t;
+    F( 1, 1 ) -= 0.02 * t;
+    F( 2, 2 ) -= 0.02 * t;
+    return F;
+  };
+
+  Tensor33d FOld = deformationGradient( 0 );
+  Tensor33d POld( 0.0 );
+  double    work = 0.0, dissipation = 0.0, energy = 0.0, previousDissipation = 0.0;
+  bool      monotone = true;
+
+  for ( int k = 1; k <= nIncrements; ++k ) {
+    const Tensor33d F = deformationGradient( k );
+
+    DufourModel::ConstitutiveResponse< 3 > response;
+    response.stateVars   = sv.data();
+    response.dissipation = dissipation;
+    DufourModel::AlgorithmicModuli< 3 > tangent;
+    mat.computeStress( response, tangent, { F, 0.0 }, { 0.01 * ( k - 1 ), 0.01 } );
+
+    // nominal stress P = tau F^-T
+    const Tensor33d P = einsum< ij, jk, to_ik >( response.tau, transpose( inverse( F ) ) );
+    work += 0.5 * Fastor::inner( Tensor33d( P + POld ), Tensor33d( F - FOld ) );
+
+    dissipation         = response.dissipation;
+    energy              = response.elasticEnergyDensity;
+    monotone            = monotone && dissipation >= previousDissipation - 1e-14;
+    previousDissipation = dissipation;
+
+    FOld = F;
+    POld = P;
+  }
+
+  throwExceptionOnFailure( monotone,
+                           "DufourModel E-1: the dissipation must not decrease in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( dissipation > 0.0 && *mat.getStateView( "omega", sv.data() ).stateLocation > 0.0,
+                           "DufourModel E-1: the path must be plastic and damaging in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( std::abs( work - energy - dissipation ) < 0.02 * work,
+                           "DufourModel E-1: work " + std::to_string( work ) + " is not energy " +
+                             std::to_string( energy ) + " plus dissipation " + std::to_string( dissipation ) + " in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// E-2: an elastic path does not dissipate
+void testElasticPathDoesNotDissipate()
+{
+  std::vector< double > sv;
+  const Tensor33d       F = []() {
+    Tensor33d F( 0.0 );
+    F.eye();
+    F( 0, 1 ) = 1e-4;
+    return F;
+  }();
+
+  DufourModel mat( props.data(), static_cast< int >( props.size() ), elLabel );
+  sv.assign( mat.getNumberOfRequiredStateVars(), 0.0 );
+  mat.initializeYourself( sv.data(), static_cast< int >( sv.size() ) );
+
+  DufourModel::ConstitutiveResponse< 3 > response;
+  response.stateVars   = sv.data();
+  response.dissipation = 0.25;
+  DufourModel::AlgorithmicModuli< 3 > tangent;
+  mat.computeStress( response, tangent, { F, 0.0 }, { 0.0, 1.0 } );
+
+  throwExceptionOnFailure( response.dissipation == 0.25 && response.elasticEnergyDensity > 0.0,
+                           "DufourModel E-2: an elastic step stores energy and adds no dissipation in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
 int main()
 {
   auto tests = std::vector< std::function< void() > >{
@@ -990,6 +1080,8 @@ int main()
     testInvalidCardsAreRefused,
     testBumpOnTheWeight,
     testNegativeWeightedPlasticStrainCausesNoDamage,
+    testEnergyBalance,
+    testElasticPathDoesNotDissipate,
   };
 
   executeTestsAndCollectExceptions( tests );

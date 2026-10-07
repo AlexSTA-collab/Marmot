@@ -99,8 +99,16 @@ namespace Marmot::Materials {
    * weighted plastic strain alphaPBar of the previous increment, the reference stress PK2Ref and the states of the
    * Maxwell branches veDev and veVol, and the output variables triax, omegaS, omegaF and lode.
    *
-   * The nonlocal radius is the value of the card and constant. The dissipation of the response is passed through
-   * unchanged.
+   * The nonlocal radius is the value of the card and constant.
+   *
+   * @par Energy and dissipation
+   * The elastic energy density of the response is @f$ (1 - \omega)\,\psi_\mathrm{eff} @f$ with the potential of the
+   * elastic part. The dissipation is cumulative: the incoming value is incremented by
+   * @f$ (1 - \omega)\,\boldsymbol{M} : \Delta\boldsymbol{\varepsilon}^p + \psi_\mathrm{eff}\,\Delta\omega @f$, with the
+   * effective Mandel stress @f$ \boldsymbol{M} @f$, the plastic increment @f$ \Delta\boldsymbol{\varepsilon}^p @f$ of
+   * the return map and the energy that the increase of the damage releases. A decrease of the damage, which the
+   * nonlocal field can cause, does not dissipate. The viscous dissipation of the Maxwell branches is not included,
+   * because the energy stored in the branches is not tracked.
    */
   class DufourModel : public MarmotMaterialGradientEnhancedFiniteStrain {
 

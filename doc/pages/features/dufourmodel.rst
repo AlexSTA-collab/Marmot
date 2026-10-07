@@ -47,6 +47,17 @@ For :math:`c_{SW} = 0` the failure part is absent. The growth of the driver in o
 increase makes the material throw ``Marmot::StressUpdateFailed``, so that the solver retakes the increment with a
 smaller time step.
 
+Energy and dissipation
+^^^^^^^^^^^^^^^^^^^^^^
+
+The elastic energy density of the response is :math:`(1 - \omega)\,\psi_\mathrm{eff}`. The dissipation is cumulative, as in
+the other damage models: the incoming value is incremented by
+:math:`(1 - \omega)\,\boldsymbol{M} : \Delta\boldsymbol{\varepsilon}^p + \psi_\mathrm{eff}\,\Delta\omega`, with the effective
+Mandel stress :math:`\boldsymbol{M}` and the plastic increment of the return map. A decrease of the damage, which the nonlocal
+field can cause, does not dissipate. Without Maxwell branches the work of the stress along a path is the stored energy plus
+the dissipation. The viscous dissipation of the Maxwell branches is not included, because the energy stored in them is not
+tracked.
+
 Material parameters
 -------------------
 
