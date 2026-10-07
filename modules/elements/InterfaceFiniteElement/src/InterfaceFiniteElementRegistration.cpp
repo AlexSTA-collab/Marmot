@@ -1,6 +1,7 @@
 #include "Marmot/InterfaceFiniteElement.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotFiniteElement.h"
+#include "Marmot/YInterfaceFiniteElement.h"
 
 namespace Marmot::Elements::Registration {
 
@@ -34,5 +35,17 @@ namespace Marmot::Elements::Registration {
                      makeFactoryFunction< InterfaceFiniteElement< 3, 8 >,
                                           FullIntegration,
                                           InterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
+
+  const static bool YILINE2_isRegistered = MarmotElementFactory::
+    registerElement( "YILINE2",
+                     makeFactoryFunction< YInterfaceFiniteElement< 2, 4 >,
+                                          FullIntegration,
+                                          YInterfaceFiniteElement< 2, 4 >::SectionType::Interface >() );
+
+  const static bool YIQUAD4_isRegistered = MarmotElementFactory::
+    registerElement( "YIQUAD4",
+                     makeFactoryFunction< YInterfaceFiniteElement< 3, 8 >,
+                                          FullIntegration,
+                                          YInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
 
 } // namespace Marmot::Elements::Registration

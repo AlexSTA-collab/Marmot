@@ -75,10 +75,15 @@ namespace Marmot::Elements {
    * - `QPStateVarManager`: the named state variables of a quadrature point. It can be created from a pointer to
    *   them and their number, provides the static function `getNumberOfRequiredStateVarsQuadraturePointOnly()` and
    *   the vector `materialStateVars` of the material state variables, and is a MarmotStateVarVectorManager,
+   * - `QuadraturePointData`: the data a formulation keeps at each quadrature point besides the state variables,
+   *   for instance additional geometry. It can be default constructed, and may be an empty class,
+   * - `initializeQuadraturePoint()`: a static function template that is called for every quadrature point once the
+   *   geometry of the point has been evaluated, with the element and the point. It completes the geometry and
+   *   fills the QuadraturePointData,
    * - `integrate()`: a static function template that evaluates the material at a quadrature point from the
    *   increments of the interface displacement and of the surface gradient, updates the state variables of the
    *   quadrature point, and adds the contributions to the residual and the tangent of the element, see
-   *   DisplacementJumpFormulation.
+   *   DisplacementJumpFormulation and EquilibratedTwoSidedFormulation.
    */
   template < int nDim, int nNodes, class Formulation >
   class InterfaceFiniteElementBase : public MarmotElement, public MarmotGeometryInterfaceElement< nDim, nNodes > {
@@ -190,6 +195,11 @@ namespace Marmot::Elements {
        * live in the shared material object.
        */
       double characteristicLength = 0.0;
+
+      /**
+       * @brief Data of the formulation at this quadrature point, besides the state variables.
+       */
+      typename Formulation::QuadraturePointData formulationData;
 
       /**
        * @brief Number of non-material state variables stored at this quadrature point.
@@ -542,6 +552,8 @@ namespace Marmot::Elements {
       else if constexpr ( nDim == 2 ) {
         qp.characteristicLength = qp.sqrtDetG;
       }
+
+      Formulation::initializeQuadraturePoint( *this, qp );
     }
   }
 

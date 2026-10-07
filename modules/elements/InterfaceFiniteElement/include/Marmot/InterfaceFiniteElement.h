@@ -75,6 +75,20 @@ namespace Marmot::Elements {
 
     using Material = MarmotInterfaceMaterialHypoElastic; ///< interface material of the element
 
+    /// This formulation keeps no data at the quadrature points besides the state variables.
+    struct QuadraturePointData {};
+
+    /**
+     * @brief Complete the geometry of a quadrature point; nothing is to be done in this formulation.
+     *
+     * @tparam Element type of the element
+     * @tparam QuadraturePoint type of the quadrature point
+     */
+    template < class Element, class QuadraturePoint >
+    static void initializeQuadraturePoint( const Element&, QuadraturePoint& )
+    {
+    }
+
     /**
      * @brief Named state-variable manager for interface quadrature points.
      */

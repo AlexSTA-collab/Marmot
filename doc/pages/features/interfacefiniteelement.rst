@@ -68,6 +68,12 @@ Elements
      - 8
      - Three-dimensional interface element between two bilinear quadrilaterals (4 bottom and 4 top nodes),
        full integration
+   * - ``YIQUAD4``
+     - 8
+     - As ``IQUAD4``, with the :ref:`equilibrated two-sided interface material <equilibratedinterfacematerialhypoelastic>`
+   * - ``YILINE2``
+     - 4
+     - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
 
 The element is a template in the spatial dimension and the number of nodes. Besides the registered
 three-dimensional ``IQUAD4``, a two-dimensional instantiation embeds its quadrature-point state in the
@@ -80,6 +86,20 @@ supplies what differs between the elements: the interface material, the state va
 point, and the evaluation of the material response together with the assembly of the residual and the tangent.
 ``DisplacementJumpFormulation`` is the formulation described here, and ``InterfaceFiniteElement`` is the base with
 this formulation.
+
+The ``Y`` elements use ``EquilibratedTwoSidedFormulation``. Each side keeps its own surface gradient
+:math:`\mathbf{A}^{\pm}`, and the material condenses the normal-gradient jump by enforcing traction equilibrium
+:math:`\boldsymbol{\sigma}^{+}\mathbf{n} = \boldsymbol{\sigma}^{-}\mathbf{n}`. The faces may be separated: the
+normal is oriented from the bottom to the top face, and nodes with a connector that has no component along the
+normal are rejected when the element is initialized. The residual and the tangent are
+
+.. math::
+
+   \mathbf{P}_e = \sum_{qp} \Big( \mathbf{N}_{\mathrm{jump}}^\mathsf{T}\mathbf{f}
+     + \mathbf{B}_{+}^\mathsf{T}\mathbf{S}^{+} + \mathbf{B}_{-}^\mathsf{T}\mathbf{S}^{-} \Big) J_0\, w,
+
+with the tangent assembled from the nine blocks of the condensed material tangent over
+:math:`(\mathbf{w}, \mathbf{A}^{+}, \mathbf{A}^{-})`.
 
 Properties
 ----------
@@ -102,4 +122,7 @@ Implementation
    :allow-dot-graphs:
 
 .. doxygenstruct:: Marmot::Elements::DisplacementJumpFormulation
+   :members:
+
+.. doxygenstruct:: Marmot::Elements::EquilibratedTwoSidedFormulation
    :members:
