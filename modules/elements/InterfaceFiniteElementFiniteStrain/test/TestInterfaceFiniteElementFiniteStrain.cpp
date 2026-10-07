@@ -2,6 +2,7 @@
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotElementProperty.h"
+#include "Marmot/MarmotMaterialFiniteStrainFactory.h"
 #include "Marmot/MarmotTesting.h"
 
 #include <Eigen/Dense>
@@ -596,6 +597,30 @@ namespace {
                                                            "DUFOURMODEL" );
   }
 
+  void testMaterialAccessors()
+  {
+    // thickness, bulk modulus, shear modulus and density
+    const std::vector< double >         properties = { 0.1, 3500.0, 1500.0, 2.0 };
+    MarmotInterfaceMaterialFiniteStrain material( "COMPRESSIBLENEOHOOKE", properties.data(), 4, 1 );
+    material.setCharacteristicElementLength( 0.5 );
+
+    std::vector< double > stateVars( material.getNumberOfRequiredStateVars(), 0.0 );
+    material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
+
+    throwExceptionOnFailure( material.getStateView( "baseMaterialStateVars", stateVars.data() ).stateSize ==
+                               material.getNumberOfRequiredStateVars(),
+                             "The state of the bulk material is a named state." );
+
+    const double                                  bulkProperties[] = { 3500.0, 1500.0, 2.0 };
+    std::unique_ptr< MarmotMaterialFiniteStrain > bulk(
+      MarmotLibrary::MarmotMaterialFiniteStrainFactory::createMaterial( "COMPRESSIBLENEOHOOKE",
+                                                                        bulkProperties,
+                                                                        3,
+                                                                        1 ) );
+    throwExceptionOnFailure( material.getDensity() == bulk->getDensity( nullptr ),
+                             "The density is the one of the bulk material." );
+  }
+
   void testRegistration()
   {
     for ( const std::string name : { "ILINE2UL",
@@ -628,6 +653,7 @@ int main()
                                                    testRigidTranslationIsStressFree,
                                                    testCoincidentFacesAreRejected,
                                                    testInvalidMaterialsAreRejected,
+                                                   testMaterialAccessors,
                                                    testRegistration };
   executeTestsAndCollectExceptions( tests );
   return 0;

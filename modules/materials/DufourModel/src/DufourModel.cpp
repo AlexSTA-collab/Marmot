@@ -462,29 +462,6 @@ namespace Marmot::Materials {
     return { f, df_dFe, df_dBetaP, dg_dMandel, dh_dFe };
   }
 
-  std::tuple< double > DufourModel::yieldFunctionNominal( const Context&   ctx,
-                                                          const Tensor33d& Fe,
-                                                          const double     betaP,
-                                                          const double     omega,
-                                                          const double     J ) const
-  {
-    Tensor33d   mandelStressN;
-    Tensor3333d dMandel_dFe;
-    std::tie( mandelStressN, dMandel_dFe ) = computeNominalMandelStress( ctx, Fe, omega );
-
-    const double eta = fc / ft;
-    Tensor33d    dev = deviatoric( mandelStressN );
-    const double J2  = 0.5 * Fastor::inner( dev, dev );
-    const double I1  = trace( mandelStressN );
-
-    const double A = eta - 1.0;
-    const double B = sqrt( std::max( A * A * I1 * I1 + 12.0 * eta * J2, 1e-15 ) );
-
-    const double f = ( A * I1 + B ) / ( 2.0 * eta ) / J - betaP;
-
-    return { f };
-  }
-
   bool DufourModel::isYielding( const Context& ctx, const Tensor33d& Fe, const double betaP, const double J ) const
   {
     return std::get< 0 >( yieldFunction( ctx, Fe, betaP, J ) ) > 0.0;
@@ -517,39 +494,6 @@ namespace Marmot::Materials {
                   einsum< IK, iL, iJ, to_IJKL >( Spatial3D::I, Spatial3D::I, PK2 );
     Tensor3333d dMandel_dFe = einsum< IJKL, KLMN >( dMandel_dCe, dCe_dFe );
     return { mandel, dMandel_dFe };
-  }
-
-  std::tuple< Tensor33d, Tensor3333d > DufourModel::computeNominalMandelStress( const Context&   ctx,
-                                                                                const Tensor33d& Fe,
-                                                                                const double&    omega ) const
-  {
-    using namespace Marmot::ContinuumMechanics;
-    Tensor33d   Ce;
-    Tensor3333d dCe_dFe;
-    std::tie( Ce, dCe_dFe ) = DeformationMeasures::FirstOrderDerived::rightCauchyGreen( Fe );
-
-    double      psi_;
-    Tensor33d   dPsi_dCe;
-    Tensor3333d d2Psi_dCedCe, dMandelN_dCe;
-
-    std::tie( psi_, dPsi_dCe, d2Psi_dCedCe ) = EnergyDensityFunctions::SecondOrderDerived::PenceGouPotentialB( Ce,
-                                                                                                               K,
-                                                                                                               G );
-
-    auto [PK2, dPK2_dCe] = applyViscoelasticity( ctx,
-                                                 Tensor33d( 2.0 * dPsi_dCe ),
-                                                 Tensor3333d( 2.0 * d2Psi_dCedCe ),
-                                                 false );
-
-    const Tensor33d mandelN = ( Ce % PK2 ) * ( 1.0 - omega );
-
-    dMandelN_dCe = ( einsum< Ii, iJKL, to_IJKL >( Ce, dPK2_dCe ) +
-                     einsum< IK, iL, iJ, to_IJKL >( Spatial3D::I, Spatial3D::I, PK2 ) ) *
-                   ( 1.0 - omega );
-
-    Tensor3333d dMandelN_dFe = einsum< IJKL, KLMN >( dMandelN_dCe, dCe_dFe );
-
-    return { mandelN, dMandelN_dFe };
   }
 
   std::tuple< double, double > DufourModel::computeBetaP( const double alphaP ) const

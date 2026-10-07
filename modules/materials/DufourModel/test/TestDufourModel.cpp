@@ -875,6 +875,95 @@ void testStateVarLayout()
                              std::string( __PRETTY_FUNCTION__ ) );
 }
 
+// C-1: cards that the model must refuse, besides the ones of the older layout and without the shape of the exponent
+void testInvalidCardsAreRefused()
+{
+  const auto refuses = []( const std::vector< double >& card ) {
+    try {
+      DufourModel mat( card.data(), static_cast< int >( card.size() ), elLabel );
+    }
+    catch ( const std::invalid_argument& ) {
+      return true;
+    }
+    return false;
+  };
+
+  // the relative moduli of the Maxwell branches leave no stiffness to the equilibrium branch
+  throwExceptionOnFailure( refuses( withMaxwell( { 0.60, 0.15, 0.5, 0.50, 0.10, 5.0 } ) ),
+                           "DufourModel C-1: Maxwell moduli that sum to one or more must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // more entries than the layout holds
+  std::vector< double > tooLong = withMaxwell( { 0.30, 0.15, 0.5 } );
+  tooLong.insert( tooLong.end(), 12, 0.0 );
+  throwExceptionOnFailure( refuses( tooLong ),
+                           "DufourModel C-1: a card with entries beyond the layout must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // too many branches for the state variables
+  throwExceptionOnFailure( refuses( withMaxwell( std::vector< double >( 3 * 8, 0.01 ) ) ),
+                           "DufourModel C-1: more than nMaxwellMax branches must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // triplets that are not complete
+  std::vector< double > incomplete = propsBase;
+  incomplete.push_back( 2.0 );
+  incomplete.insert( incomplete.end(), { 0.30, 0.15, 0.5, 0.20 } );
+  throwExceptionOnFailure( refuses( incomplete ),
+                           "DufourModel C-1: incomplete Maxwell triplets must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+
+  // a property that is missing
+  throwExceptionOnFailure( refuses( std::vector< double >( props.begin(), props.begin() + 10 ) ),
+                           "DufourModel C-1: a card with missing properties must be refused in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
+// C-2: the Gaussian bump on g adds log( 1 + A exp( -z^2 ) ) to the exponent, and nothing outside of its band
+void testBumpOnTheWeight()
+{
+  const std::vector< double > plain = withMonotoneG( 1.1402, -0.4450, 0.9725, 0.0, 0.0 );
+
+  // after the five entries of the shape and the rate: the cap of the triaxiality, then the amplitude, the centre and
+  // the width of the bump
+  std::vector< double > bump = plain;
+  bump.insert( bump.end(), { 0.0, 0.6, 0.8, 0.2 } );
+
+  DufourModel withoutBump( plain.data(), static_cast< int >( plain.size() ), elLabel );
+  DufourModel withBump( bump.data(), static_cast< int >( bump.size() ), elLabel );
+
+  for ( double T : { 0.2, 0.8, 1.0 } ) {
+    const double z = ( T - 0.8 ) / 0.2;
+    throwExceptionOnFailure( checkIfEqual( withBump.swdfmLogG( T ) - withoutBump.swdfmLogG( T ),
+                                           std::log1p( 0.6 * std::exp( -z * z ) ),
+                                           1e-12 ),
+                             "DufourModel C-2: the bump must add log1p( A exp( -z^2 ) ) in " +
+                               std::string( __PRETTY_FUNCTION__ ) );
+  }
+}
+
+// C-3: a negative nonlocal field gives a negative weighted plastic strain, which causes no damage
+void testNegativeWeightedPlasticStrainCausesNoDamage()
+{
+  std::vector< double > sv;
+  const Tensor33d       F = []() {
+    Tensor33d F( 0.0 );
+    F.eye();
+    F( 0, 1 ) = 1e-4;
+    return F;
+  }();
+
+  step( sv, F, -0.5, 1.0, std::vector< double >( props.begin(), props.end() ) );
+
+  DufourModel mat( props.data(), static_cast< int >( props.size() ), elLabel );
+  throwExceptionOnFailure( mat.getStateView( "omega", sv.data() ).stateLocation[0] == 0.0,
+                           "DufourModel C-3: a negative weighted plastic strain must not cause damage in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+  throwExceptionOnFailure( checkIfEqual( mat.getDensity( sv.data() ), 1.0, 1e-14 ),
+                           "DufourModel C-3: the density is the one of the card in " +
+                             std::string( __PRETTY_FUNCTION__ ) );
+}
+
 int main()
 {
   auto tests = std::vector< std::function< void() > >{
@@ -898,6 +987,9 @@ int main()
     testLargeDamageIncrementRequestsCutback,
     testDamagingRateTangent,
     testPostprocessingStateVars,
+    testInvalidCardsAreRefused,
+    testBumpOnTheWeight,
+    testNegativeWeightedPlasticStrainCausesNoDamage,
   };
 
   executeTestsAndCollectExceptions( tests );

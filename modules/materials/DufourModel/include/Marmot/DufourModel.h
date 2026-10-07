@@ -396,18 +396,6 @@ namespace Marmot::Materials {
     std::tuple< Tensor33d, Tensor3333d > computeMandelStress( const Context& ctx, const Tensor33d& Fe ) const;
 
     /**
-     * @brief Mandel stress of the elastic deformation scaled by the undamaged fraction, and its derivative.
-     *
-     * @param[in] ctx state variables and time increment
-     * @param[in] Fe elastic deformation gradient
-     * @param[in] omega damage
-     * @return the nominal Mandel stress and its derivative with respect to Fe
-     */
-    std::tuple< Tensor33d, Tensor3333d > computeNominalMandelStress( const Context&   ctx,
-                                                                     const Tensor33d& Fe,
-                                                                     const double&    omega ) const;
-
-    /**
      * @brief Yield strength and its derivative with respect to the plastic strain.
      *
      * @param[in] alphaP plastic strain
@@ -443,22 +431,6 @@ namespace Marmot::Materials {
                                                                                  const Tensor33d& Fe,
                                                                                  const double     betaP,
                                                                                  const double     J ) const;
-
-    /**
-     * @brief Yield function of the nominal Mandel stress of an elastic deformation.
-     *
-     * @param[in] ctx state variables and time increment
-     * @param[in] Fe elastic deformation gradient
-     * @param[in] betaP yield strength
-     * @param[in] omega damage
-     * @param[in] J determinant of the deformation gradient
-     * @return the yield function
-     */
-    std::tuple< double > yieldFunctionNominal( const Context&   ctx,
-                                               const Tensor33d& Fe,
-                                               const double     betaP,
-                                               const double     omega,
-                                               const double     J ) const;
 
     /**
      * @brief Whether a trial elastic deformation violates the yield function.

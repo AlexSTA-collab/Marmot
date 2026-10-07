@@ -42,10 +42,10 @@
  * The interface is a thin layer of the thickness h between two faces. The layer is described by a bulk material of
  * finite strain, which is evaluated for the deformation gradient
  *
- *   F = I + <grad_s u> + ( [u] - <grad_s u> dTau ) (x) N / ell,
+ *   F = I + avg( grad_s u ) + ( [u] - avg( grad_s u ) dTau ) (x) N / ell,
  *
- * where [u] is the jump of the total displacement, <grad_s u> the average of the total surface gradients of the two
- * faces, N the interface normal, ell the separation of the faces along the normal, and dTau the tangential part of
+ * where [u] is the jump of the total displacement, avg( grad_s u ) the average of the total surface gradients of the
+ * two faces, N the interface normal, ell the separation of the faces along the normal, and dTau the tangential part of
  * the connector between the faces. The connector dX = X+ - X- = ell N + dTau is taken from the mesh, so that a
  * rigid rotation of an inclined interface does not cause stresses.
  *

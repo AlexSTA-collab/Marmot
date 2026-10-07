@@ -252,6 +252,25 @@ namespace {
     checkTangentsAreConsistent( 5.0e-3, "different histories" );
   }
 
+  void testAccessors()
+  {
+    Material material( "GRADIENTENHANCEDCOMPRESSIBLENEOHOOKEDAMAGE",
+                       card.data(),
+                       static_cast< int >( card.size() ),
+                       1 );
+    material.setCharacteristicElementLength( 0.5 );
+
+    std::vector< double > stateVars( material.getNumberOfRequiredStateVars(), 0.0 );
+    material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
+
+    throwExceptionOnFailure( material.getStateView( "normalGradientJump", stateVars.data() ).stateSize == 3,
+                             "The normal-gradient jump is a named state." );
+    throwExceptionOnFailure( std::abs( material.thickness() - card[2] ) < 1e-15,
+                             "The thickness is the one of the card." );
+    throwExceptionOnFailure( std::abs( material.getDensity( stateVars.data() ) - card[6] ) < 1e-15,
+                             "The density is the one of the bulk material." );
+  }
+
   void testInvalidCardsAreRejected()
   {
     const auto rejects = []( const std::string& name, const std::vector< double >& values ) {
@@ -278,6 +297,7 @@ int main()
 {
   std::vector< std::function< void() > > tests = { testMatchesTheLocalMaterialBelowTheThreshold,
                                                    testTangentsAreConsistent,
+                                                   testAccessors,
                                                    testInvalidCardsAreRejected };
   executeTestsAndCollectExceptions( tests );
   return 0;

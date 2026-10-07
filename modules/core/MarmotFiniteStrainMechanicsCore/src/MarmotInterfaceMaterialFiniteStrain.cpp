@@ -61,8 +61,6 @@ MarmotInterfaceMaterialFiniteStrain::MarmotInterfaceMaterialFiniteStrain( const 
                                                                       static_cast< int >(
                                                                         baseMaterialProperties.size() ),
                                                                       materialNumber ) );
-  if ( !baseMaterial )
-    throw std::invalid_argument( "Unknown base material for MarmotInterfaceMaterialFiniteStrain: " + materialName );
 
   stateLayout.add( "baseMaterialStateVars", baseMaterial->getNumberOfRequiredStateVars() );
   stateLayout.finalize();

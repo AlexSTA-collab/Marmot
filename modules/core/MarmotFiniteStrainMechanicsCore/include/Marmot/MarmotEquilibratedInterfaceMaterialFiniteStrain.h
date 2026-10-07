@@ -61,7 +61,7 @@
  *
  * The Jacobian of the local residual r(z) = P+ N - P- N is the average one-sided acoustic tensor
  *
- *   <Q> = 1/2 ( N A+ N + N A- N ) ,   A = dP/dF ,
+ *   Qavg = 1/2 ( N A+ N + N A- N ) ,   A = dP/dF ,
  *
  * so only the average is ever inverted, never one side alone.
  *
@@ -69,8 +69,8 @@
  * bulk law, the thickness of the layer normal to the interface, then the rest of the properties of the bulk law.
  *
  * The material does not have the gauge of the small-strain material, which fixes the undetermined component of z once
- * both faces reach a perfectly plastic state and <Q> loses its transverse stiffness. Elastic, viscoelastic and
- * hardening responses keep <Q> well conditioned. For near-perfect plasticity the local residual stalls, and the best
+ * both faces reach a perfectly plastic state and Qavg loses its transverse stiffness. Elastic, viscoelastic and
+ * hardening responses keep Qavg well conditioned. For near-perfect plasticity the local residual stalls, and the best
  * iterate is accepted.
  *
  * In contrast to the small-strain materials, this material receives the TOTAL displacements and surface gradients.

@@ -1,4 +1,5 @@
 #include "Marmot/MarmotEquilibratedInterfaceMaterialFiniteStrain.h"
+#include "Marmot/MarmotMaterialFiniteStrainFactory.h"
 #include "Marmot/MarmotTesting.h"
 
 #include <Eigen/Dense>
@@ -414,6 +415,79 @@ void TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards()
   throwExceptionOnFailure( rejects( "NOSUCHMATERIAL", { K, G, 0.1 } ), "An unknown bulk material is rejected." );
 }
 
+void TestEquilibratedFiniteStrainInterfaceRejectsInvalidGeometry()
+{
+  std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceRejectsInvalidGeometry ---\n";
+
+  const Geometry geometry = inclinedGeometry( 10.0 * pi / 180.0 );
+
+  const std::vector< double > card = { K, G, geometry.hNormal };
+
+  MarmotEquilibratedInterfaceMaterialFiniteStrain material( "COMPRESSIBLENEOHOOKE", card.data(), 3, 1 );
+
+  std::vector< double > stateVars( material.getNumberOfRequiredStateVars(), 0.0 );
+  material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
+
+  using M = MarmotEquilibratedInterfaceMaterialFiniteStrain;
+
+  const auto computes = [&]( const Vector3d& normal, const Vector3d& connector ) {
+    std::array< double, 6 >  U{};
+    std::array< double, 18 > surfaceGradient{};
+
+    M::State       state{ M::Tensor3d( 0.0 ), M::Tensor33d( 0.0 ), M::Tensor33d( 0.0 ), stateVars.data() };
+    M::Tangents    tangents{ M::Tensor33d( 0.0 ),
+                          M::Tensor333d( 0.0 ),
+                          M::Tensor333d( 0.0 ),
+                          M::Tensor333d( 0.0 ),
+                          M::Tensor3333d( 0.0 ),
+                          M::Tensor3333d( 0.0 ),
+                          M::Tensor333d( 0.0 ),
+                          M::Tensor3333d( 0.0 ),
+                          M::Tensor3333d( 0.0 ) };
+    M::Deformation deformation{ M::Tensor6d( U.data() ),
+                                M::Tensor18d( surfaceGradient.data() ),
+                                M::Tensor3d( normal.data() ),
+                                M::Tensor3d( connector.data() ) };
+    try {
+      material.computeStress( state, tangents, deformation, { 0.0, 1.0 } );
+    }
+    catch ( const std::invalid_argument& ) {
+      return false;
+    }
+    return true;
+  };
+
+  throwExceptionOnFailure( computes( geometry.normal, geometry.connector ), "The valid geometry is accepted." );
+  throwExceptionOnFailure( !computes( Vector3d::Zero(), geometry.connector ), "A vanishing normal is rejected." );
+  throwExceptionOnFailure( !computes( geometry.normal, -geometry.connector ),
+                           "Faces that are not separated along the normal are rejected." );
+}
+
+void TestEquilibratedFiniteStrainInterfaceAccessors()
+{
+  std::cout << "\n--- TestEquilibratedFiniteStrainInterfaceAccessors ---\n";
+
+  const std::vector< double > card = { K, G, 0.1, 2.0 };
+
+  MarmotEquilibratedInterfaceMaterialFiniteStrain material( "COMPRESSIBLENEOHOOKE", card.data(), 4, 1 );
+  material.setCharacteristicElementLength( 0.5 );
+
+  std::vector< double > stateVars( material.getNumberOfRequiredStateVars(), 0.0 );
+  material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
+
+  throwExceptionOnFailure( material.getStateView( "normalGradientJump", stateVars.data() ).stateSize == 3,
+                           "The normal-gradient jump is a named state." );
+  throwExceptionOnFailure( material.getStateView( "firstPiolaPlus", stateVars.data() ).stateSize == 9,
+                           "The first Piola-Kirchhoff stress of the top face is a named state." );
+  throwExceptionOnFailure( std::abs( material.thickness() - 0.1 ) < 1e-15, "The thickness is the one of the card." );
+
+  const double                                  kBulk[] = { K, G, 2.0 };
+  std::unique_ptr< MarmotMaterialFiniteStrain > bulk(
+    MarmotLibrary::MarmotMaterialFiniteStrainFactory::createMaterial( "COMPRESSIBLENEOHOOKE", kBulk, 3, 1 ) );
+  throwExceptionOnFailure( material.getDensity() == bulk->getDensity( nullptr ),
+                           "The density is the one of the bulk material." );
+}
+
 int main()
 {
   auto tests = std::vector< std::function< void() > >{
@@ -424,6 +498,8 @@ int main()
     TestEquilibratedFiniteStrainInterfaceCarriesAGradientEnhancedMaterial,
     TestEquilibratedFiniteStrainInterfaceTangentWithDufour,
     TestEquilibratedFiniteStrainInterfaceRejectsInvalidCards,
+    TestEquilibratedFiniteStrainInterfaceRejectsInvalidGeometry,
+    TestEquilibratedFiniteStrainInterfaceAccessors,
   };
 
   executeTestsAndCollectExceptions( tests );
