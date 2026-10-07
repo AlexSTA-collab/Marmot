@@ -20,6 +20,7 @@ This section contains the ready to use available material models.
   linearviscoelasticorthotropicpowerlaw
   linearviscoelasticwiechert
   interfacematerialhypoelastic
+  equilibratedinterfacematerialhypoelastic
   vonmises
   advonmises
   hugheswinget

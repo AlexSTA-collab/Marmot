@@ -63,3 +63,6 @@ add_marmot_test("TestMarmotTesting" "${CURR_TEST_SOURCE_DIR}/TestMarmotTesting.c
 
 # Tests for MarmotInterfaceMaterialHypoElastic
 add_marmot_test("TestMarmotInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotInterfaceMaterialHypoElastic.cpp")
+
+# Tests for MarmotEquilibratedXInterfaceMaterialHypoElastic
+add_marmot_test("TestMarmotEquilibratedXInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotEquilibratedXInterfaceMaterialHypoElastic.cpp" REQUIRES LinearElastic VonMises LinearViscoElasticWiechert)
