@@ -51,6 +51,7 @@
  * Supported interpolations are:
  * - `nDim == 2`, `nNodes == 4`: two-node line interface (`iline2`).
  * - `nDim == 3`, `nNodes == 8`: four-node quadrilateral interface (`iquad4`).
+ * - `nDim == 3`, `nNodes == 16`: eight-node serendipity quadrilateral interface (`iquad8`).
  *
  * Node ordering is expected to be side-wise:
  * - nodes `0 ... nInterfaceNodes - 1`: bottom side,
@@ -138,7 +139,8 @@ public:
   /**
    * @brief Return the Marmot element shape associated with the template parameters.
    *
-   * @return `Bar2` for 2D line interfaces and `Quad4` for 3D quadrilateral interfaces.
+   * @return `Bar2` for 2D line interfaces, `Quad4` and `Quad8` for 3D bilinear and serendipity quadrilateral
+   *         interfaces.
    */
   static constexpr Marmot::FiniteElement::ElementShapes getInterfaceElementShape()
   {
@@ -150,6 +152,9 @@ public:
     else if constexpr ( nDim == 3 && nInterfaceNodes == 4 ) {
       return Quad4;
     }
+    else if constexpr ( nDim == 3 && nInterfaceNodes == 8 ) {
+      return Quad8;
+    }
     else {
       static_assert( nDim == -1, "Unsupported MarmotGeometryInterfaceElement interpolation in the current build." );
     }
@@ -158,7 +163,9 @@ public:
   /**
    * @brief Return the result-file geometry keyword for this interface interpolation.
    *
-   * @return `"bar2"` for 2D line interfaces and `"hexa8"` for 3D quadrilateral interfaces.
+   * @return `"bar2"` for 2D line interfaces and `"hexa8"` for 3D bilinear quadrilateral interfaces. The serendipity
+   *         quadrilateral interface has no keyword yet: the side-wise node order is not the one of `"hexa20"`, so the
+   *         lookup throws.
    *
    * @details
    * These are EnSight element names, not the computational interface shape. EnSight and ParaView do not

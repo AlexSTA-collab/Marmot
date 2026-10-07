@@ -361,8 +361,80 @@ namespace {
                              "The state of the material is reachable through the element." );
   }
 
+  /// the nodes of a serendipity quadrilateral interface: corners, then midsides, bottom side first; the top is skewed
+  std::array< double, 48 > serendipityCoordinates( double skew )
+  {
+    const std::array< std::array< double, 2 >, 8 > parametric = { { { -0.5, -0.5 },
+                                                                    { 0.5, -0.5 },
+                                                                    { 0.5, 0.5 },
+                                                                    { -0.5, 0.5 },
+                                                                    { 0.0, -0.5 },
+                                                                    { 0.5, 0.0 },
+                                                                    { 0.0, 0.5 },
+                                                                    { -0.5, 0.0 } } };
+
+    std::array< double, 48 > x{};
+    for ( int side = 0; side < 2; ++side )
+      for ( int node = 0; node < 8; ++node ) {
+        const double sign              = side == 0 ? -1.0 : 1.0;
+        x[3 * ( 8 * side + node )]     = parametric[node][0];
+        x[3 * ( 8 * side + node ) + 1] = parametric[node][1];
+        x[3 * ( 8 * side + node ) + 2] = 0.05 * ( side == 0 ? 0.0 : 2.0 ) +
+                                         sign * skew * parametric[node][0] * parametric[node][1] + 0.05;
+      }
+    return x;
+  }
+
+  void testSerendipityElement()
+  {
+    const auto flat   = serendipityCoordinates( 0.0 );
+    const auto warped = serendipityCoordinates( 0.04 );
+
+    {
+      std::vector< double > stateVars;
+      auto                  element = makeElement< YInterfaceFiniteElement< 3, 16 >, 3, 16 >( flat,
+                                                                             "LINEARELASTIC",
+                                                                             elasticProperties,
+                                                                             stateVars );
+      throwExceptionOnFailure( element->getNumberOfQuadraturePoints() == 9,
+                               "Full integration of the Quad8 interface has 9 points." );
+    }
+
+    assertTangentMatchesFiniteDifference< YInterfaceFiniteElement< 3, 16 >, 3, 16 >( warped,
+                                                                                     "LINEARELASTIC",
+                                                                                     elasticProperties,
+                                                                                     makeIncrement< 48 >( 0.1, 1 ),
+                                                                                     nullptr,
+                                                                                     1e-6,
+                                                                                     "Elastic, serendipity" );
+
+    const std::vector< double > history = makePlasticHistory< 3, 16 >( warped );
+    assertTangentMatchesFiniteDifference< YInterfaceFiniteElement< 3, 16 >, 3, 16 >( warped,
+                                                                                     "VONMISES",
+                                                                                     plasticProperties,
+                                                                                     makeIncrement< 48 >( 0.25, 3 ),
+                                                                                     &history,
+                                                                                     1e-5,
+                                                                                     "Plastic, serendipity" );
+
+    // a rigid translation of the whole element leaves it stress free
+    Eigen::Matrix< double, 48, 1 > translation;
+    for ( int node = 0; node < 16; ++node )
+      translation.segment< 3 >( 3 * node ) = Eigen::Vector3d( 0.3, -0.2, 0.1 );
+    const auto rigid = evaluate< YInterfaceFiniteElement< 3, 16 >, 3, 16 >( warped,
+                                                                            "LINEARELASTIC",
+                                                                            elasticProperties,
+                                                                            translation );
+    throwExceptionOnFailure( rigid.residual.norm() < 1e-9 * 2e5, "A rigid translation must not cause forces." );
+  }
+
   void testRegistration()
   {
+    for ( const std::string name : { "IQUAD8", "YIQUAD8" } )
+      throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
+                                 MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
+                               name + " is not registered with the element factory." );
+
     const std::pair< std::string, std::string > registered[] = { { "YIQUAD4", "hexa8" }, { "YILINE2", "bar2" } };
     for ( const auto& [name, shape] : registered ) {
       std::unique_ptr< MarmotElement > element( MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) );
@@ -384,6 +456,7 @@ int main()
                                                    testNormalPointsFromTheBottomToTheTopFace,
                                                    testConnectorWithoutNormalComponentThrows,
                                                    testStateVariablesAreNamed,
+                                                   testSerendipityElement,
                                                    testRegistration };
   executeTestsAndCollectExceptions( tests );
   return 0;

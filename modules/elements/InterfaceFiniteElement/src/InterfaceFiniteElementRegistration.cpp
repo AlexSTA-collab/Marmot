@@ -36,6 +36,12 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           InterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
 
+  const static bool IQUAD8_isRegistered = MarmotElementFactory::
+    registerElement( "IQUAD8",
+                     makeFactoryFunction< InterfaceFiniteElement< 3, 16 >,
+                                          FullIntegration,
+                                          InterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
+
   const static bool YILINE2_isRegistered = MarmotElementFactory::
     registerElement( "YILINE2",
                      makeFactoryFunction< YInterfaceFiniteElement< 2, 4 >,
@@ -47,5 +53,11 @@ namespace Marmot::Elements::Registration {
                      makeFactoryFunction< YInterfaceFiniteElement< 3, 8 >,
                                           FullIntegration,
                                           YInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
+
+  const static bool YIQUAD8_isRegistered = MarmotElementFactory::
+    registerElement( "YIQUAD8",
+                     makeFactoryFunction< YInterfaceFiniteElement< 3, 16 >,
+                                          FullIntegration,
+                                          YInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
 
 } // namespace Marmot::Elements::Registration

@@ -36,6 +36,21 @@ MarmotGeometryInterfaceElement< 3, 8 >::NSized MarmotGeometryInterfaceElement< 3
   return Marmot::FiniteElement::Spatial2D::Quad4::N( xi );
 }
 
+// IQuad8:
+// 8-node serendipity quadrilateral interface surface embedded in 3D,
+// with 16 total interface element nodes.
+/**
+ * @brief Shape functions of the eight-node serendipity quadrilateral interface surface at a parametric point.
+ *
+ * @param[in] xi parametric coordinates on the surface
+ * @return the eight shape functions of the quadrilateral
+ */
+template <>
+MarmotGeometryInterfaceElement< 3, 16 >::NSized MarmotGeometryInterfaceElement< 3, 16 >::N( const XiSized& xi ) const
+{
+  return Marmot::FiniteElement::Spatial2D::Quad8::N( xi );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Shape-function derivatives wrt interface coordinates                       */
 /* -------------------------------------------------------------------------- */
@@ -70,9 +85,25 @@ MarmotGeometryInterfaceElement< 3, 8 >::dNdXiSized MarmotGeometryInterfaceElemen
   return Marmot::FiniteElement::Spatial2D::Quad4::dNdXi( xi );
 }
 
+// IQuad8:
+// derivatives wrt surface coordinates xi, eta.
+/**
+ * @brief Derivatives of the shape functions of the eight-node serendipity quadrilateral interface surface.
+ *
+ * @param[in] xi parametric coordinates on the surface
+ * @return the derivatives of the eight shape functions with respect to the surface coordinates
+ */
+template <>
+MarmotGeometryInterfaceElement< 3, 16 >::dNdXiSized MarmotGeometryInterfaceElement< 3, 16 >::dNdXi(
+  const XiSized& xi ) const
+{
+  return Marmot::FiniteElement::Spatial2D::Quad8::dNdXi( xi );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Explicit template instantiation                                            */
 /* -------------------------------------------------------------------------- */
 
 template class MarmotGeometryInterfaceElement< 2, 4 >;
 template class MarmotGeometryInterfaceElement< 3, 8 >;
+template class MarmotGeometryInterfaceElement< 3, 16 >;

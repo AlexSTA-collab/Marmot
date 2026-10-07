@@ -68,9 +68,16 @@ Elements
      - 8
      - Three-dimensional interface element between two bilinear quadrilaterals (4 bottom and 4 top nodes),
        full integration
+   * - ``IQUAD8``
+     - 16
+     - Three-dimensional interface element between two serendipity quadrilaterals (8 bottom and 8 top nodes),
+       full integration
    * - ``YIQUAD4``
      - 8
      - As ``IQUAD4``, with the :ref:`equilibrated two-sided interface material <equilibratedinterfacematerialhypoelastic>`
+   * - ``YIQUAD8``
+     - 16
+     - As ``IQUAD8``, with the equilibrated two-sided interface material
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
