@@ -73,23 +73,28 @@ namespace Marmot::Elements {
     constexpr int nSide3d = rank == 1 ? 3 : 9;
     constexpr int nSide   = rank == 1 ? nDim : nDim * nDim;
 
-    Eigen::Matrix< double, 2 * nSide3d, 1 > expanded = Eigen::Matrix< double, 2 * nSide3d, 1 >::Zero();
-
-    for ( int side = 0; side < 2; ++side ) {
-      if constexpr ( rank == 1 ) {
-        const Fastor::Tensor< double, 3 > block = expandTo3D(
-          Fastor::Tensor< double, nDim >( sides.data() + side * nSide ) );
-        expanded.template segment< nSide3d >(
-          side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
-      }
-      else {
-        const Fastor::Tensor< double, 3, 3 > block = expandTo3D(
-          Fastor::Tensor< double, nDim, nDim >( sides.data() + side * nSide ) );
-        expanded.template segment< nSide3d >(
-          side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
-      }
+    if constexpr ( nDim == 3 ) {
+      return sides;
     }
-    return expanded;
+    else {
+      Eigen::Matrix< double, 2 * nSide3d, 1 > expanded = Eigen::Matrix< double, 2 * nSide3d, 1 >::Zero();
+
+      for ( int side = 0; side < 2; ++side ) {
+        if constexpr ( rank == 1 ) {
+          const Fastor::Tensor< double, 3 > block = expandTo3D(
+            Fastor::Tensor< double, nDim >( sides.data() + side * nSide ) );
+          expanded.template segment< nSide3d >(
+            side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
+        }
+        else {
+          const Fastor::Tensor< double, 3, 3 > block = expandTo3D(
+            Fastor::Tensor< double, nDim, nDim >( sides.data() + side * nSide ) );
+          expanded.template segment< nSide3d >(
+            side * nSide3d ) = Eigen::Map< const Eigen::Matrix< double, nSide3d, 1 > >( block.data() );
+        }
+      }
+      return expanded;
+    }
   }
 
   /**
@@ -238,6 +243,45 @@ namespace Marmot::Elements {
        * @brief Data of the formulation at this quadrature point, besides the state variables.
        */
       typename Formulation::QuadraturePointData formulationData;
+
+      /**
+       * @brief Interpolate a field of nodal values to the quadrature point on both interface sides.
+       *
+       * @tparam Vector type of the nodal vector
+       * @param[in] q nodal values of the element, for instance the displacements or their increments, the bottom
+       * side first
+       * @return the values of the top side followed by the values of the bottom side
+       */
+      template < class Vector >
+      InterfaceDisplSized interpolateToSides( const Vector& q ) const
+      {
+        constexpr int halfSize = nNodes * nDim / 2;
+
+        InterfaceDisplSized atSides;
+        atSides.template segment< nDim >( 0 )    = NmatSide * q.template segment< halfSize >( halfSize );
+        atSides.template segment< nDim >( nDim ) = NmatSide * q.template segment< halfSize >( 0 );
+        return atSides;
+      }
+
+      /**
+       * @brief Interpolate the surface gradient of a field of nodal values to the quadrature point on both interface
+       * sides.
+       *
+       * @tparam Vector type of the nodal vector
+       * @param[in] q nodal values of the element, for instance the displacements or their increments, the bottom
+       * side first
+       * @return the surface gradients of the top side followed by the ones of the bottom side
+       */
+      template < class Vector >
+      InterfaceSurfaceGradSized surfaceGradientsAtSides( const Vector& q ) const
+      {
+        constexpr int halfSize = nNodes * nDim / 2;
+
+        InterfaceSurfaceGradSized atSides;
+        atSides.template segment< nTensor >( 0 )       = BmatSide * q.template segment< halfSize >( halfSize );
+        atSides.template segment< nTensor >( nTensor ) = BmatSide * q.template segment< halfSize >( 0 );
+        return atSides;
+      }
 
       /**
        * @brief Number of non-material state variables stored at this quadrature point.
@@ -608,22 +652,9 @@ namespace Marmot::Elements {
     Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
     Eigen::Map< RhsSized >       Pe( Pe_ );
 
-    constexpr int halfSize = nNodes * nDim / 2;
-
     for ( QuadraturePoint& qp : qps ) {
-      const auto& Nside = qp.NmatSide;
-      const auto& Bside = qp.BmatSide;
-
-      const auto dQBottom = dQ.template segment< halfSize >( 0 );
-      const auto dQTop    = dQ.template segment< halfSize >( halfSize );
-
-      InterfaceDisplSized dU_GPs;
-      dU_GPs.template segment< nDim >( 0 )    = Nside * dQTop;
-      dU_GPs.template segment< nDim >( nDim ) = Nside * dQBottom;
-
-      InterfaceSurfaceGradSized dSurface_strain_GPs;
-      dSurface_strain_GPs.template segment< nTensor >( 0 )       = Bside * dQTop;
-      dSurface_strain_GPs.template segment< nTensor >( nTensor ) = Bside * dQBottom;
+      const InterfaceDisplSized       dU_GPs              = qp.interpolateToSides( dQ );
+      const InterfaceSurfaceGradSized dSurface_strain_GPs = qp.surfaceGradientsAtSides( dQ );
 
       // the shared material carries no per-quadrature-point state, so the characteristic length of
       // THIS point has to be installed before every evaluation

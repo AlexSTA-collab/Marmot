@@ -30,3 +30,6 @@ add_marmot_test("TestMarmotMaterialPointSolverFiniteStrain" "${CURR_TEST_SOURCE_
 
 # Tests for the gradient-enhanced Hughes-Winget small-strain wrapper
 add_marmot_test("TestMarmotMaterialGradientEnhancedHughesWinget" "${CURR_TEST_SOURCE_DIR}/TestMarmotMaterialGradientEnhancedHughesWinget.cpp")
+
+# Tests for MarmotEquilibratedInterfaceMaterialFiniteStrain
+add_marmot_test("TestMarmotEquilibratedInterfaceMaterialFiniteStrain" "${CURR_TEST_SOURCE_DIR}/TestMarmotEquilibratedInterfaceMaterialFiniteStrain.cpp" REQUIRES CompressibleNeoHooke CompressibleFiniteStrainLinearViscoelasticity)

@@ -84,6 +84,13 @@ Elements
    * - ``ILINE2UL``
      - 4
      - Two-dimensional counterpart of ``IQUAD4UL`` between two linear lines
+   * - ``YIQUAD4UL``, ``YIQUAD8UL``
+     - 8, 16
+     - As ``YIQUAD4`` and ``YIQUAD8`` at finite strain, with the :ref:`equilibrated finite-strain interface material
+       <equilibratedinterfacematerialfinitestrain>`
+   * - ``YILINE2UL``
+     - 4
+     - Two-dimensional counterpart of ``YIQUAD4UL``
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
@@ -161,4 +168,7 @@ Implementation
    :members:
 
 .. doxygenclass:: MarmotInterfaceMaterialFiniteStrain
+   :members:
+
+.. doxygenstruct:: Marmot::Elements::FiniteStrainEquilibratedTwoSidedFormulation
    :members:

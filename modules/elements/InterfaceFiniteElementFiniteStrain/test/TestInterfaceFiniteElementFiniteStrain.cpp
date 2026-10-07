@@ -34,6 +34,12 @@ namespace {
     return { thickness, 3500.0, 1500.0 };
   }
 
+  /// the properties of the equilibrated interface material: the bulk modulus, the shear modulus and the thickness
+  std::vector< double > equilibratedNeoHookeProperties( double thickness )
+  {
+    return { 3500.0, 1500.0, thickness };
+  }
+
   /// A bilinear interface whose bottom side is inclined by the angle about the y axis, and whose top side is
   /// offset VERTICALLY by the gap, so that the connector is not parallel to the normal.
   Coordinates< 3, 8 > inclinedQuadrilateral( double angle, double gap )
@@ -294,9 +300,88 @@ namespace {
                              "An unknown base material is rejected." );
   }
 
+  /// The equilibrated element: tangent and objectivity.
+  void testEquilibratedElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    assertTangentMatchesFiniteDifference< YInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                                          3,
+                                          8 >( inclinedQuadrilateral( angle, gap ),
+                                               equilibratedNeoHookeProperties( hn ),
+                                               makeDisplacements< 24 >( 3e-3, 1 ),
+                                               "Y 3D, inclined" );
+
+    assertTangentMatchesFiniteDifference< YInterfaceFiniteElementFiniteStrain< 3, 16 >,
+                                          3,
+                                          16 >( serendipityQuadrilateral( gap ),
+                                                equilibratedNeoHookeProperties( gap ),
+                                                makeDisplacements< 48 >( 3e-3, 2 ),
+                                                "Y 3D, serendipity" );
+
+    assertTangentMatchesFiniteDifference< YInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                                          2,
+                                          4 >( inclinedLine( angle, gap ),
+                                               equilibratedNeoHookeProperties( hn ),
+                                               makeDisplacements< 8 >( 5e-3, 3 ),
+                                               "Y 2D, inclined" );
+
+    // a rigid rotation is stress free
+    const double theta       = 0.3;
+    const auto   coordinates = inclinedQuadrilateral( angle, gap );
+
+    Eigen::Matrix3d R;
+    R << std::cos( theta ), 0.0, std::sin( theta ), 0.0, 1.0, 0.0, -std::sin( theta ), 0.0, std::cos( theta );
+
+    DofVector< 3, 8 > Q;
+    for ( int node = 0; node < 8; ++node ) {
+      const Eigen::Vector3d X( coordinates[3 * node], coordinates[3 * node + 1], coordinates[3 * node + 2] );
+      Q.segment< 3 >( 3 * node ) = ( R - Eigen::Matrix3d::Identity() ) * X;
+    }
+
+    const auto rotated = evaluate< YInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates,
+                                                                                        equilibratedNeoHookeProperties(
+                                                                                          hn ),
+                                                                                        Q );
+    const auto
+      stretched = evaluate< YInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates,
+                                                                                 equilibratedNeoHookeProperties( hn ),
+                                                                                 makeDisplacements< 24 >( 1e-2, 1 ) );
+
+    throwExceptionOnFailure( rotated.residual.norm() < 1e-9 * stretched.residual.norm(),
+                             "A rigid rotation must be stress free, residual " +
+                               std::to_string( rotated.residual.norm() ) );
+  }
+
+  /// With a uniform shift of the top face the two faces carry the same stress, and the equilibrated element gives the
+  /// force of the plain element.
+  void testEquilibratedElementAgreesWithThePlainElementForAUniformShift()
+  {
+    const auto coordinates = inclinedQuadrilateral( 0.0, 0.1 );
+
+    DofVector< 3, 8 > shift = DofVector< 3, 8 >::Zero();
+    for ( int node = 4; node < 8; ++node )
+      shift.segment< 3 >( 3 * node ) = Eigen::Vector3d( 1.5e-3, -0.8e-3, 2.0e-3 );
+
+    const auto plain = evaluate< InterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates,
+                                                                                     neoHookeProperties( 0.1 ),
+                                                                                     shift );
+    const auto
+      equilibrated = evaluate< YInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates,
+                                                                                    equilibratedNeoHookeProperties(
+                                                                                      0.1 ),
+                                                                                    shift );
+
+    throwExceptionOnFailure( ( plain.residual - equilibrated.residual ).norm() < 1e-9 * plain.residual.norm(),
+                             "The equilibrated element must give the residual of the plain element for a uniform "
+                             "shift." );
+  }
+
   void testRegistration()
   {
-    for ( const std::string name : { "ILINE2UL", "IQUAD4UL", "IQUAD8UL" } )
+    for ( const std::string name : { "ILINE2UL", "IQUAD4UL", "IQUAD8UL", "YILINE2UL", "YIQUAD4UL", "YIQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -308,6 +393,8 @@ int main()
 {
   std::vector< std::function< void() > > tests = { testTangentMatchesFiniteDifference,
                                                    testRigidRotationIsStressFree,
+                                                   testEquilibratedElement,
+                                                   testEquilibratedElementAgreesWithThePlainElementForAUniformShift,
                                                    testRigidTranslationIsStressFree,
                                                    testCoincidentFacesAreRejected,
                                                    testInvalidMaterialsAreRejected,

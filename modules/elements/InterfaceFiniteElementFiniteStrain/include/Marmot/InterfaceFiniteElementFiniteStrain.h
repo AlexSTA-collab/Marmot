@@ -32,7 +32,8 @@
  *
  * This file defines the formulation `Marmot::Elements::FiniteStrainDisplacementJumpFormulation` and the element
  * `Marmot::Elements::InterfaceFiniteElementFiniteStrain`, which is the common base of the interface elements
- * (InterfaceFiniteElementBase.h) with this formulation. In contrast to the small-strain element, the interface
+ * (InterfaceFiniteElementBase.h) with this formulation, and the equilibrated two-sided counterpart
+ * `Marmot::Elements::YInterfaceFiniteElementFiniteStrain`. In contrast to the small-strain element, the interface
  * material (MarmotInterfaceMaterialFiniteStrain) receives the total displacements and the total surface gradients
  * at the end of the increment, and evaluates a bulk material of finite strain for the deformation gradient of the
  * layer.
@@ -41,8 +42,10 @@
 
 #include "Marmot/InterfaceFiniteElement.h"
 #include "Marmot/InterfaceFiniteElementBase.h"
+#include "Marmot/MarmotEquilibratedInterfaceMaterialFiniteStrain.h"
 #include "Marmot/MarmotFastorTensorBasics.h"
 #include "Marmot/MarmotInterfaceMaterialFiniteStrain.h"
+#include "Marmot/YInterfaceFiniteElement.h"
 
 #include <Eigen/Dense>
 
@@ -134,23 +137,13 @@ namespace Marmot::Elements {
 
       using namespace Marmot;
 
-      constexpr int halfSize = nNodes * nDim / 2;
-
       const auto& Njump    = qp.NmatJump;
       const auto& Bavg     = qp.BmatAverage;
       auto&       material = element.material;
 
       // total kinematics of both interface sides at the quadrature point, top side first
-      const auto QTotalBottom = QTotal.template segment< halfSize >( 0 );
-      const auto QTotalTop    = QTotal.template segment< halfSize >( halfSize );
-
-      InterfaceDisplSized totalU_GPs;
-      totalU_GPs.template segment< nDim >( 0 )    = qp.NmatSide * QTotalTop;
-      totalU_GPs.template segment< nDim >( nDim ) = qp.NmatSide * QTotalBottom;
-
-      InterfaceSurfaceGradSized totalSurfaceGradient_GPs;
-      totalSurfaceGradient_GPs.template segment< nTensor >( 0 )       = qp.BmatSide * QTotalTop;
-      totalSurfaceGradient_GPs.template segment< nTensor >( nTensor ) = qp.BmatSide * QTotalBottom;
+      const InterfaceDisplSized       totalU_GPs               = qp.interpolateToSides( QTotal );
+      const InterfaceSurfaceGradSized totalSurfaceGradient_GPs = qp.surfaceGradientsAtSides( QTotal );
 
       // The reference connector between the paired faces at this quadrature point. The reduced normal derivative is
       // taken along it, so that the material needs it whole: its normal part is the fibre, its tangential part an
@@ -244,5 +237,131 @@ namespace Marmot::Elements {
     nDim,
     nNodes,
     FiniteStrainDisplacementJumpFormulation< nDim, nNodes > >;
+
+  /**
+   * @struct FiniteStrainEquilibratedTwoSidedFormulation
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   * @brief Formulation of the interface element with equilibrated two-sided kinematics at finite strain.
+   *
+   * The counterpart of EquilibratedTwoSidedFormulation at finite strain. The interface material
+   * (`MarmotEquilibratedInterfaceMaterialFiniteStrain`) receives the total displacements of both interface sides,
+   * their total surface gradients, the normal of the interface and the connector between the faces, and returns the
+   * generalized force, the generalized surface stresses and the condensed block tangent. The geometry of the
+   * quadrature points, the state variables and the assembly are the ones of the small-strain formulation.
+   */
+  template < int nDim, int nNodes >
+  struct FiniteStrainEquilibratedTwoSidedFormulation {
+
+    using Small = EquilibratedTwoSidedFormulation< nDim, nNodes >;
+
+    using InterfaceDisplSized       = typename Small::InterfaceDisplSized;
+    using InterfaceSurfaceGradSized = typename Small::InterfaceSurfaceGradSized;
+
+    using Material          = MarmotEquilibratedInterfaceMaterialFiniteStrain; ///< interface material of the element
+    using QPStateVarManager = typename Small::QPStateVarManager;               ///< named state variables of a point
+
+    /// This formulation keeps the connector between the faces at the quadrature points.
+    struct QuadraturePointData : TwoSidedGeometryData< nDim > {};
+
+    /**
+     * @brief Complete the geometry of a quadrature point with the connector between the two faces.
+     *
+     * @tparam Element type of the element
+     * @tparam QuadraturePoint type of the quadrature point
+     * @param[in] element the element, which holds the coordinates of the nodes
+     * @param[in,out] qp quadrature point, whose normal and projections may be reoriented
+     *
+     * @throws std::invalid_argument if the connector has no positive component along the normal
+     */
+    template < class Element, class QuadraturePoint >
+    static void initializeQuadraturePoint( const Element& element, QuadraturePoint& qp )
+    {
+      initializeTwoSidedQuadraturePoint( element, qp, "YInterfaceFiniteElementFiniteStrain" );
+    }
+
+    /**
+     * @brief Evaluate the material at a quadrature point and add its contributions to the element.
+     *
+     * @tparam Element type of the element
+     * @tparam QuadraturePoint type of the quadrature point
+     * @tparam QType type of the total nodal displacements
+     * @tparam PeType type of the element residual
+     * @tparam KeType type of the element tangent
+     * @param[in] element the element, which holds the material
+     * @param[in,out] qp quadrature point, whose state variables are updated
+     * @param[in] QTotal total nodal displacements of the element at the end of the increment
+     * @param[in] dU_GPs increment of the displacements of both interface sides, which this formulation does not need
+     * @param[in] dSurface_strain_GPs increment of the surface gradients, which this formulation does not need
+     * @param[in] time time at the beginning of the increment
+     * @param[in] dT time increment
+     * @param[in,out] Pe element residual, to which the contribution is added
+     * @param[in,out] Ke element tangent, to which the contribution is added
+     */
+    template < class Element, class QuadraturePoint, class QType, class PeType, class KeType >
+    static void integrate( Element&                         element,
+                           QuadraturePoint&                 qp,
+                           const QType&                     QTotal,
+                           const InterfaceDisplSized&       dU_GPs,
+                           const InterfaceSurfaceGradSized& dSurface_strain_GPs,
+                           double                           time,
+                           double                           dT,
+                           PeType&                          Pe,
+                           KeType&                          Ke )
+    {
+      (void)dU_GPs;
+      (void)dSurface_strain_GPs;
+
+      auto& material = element.material;
+      auto& data     = qp.formulationData;
+
+      const InterfaceDisplSized       totalU_GPs               = qp.interpolateToSides( QTotal );
+      const InterfaceSurfaceGradSized totalSurfaceGradient_GPs = qp.surfaceGradientsAtSides( QTotal );
+
+      Material::State state{ embedVectorIn3D< nDim >( qp.managedStateVars->generalizedForce.data() ),
+                             embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressPlus.data() ),
+                             embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressMinus.data() ),
+                             qp.managedStateVars->materialStateVars.data() };
+
+      Material::Tangents tangents{ Material::Tensor33d( 0.0 ),
+                                   Material::Tensor333d( 0.0 ),
+                                   Material::Tensor333d( 0.0 ),
+                                   Material::Tensor333d( 0.0 ),
+                                   Material::Tensor3333d( 0.0 ),
+                                   Material::Tensor3333d( 0.0 ),
+                                   Material::Tensor333d( 0.0 ),
+                                   Material::Tensor3333d( 0.0 ),
+                                   Material::Tensor3333d( 0.0 ) };
+
+      // the materials are fixed to three dimensions, a two-dimensional element embeds its kinematics
+      const Eigen::Matrix< double, 6, 1 >  U3d               = expandSidesTo3D< nDim, 1 >( totalU_GPs );
+      const Eigen::Matrix< double, 18, 1 > surfaceGradient3d = expandSidesTo3D< nDim, 2 >( totalSurfaceGradient_GPs );
+
+      Material::Deformation   deformation{ Material::Tensor6d( U3d.data() ),
+                                         Material::Tensor18d( surfaceGradient3d.data() ),
+                                         embedVectorIn3D< nDim >( qp.normal.data() ),
+                                         embedVectorIn3D< nDim >( data.separationVector.data() ) };
+      Material::TimeIncrement timeIncrement{ time, dT };
+
+      material->computeStress( state, tangents, deformation, timeIncrement );
+
+      qp.managedStateVars->displacement  = totalU_GPs;
+      qp.managedStateVars->surfaceStrain = totalSurfaceGradient_GPs;
+
+      assembleTwoSidedResponse< nDim, nNodes >( qp, state, tangents, Pe, Ke );
+    }
+  };
+
+  /**
+   * @brief Equilibrated two-sided interface finite element at finite strain.
+   *
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   */
+  template < int nDim, int nNodes >
+  using YInterfaceFiniteElementFiniteStrain = InterfaceFiniteElementBase<
+    nDim,
+    nNodes,
+    FiniteStrainEquilibratedTwoSidedFormulation< nDim, nNodes > >;
 
 } // namespace Marmot::Elements

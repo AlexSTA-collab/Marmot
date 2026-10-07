@@ -117,8 +117,7 @@ void MarmotInterfaceMaterialFiniteStrain::computeStress( State&               st
   MarmotMaterialFiniteStrain::ConstitutiveResponse< 3 > response( Tensor33d( 0.0 ), 0.0, 0.0, baseMaterialStateVars );
   MarmotMaterialFiniteStrain::AlgorithmicModuli< 3 >    materialTangents;
   MarmotMaterialFiniteStrain::Deformation< 3 >          materialDeformation{ F };
-  const MarmotMaterialFiniteStrain::TimeIncrement       materialTimeIncrement{ timeIncrement.timeOld + timeIncrement.dT,
-                                                                         timeIncrement.dT };
+  const MarmotMaterialFiniteStrain::TimeIncrement materialTimeIncrement{ timeIncrement.timeOld, timeIncrement.dT };
 
   baseMaterial->computeStress( response, materialTangents, materialDeformation, materialTimeIncrement );
 
