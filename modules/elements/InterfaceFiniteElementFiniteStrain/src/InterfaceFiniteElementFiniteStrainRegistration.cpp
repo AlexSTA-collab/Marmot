@@ -78,4 +78,22 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           GYInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
 
+  const static bool GY2ILINE2UL_isRegistered = MarmotElementFactory::
+    registerElement( "GY2ILINE2UL",
+                     makeFactoryFunction< GY2InterfaceFiniteElementFiniteStrain< 2, 4 >,
+                                          FullIntegration,
+                                          GY2InterfaceFiniteElementFiniteStrain< 2, 4 >::SectionType::Interface >() );
+
+  const static bool GY2IQUAD4UL_isRegistered = MarmotElementFactory::
+    registerElement( "GY2IQUAD4UL",
+                     makeFactoryFunction< GY2InterfaceFiniteElementFiniteStrain< 3, 8 >,
+                                          FullIntegration,
+                                          GY2InterfaceFiniteElementFiniteStrain< 3, 8 >::SectionType::Interface >() );
+
+  const static bool GY2IQUAD8UL_isRegistered = MarmotElementFactory::
+    registerElement( "GY2IQUAD8UL",
+                     makeFactoryFunction< GY2InterfaceFiniteElementFiniteStrain< 3, 16 >,
+                                          FullIntegration,
+                                          GY2InterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
+
 } // namespace Marmot::Elements::Registration

@@ -69,11 +69,12 @@ void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::setCharact
   bottomMaterial->setCharacteristicElementLength( length );
 }
 
-void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStress(
-  State&               state,
-  Tangents&            tangents,
-  const Deformation&   deformation,
-  const TimeIncrement& timeIncrement )
+MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::Solution MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::
+  solveWithFields( double*                                                                 stateVars,
+                   const MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Deformation& deformation,
+                   const TimeIncrement&                                                    timeIncrement,
+                   double                                                                  nonlocalFieldTop,
+                   double                                                                  nonlocalFieldBottom ) const
 {
   const MarmotMaterialGradientEnhancedFiniteStrain::TimeIncrement materialTime{ timeIncrement.timeOld,
                                                                                 timeIncrement.dT };
@@ -83,7 +84,7 @@ void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStr
   const auto evaluateSide = [&]( Side side, const Matrix3dRowMajor& G ) {
     const MarmotMaterialGradientEnhancedFiniteStrain& material = side == Side::Top ? *topMaterial : *bottomMaterial;
 
-    const double*         committedStateVars = bulkStateVars( side, state.stateVars );
+    const double*         committedStateVars = bulkStateVars( side, stateVars );
     const int             nStateVars         = material.getNumberOfRequiredStateVars();
     std::vector< double > trialStateVars( committedStateVars, committedStateVars + nStateVars );
 
@@ -97,7 +98,9 @@ void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStr
     response.stateVars = trialStateVars.data();
     MarmotMaterialGradientEnhancedFiniteStrain::AlgorithmicModuli< 3 > moduli;
     const MarmotMaterialGradientEnhancedFiniteStrain::Deformation< 3 > materialDeformation{ F,
-                                                                                            deformation.nonlocalField };
+                                                                                            side == Side::Top
+                                                                                              ? nonlocalFieldTop
+                                                                                              : nonlocalFieldBottom };
 
     material.computeStress( response, moduli, materialDeformation, materialTime );
 
@@ -119,7 +122,20 @@ void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStr
     return trial;
   };
 
-  const Solution solution = solve( state.stateVars, deformation, evaluateSide, true );
+  return solve( stateVars, deformation, evaluateSide, true );
+}
+
+void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStress(
+  State&               state,
+  Tangents&            tangents,
+  const Deformation&   deformation,
+  const TimeIncrement& timeIncrement )
+{
+  const Solution solution = solveWithFields( state.stateVars,
+                                             deformation,
+                                             timeIncrement,
+                                             deformation.nonlocalField,
+                                             deformation.nonlocalField );
 
   writeResponse( solution, state, tangents );
 
@@ -130,6 +146,37 @@ void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStr
   Eigen::Map< Eigen::Matrix< double, 1, 21 > >(
     tangents.dLocalField_dGeneralizedStrain.data() ) = solution.dLocalField_dStrain;
   tangents.dLocalField_dNonlocal                     = solution.dLocalField_dNonlocal;
+}
+
+void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::computeStress(
+  FaceFieldsState&             state,
+  FaceFieldsTangents&          tangents,
+  const FaceFieldsDeformation& deformation,
+  const TimeIncrement&         timeIncrement )
+{
+  const Solution solution = solveWithFields( state.stateVars,
+                                             deformation,
+                                             timeIncrement,
+                                             deformation.nonlocalFieldTop,
+                                             deformation.nonlocalFieldBottom );
+
+  writeResponse( solution, state, tangents );
+
+  state.localFieldTop        = solution.plus.L;
+  state.localFieldBottom     = solution.minus.L;
+  state.nonlocalRadiusTop    = solution.plus.nonlocalRadius;
+  state.nonlocalRadiusBottom = solution.minus.nonlocalRadius;
+
+  Eigen::Map< Vector21d >( tangents.dGeneralizedStress_dNonlocalTop.data() )    = solution.dStress_dNonlocalPlus;
+  Eigen::Map< Vector21d >( tangents.dGeneralizedStress_dNonlocalBottom.data() ) = solution.dStress_dNonlocalMinus;
+  Eigen::Map< Eigen::Matrix< double, 1, 21 > >(
+    tangents.dLocalFieldTop_dGeneralizedStrain.data() ) = solution.dLocalFieldPlus_dStrain;
+  Eigen::Map< Eigen::Matrix< double, 1, 21 > >(
+    tangents.dLocalFieldBottom_dGeneralizedStrain.data() ) = solution.dLocalFieldMinus_dStrain;
+  tangents.dLocalFieldTop_dNonlocalTop                     = solution.dLocalField_dNonlocalFaces( 0, 0 );
+  tangents.dLocalFieldTop_dNonlocalBottom                  = solution.dLocalField_dNonlocalFaces( 0, 1 );
+  tangents.dLocalFieldBottom_dNonlocalTop                  = solution.dLocalField_dNonlocalFaces( 1, 0 );
+  tangents.dLocalFieldBottom_dNonlocalBottom               = solution.dLocalField_dNonlocalFaces( 1, 1 );
 }
 
 void MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::initializeYourself( double* stateVars,

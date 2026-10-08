@@ -60,6 +60,22 @@ protected:
   std::unique_ptr< MarmotMaterialGradientEnhancedFiniteStrain > topMaterial;    ///< material of the top face
   std::unique_ptr< MarmotMaterialGradientEnhancedFiniteStrain > bottomMaterial; ///< material of the bottom face
 
+  /**
+   * @brief Solve for the normal-gradient jump with a nonlocal field of each face.
+   *
+   * @param[in,out] stateVars state variables of the interface material
+   * @param[in] deformation kinematics of the interface
+   * @param[in] timeIncrement time at the beginning of the increment and time increment
+   * @param[in] nonlocalFieldTop nonlocal field of the top face
+   * @param[in] nonlocalFieldBottom nonlocal field of the bottom face
+   * @return the solution, with the derivatives with respect to the field of each face
+   */
+  Solution solveWithFields( double*                                                                 stateVars,
+                            const MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Deformation& deformation,
+                            const TimeIncrement&                                                    timeIncrement,
+                            double                                                                  nonlocalFieldTop,
+                            double nonlocalFieldBottom ) const;
+
 public:
   using Tensor21d = Fastor::Tensor< double, 21 >; ///< vector over the generalized strain (w, A+, A-)
 
@@ -79,6 +95,32 @@ public:
   /// Kinematics of the interface at a quadrature point, and the nonlocal field.
   struct Deformation : MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Deformation {
     double nonlocalField; ///< nonlocal field abar, shared by both faces
+  };
+
+  /// Generalized stress, and the local fields of the two faces.
+  struct FaceFieldsState : MarmotEquilibratedInterfaceMaterialFiniteStrainBase::State {
+    double localFieldTop;        ///< local driving field L+ of the top face
+    double localFieldBottom;     ///< local driving field L- of the bottom face
+    double nonlocalRadiusTop;    ///< nonlocal radius of the top face
+    double nonlocalRadiusBottom; ///< nonlocal radius of the bottom face
+  };
+
+  /// Condensed tangent, and the tangents of the coupling to the nonlocal fields of the two faces.
+  struct FaceFieldsTangents : MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Tangents {
+    Tensor21d dGeneralizedStress_dNonlocalTop;      ///< d(f, S+, S-)/d(N+)
+    Tensor21d dGeneralizedStress_dNonlocalBottom;   ///< d(f, S+, S-)/d(N-)
+    Tensor21d dLocalFieldTop_dGeneralizedStrain;    ///< d(L+)/d(w, A+, A-)
+    Tensor21d dLocalFieldBottom_dGeneralizedStrain; ///< d(L-)/d(w, A+, A-)
+    double    dLocalFieldTop_dNonlocalTop;          ///< d(L+)/d(N+)
+    double    dLocalFieldTop_dNonlocalBottom;       ///< d(L+)/d(N-), through the normal-gradient jump
+    double    dLocalFieldBottom_dNonlocalTop;       ///< d(L-)/d(N+), through the normal-gradient jump
+    double    dLocalFieldBottom_dNonlocalBottom;    ///< d(L-)/d(N-)
+  };
+
+  /// Kinematics of the interface at a quadrature point, and the nonlocal field of each face.
+  struct FaceFieldsDeformation : MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Deformation {
+    double nonlocalFieldTop;    ///< nonlocal field N+ of the top face
+    double nonlocalFieldBottom; ///< nonlocal field N- of the bottom face
   };
 
   /**
@@ -120,6 +162,25 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
+
+  /**
+   * @brief Compute the generalized stress, the local fields and their tangents for a nonlocal field of each face.
+   *
+   * The faces have independent nonlocal fields, and so independent damage. They interact through the traction
+   * equilibrium of the normal-gradient jump only, so that the derivatives of the stress and of the local field of a
+   * face with respect to the field of the other face are the ones through that jump.
+   *
+   * @param[in,out] state the response, and the state variables, which are updated
+   * @param[out] tangents the condensed tangents
+   * @param[in] deformation the kinematics of the interface and the nonlocal fields
+   * @param[in] timeIncrement the time at the beginning of the increment and the time increment
+   *
+   * @throws std::invalid_argument if the normal vanishes or the faces are not separated along the normal
+   */
+  virtual void computeStress( FaceFieldsState&             state,
+                              FaceFieldsTangents&          tangents,
+                              const FaceFieldsDeformation& deformation,
+                              const TimeIncrement&         timeIncrement );
 
   /**
    * @brief Initialize the state variables at a material point.

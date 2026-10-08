@@ -97,6 +97,12 @@ Elements
    * - ``GYILINE2UL``
      - 4
      - Two-dimensional counterpart of ``GYIQUAD4UL``
+   * - ``GY2IQUAD4UL``, ``GY2IQUAD8UL``
+     - 8, 16
+     - As ``GYIQUAD4UL`` and ``GYIQUAD8UL``, with an independent nonlocal field on each face of the layer
+   * - ``GY2ILINE2UL``
+     - 4
+     - Two-dimensional counterpart of ``GY2IQUAD4UL``
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
@@ -160,6 +166,20 @@ where :math:`\bar{L}` is the average of the local driving fields of the two face
 displacements, and of the nonlocal field, are coupled through the condensed derivatives of the
 :ref:`equilibrated finite-strain interface material <equilibratedinterfacematerialfinitestrain>`.
 
+The ``GY2`` elements use ``GradientEnhancedFaceFieldsFormulation``, in which the two faces of the layer have independent
+nonlocal fields :math:`\bar N^{+}` and :math:`\bar N^{-}`, and so independent damage. Every node carries a nonlocal degree
+of freedom: the top nodes the field of the top face and the bottom nodes the one of the bottom face. Each face has its own
+nonlocal equation on the midsurface, with half of the thickness of the layer,
+
+.. math::
+
+   \frac{h}{2} \left[ \mathbf{N}^\mathsf{T} \big( \bar N^{\pm} - L^{\pm} \big)
+   + l^2\, \nabla\mathbf{N}^\mathsf{T} \nabla\bar N^{\pm} \right] = 0 ,
+
+where :math:`L^{\pm}` is the local driving field of the face, its plastic strain. The faces do not exchange nonlocal
+information through the thickness. They interact through the traction equilibrium of the normal-gradient jump only, which
+also gives each field a derivative path to the stress and to the local field of the other face.
+
 Properties
 ----------
 
@@ -196,4 +216,7 @@ Implementation
    :members:
 
 .. doxygenstruct:: Marmot::Elements::GradientEnhancedEquilibratedTwoSidedFormulation
+   :members:
+
+.. doxygenstruct:: Marmot::Elements::GradientEnhancedFaceFieldsFormulation
    :members:

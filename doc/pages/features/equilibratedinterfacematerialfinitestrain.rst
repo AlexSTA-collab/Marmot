@@ -61,6 +61,12 @@ above the thickness of the layer. Besides the generalized stress, it returns the
 :math:`\mathbf{z}`, because :math:`\mathbf{z}` solves the traction equilibrium for a given :math:`\bar{N}`. When the
 two faces have different histories, this path does not vanish.
 
+The material can also take a nonlocal field of each face, :math:`\bar N^{+}` and :math:`\bar N^{-}`, and then returns the local
+field :math:`L^{\pm}` and the nonlocal radius of each face. The derivatives of the stress and of both local fields with respect
+to both fields are condensed through :math:`\mathbf{z}`: the field of a face enters its own stress, and the traction
+equilibrium carries it to the other face. A field shared by both faces is the special case :math:`\bar N^{+} = \bar N^{-}`,
+for which the derivatives are the sums over the faces.
+
 Implementation
 --------------
 

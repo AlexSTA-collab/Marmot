@@ -271,6 +271,204 @@ namespace {
                              "The density is the one of the bulk material." );
   }
 
+  struct FaceResponse {
+    Vector21d p;
+    Matrix21d tangent;
+    Vector21d dStress_dNonlocalTop, dStress_dNonlocalBottom;
+    Vector21d dLocalFieldTop_dStrain, dLocalFieldBottom_dStrain;
+    double    dLocalFieldTop_dNonlocalTop, dLocalFieldTop_dNonlocalBottom;
+    double    dLocalFieldBottom_dNonlocalTop, dLocalFieldBottom_dNonlocalBottom;
+    double    localFieldTop, localFieldBottom;
+  };
+
+  /// One stress update with a nonlocal field of each face, from a state in which the faces have the given history.
+  FaceResponse evaluateFaces( const Vector21d& x,
+                              double           nonlocalTop,
+                              double           nonlocalBottom,
+                              double           kappaTop,
+                              double           kappaBottom )
+  {
+    Material material( "GRADIENTENHANCEDCOMPRESSIBLENEOHOOKEDAMAGE",
+                       card.data(),
+                       static_cast< int >( card.size() ),
+                       1 );
+
+    std::vector< double > stateVars( material.getNumberOfRequiredStateVars(), 0.0 );
+    material.initializeYourself( stateVars.data(), static_cast< int >( stateVars.size() ) );
+    material.getStateView( "topMaterialStateVars", stateVars.data() ).stateLocation[0]    = kappaTop;
+    material.getStateView( "bottomMaterialStateVars", stateVars.data() ).stateLocation[0] = kappaBottom;
+
+    std::array< double, 6 >  U{};
+    std::array< double, 18 > surfaceGradient{};
+    for ( int i = 0; i < 3; ++i )
+      U[i] = x( i );
+    for ( int i = 0; i < 9; ++i ) {
+      surfaceGradient[i]     = x( 3 + i );
+      surfaceGradient[9 + i] = x( 12 + i );
+    }
+
+    Material::FaceFieldsState       state{ { Material::Tensor3d( 0.0 ),
+                                             Material::Tensor33d( 0.0 ),
+                                             Material::Tensor33d( 0.0 ),
+                                             stateVars.data() },
+                                     0.0,
+                                     0.0,
+                                     0.0,
+                                     0.0 };
+    Material::FaceFieldsTangents    tangents{ { Material::Tensor33d( 0.0 ),
+                                                Material::Tensor333d( 0.0 ),
+                                                Material::Tensor333d( 0.0 ),
+                                                Material::Tensor333d( 0.0 ),
+                                                Material::Tensor3333d( 0.0 ),
+                                                Material::Tensor3333d( 0.0 ),
+                                                Material::Tensor333d( 0.0 ),
+                                                Material::Tensor3333d( 0.0 ),
+                                                Material::Tensor3333d( 0.0 ) },
+                                           Material::Tensor21d( 0.0 ),
+                                           Material::Tensor21d( 0.0 ),
+                                           Material::Tensor21d( 0.0 ),
+                                           Material::Tensor21d( 0.0 ),
+                                           0.0,
+                                           0.0,
+                                           0.0,
+                                           0.0 };
+    Material::FaceFieldsDeformation deformation{ { Material::Tensor6d( U.data() ),
+                                                   Material::Tensor18d( surfaceGradient.data() ),
+                                                   Material::Tensor3d( normal.data() ),
+                                                   Material::Tensor3d( connector.data() ) },
+                                                 nonlocalTop,
+                                                 nonlocalBottom };
+
+    material.computeStress( state, tangents, deformation, { 0.0, 1.0 } );
+
+    FaceResponse r;
+    r.p.segment< 3 >( 0 )  = Eigen::Map< const Eigen::Vector3d >( state.generalizedForce.data() );
+    r.p.segment< 9 >( 3 )  = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( state.surfaceStressPlus.data() );
+    r.p.segment< 9 >( 12 ) = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( state.surfaceStressMinus.data() );
+
+    using RowMajor = Eigen::Matrix< double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor >;
+    r.tangent.setZero();
+    r.tangent.block< 3, 3 >( 0, 0 )   = Eigen::Map< const RowMajor >( tangents.Q_ww.data(), 3, 3 );
+    r.tangent.block< 3, 9 >( 0, 3 )   = Eigen::Map< const RowMajor >( tangents.Q_wAp.data(), 3, 9 );
+    r.tangent.block< 3, 9 >( 0, 12 )  = Eigen::Map< const RowMajor >( tangents.Q_wAm.data(), 3, 9 );
+    r.tangent.block< 9, 3 >( 3, 0 )   = Eigen::Map< const RowMajor >( tangents.Q_Apw.data(), 9, 3 );
+    r.tangent.block< 9, 9 >( 3, 3 )   = Eigen::Map< const RowMajor >( tangents.Q_ApAp.data(), 9, 9 );
+    r.tangent.block< 9, 9 >( 3, 12 )  = Eigen::Map< const RowMajor >( tangents.Q_ApAm.data(), 9, 9 );
+    r.tangent.block< 9, 3 >( 12, 0 )  = Eigen::Map< const RowMajor >( tangents.Q_Amw.data(), 9, 3 );
+    r.tangent.block< 9, 9 >( 12, 3 )  = Eigen::Map< const RowMajor >( tangents.Q_AmAp.data(), 9, 9 );
+    r.tangent.block< 9, 9 >( 12, 12 ) = Eigen::Map< const RowMajor >( tangents.Q_AmAm.data(), 9, 9 );
+
+    r.dStress_dNonlocalTop      = Eigen::Map< const Vector21d >( tangents.dGeneralizedStress_dNonlocalTop.data() );
+    r.dStress_dNonlocalBottom   = Eigen::Map< const Vector21d >( tangents.dGeneralizedStress_dNonlocalBottom.data() );
+    r.dLocalFieldTop_dStrain    = Eigen::Map< const Vector21d >( tangents.dLocalFieldTop_dGeneralizedStrain.data() );
+    r.dLocalFieldBottom_dStrain = Eigen::Map< const Vector21d >( tangents.dLocalFieldBottom_dGeneralizedStrain.data() );
+    r.dLocalFieldTop_dNonlocalTop       = tangents.dLocalFieldTop_dNonlocalTop;
+    r.dLocalFieldTop_dNonlocalBottom    = tangents.dLocalFieldTop_dNonlocalBottom;
+    r.dLocalFieldBottom_dNonlocalTop    = tangents.dLocalFieldBottom_dNonlocalTop;
+    r.dLocalFieldBottom_dNonlocalBottom = tangents.dLocalFieldBottom_dNonlocalBottom;
+    r.localFieldTop                     = state.localFieldTop;
+    r.localFieldBottom                  = state.localFieldBottom;
+    return r;
+  }
+
+  /// With the same field on both faces, the response is the one of the field that the faces share, and the derivatives
+  /// of the shared field are the sums of the derivatives of the two faces.
+  void testFaceFieldsReduceToTheSharedField()
+  {
+    const Vector21d x = generalizedStrain();
+
+    for ( double kappaTop : { 0.0, 5.0e-3 } ) {
+      const auto shared = evaluate( x, 3.0e-3, kappaTop );
+      const auto faces  = evaluateFaces( x, 3.0e-3, 3.0e-3, kappaTop, 0.0 );
+
+      throwExceptionOnFailure( ( shared.p - faces.p ).norm() < 1e-12 * shared.p.norm(),
+                               "The stress of the shared field." );
+      throwExceptionOnFailure( ( shared.tangent - faces.tangent ).norm() < 1e-10 * shared.tangent.norm(),
+                               "The tangent of the shared field." );
+      throwExceptionOnFailure( ( shared.dStress_dNonlocal - faces.dStress_dNonlocalTop - faces.dStress_dNonlocalBottom )
+                                   .norm() < 1e-10 * std::max( 1.0, shared.dStress_dNonlocal.norm() ),
+                               "The derivative of the stress with respect to the shared field is the sum over the "
+                               "faces." );
+      throwExceptionOnFailure( std::abs( shared.localField - 0.5 * ( faces.localFieldTop + faces.localFieldBottom ) ) <
+                                 1e-14,
+                               "The shared local field is the average of the local fields of the faces." );
+      throwExceptionOnFailure( ( shared.dLocalField_dStrain -
+                                 0.5 * ( faces.dLocalFieldTop_dStrain + faces.dLocalFieldBottom_dStrain ) )
+                                   .norm() < 1e-10 * std::max( 1.0, shared.dLocalField_dStrain.norm() ),
+                               "The derivative of the shared local field." );
+      throwExceptionOnFailure( std::abs( shared.dLocalField_dNonlocal -
+                                         0.5 *
+                                           ( faces.dLocalFieldTop_dNonlocalTop + faces.dLocalFieldTop_dNonlocalBottom +
+                                             faces.dLocalFieldBottom_dNonlocalTop +
+                                             faces.dLocalFieldBottom_dNonlocalBottom ) ) < 1e-10,
+                               "The derivative of the shared local field with respect to the shared field." );
+    }
+  }
+
+  /// Every derivative of the faces against the finite differences, with different fields and histories on the faces.
+  void testFaceFieldsTangentsAreConsistent()
+  {
+    const Vector21d x = generalizedStrain();
+
+    // the top face is damaged up to a larger value than the bottom face, and the fields differ: only the bottom face
+    // loads
+    const double Nt = 2.0e-3, Nb = 4.0e-3, kt = 3.0e-3, kb = 0.0;
+    const auto   base = evaluateFaces( x, Nt, Nb, kt, kb );
+
+    throwExceptionOnFailure( base.dStress_dNonlocalBottom.norm() > 0.0 && base.dStress_dNonlocalTop.norm() == 0.0,
+                             "Only the loading face couples its stress to its field." );
+    throwExceptionOnFailure( std::abs( base.localFieldTop - base.localFieldBottom ) > 1e-6,
+                             "The faces have different local fields." );
+
+    const double eps = 1e-7;
+
+    Matrix21d finiteDifference;
+    Vector21d topGradient, bottomGradient;
+    for ( int j = 0; j < 21; ++j ) {
+      Vector21d plus = x, minus = x;
+      plus( j ) += eps;
+      minus( j ) -= eps;
+      const auto rp             = evaluateFaces( plus, Nt, Nb, kt, kb );
+      const auto rm             = evaluateFaces( minus, Nt, Nb, kt, kb );
+      finiteDifference.col( j ) = ( rp.p - rm.p ) / ( 2.0 * eps );
+      topGradient( j )          = ( rp.localFieldTop - rm.localFieldTop ) / ( 2.0 * eps );
+      bottomGradient( j )       = ( rp.localFieldBottom - rm.localFieldBottom ) / ( 2.0 * eps );
+    }
+
+    const auto relative = []( const auto& a, const auto& b ) { return ( a - b ).norm() / std::max( 1.0, b.norm() ); };
+
+    throwExceptionOnFailure( relative( finiteDifference, base.tangent ) < 1e-6, "The condensed tangent of the faces." );
+    throwExceptionOnFailure( relative( topGradient, base.dLocalFieldTop_dStrain ) < 1e-6, "d(L+)/dx." );
+    throwExceptionOnFailure( relative( bottomGradient, base.dLocalFieldBottom_dStrain ) < 1e-6, "d(L-)/dx." );
+
+    const double epsN = 1e-8;
+    const auto   tp   = evaluateFaces( x, Nt + epsN, Nb, kt, kb );
+    const auto   tm   = evaluateFaces( x, Nt - epsN, Nb, kt, kb );
+    const auto   bp   = evaluateFaces( x, Nt, Nb + epsN, kt, kb );
+    const auto   bm   = evaluateFaces( x, Nt, Nb - epsN, kt, kb );
+
+    throwExceptionOnFailure( relative( Vector21d( ( tp.p - tm.p ) / ( 2.0 * epsN ) ), base.dStress_dNonlocalTop ) <
+                               1e-6,
+                             "d(p)/d(N+)." );
+    throwExceptionOnFailure( relative( Vector21d( ( bp.p - bm.p ) / ( 2.0 * epsN ) ), base.dStress_dNonlocalBottom ) <
+                               1e-6,
+                             "d(p)/d(N-)." );
+
+    const auto close = []( double a, double b ) { return std::abs( a - b ) < 1e-6 * std::max( 1.0, std::abs( b ) ); };
+    throwExceptionOnFailure( close( ( tp.localFieldTop - tm.localFieldTop ) / ( 2.0 * epsN ),
+                                    base.dLocalFieldTop_dNonlocalTop ),
+                             "d(L+)/d(N+)." );
+    throwExceptionOnFailure( close( ( bp.localFieldTop - bm.localFieldTop ) / ( 2.0 * epsN ),
+                                    base.dLocalFieldTop_dNonlocalBottom ),
+                             "d(L+)/d(N-)." );
+    throwExceptionOnFailure( close( ( tp.localFieldBottom - tm.localFieldBottom ) / ( 2.0 * epsN ),
+                                    base.dLocalFieldBottom_dNonlocalTop ),
+                             "d(L-)/d(N+)." );
+    throwExceptionOnFailure( close( ( bp.localFieldBottom - bm.localFieldBottom ) / ( 2.0 * epsN ),
+                                    base.dLocalFieldBottom_dNonlocalBottom ),
+                             "d(L-)/d(N-)." );
+  }
+
   void testInvalidCardsAreRejected()
   {
     const auto rejects = []( const std::string& name, const std::vector< double >& values ) {
@@ -297,6 +495,8 @@ int main()
 {
   std::vector< std::function< void() > > tests = { testMatchesTheLocalMaterialBelowTheThreshold,
                                                    testTangentsAreConsistent,
+                                                   testFaceFieldsReduceToTheSharedField,
+                                                   testFaceFieldsTangentsAreConsistent,
                                                    testAccessors,
                                                    testInvalidCardsAreRejected };
   executeTestsAndCollectExceptions( tests );

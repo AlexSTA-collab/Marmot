@@ -204,17 +204,31 @@ protected:
 
   /// Result of the local solution and the condensation.
   struct Solution {
-    Vector3d  z;                                     ///< normal-gradient jump
-    SideTrial plus;                                  ///< response of the top face
-    SideTrial minus;                                 ///< response of the bottom face
-    Vector21d p;                                     ///< generalized stress (f, S+, S-)
-    Matrix21d tangent;                               ///< condensed tangent over (w, A+, A-)
-    Vector21d dStress_dNonlocal = Vector21d::Zero(); ///< derivative of p with respect to the nonlocal field
+    Vector3d  z;       ///< normal-gradient jump
+    SideTrial plus;    ///< response of the top face
+    SideTrial minus;   ///< response of the bottom face
+    Vector21d p;       ///< generalized stress (f, S+, S-)
+    Matrix21d tangent; ///< condensed tangent over (w, A+, A-)
+    Vector21d
+      dStress_dNonlocal = Vector21d::Zero(); ///< derivative of p with respect to a nonlocal field shared by the faces
     Eigen::Matrix< double, 1, 21 >
       dLocalField_dStrain = Eigen::Matrix< double, 1, 21 >::Zero(); ///< derivative of Lbar with respect to (w, A+, A-)
-    double dLocalField_dNonlocal = 0.0; ///< derivative of Lbar with respect to the nonlocal field
+    double dLocalField_dNonlocal = 0.0; ///< derivative of Lbar with respect to a nonlocal field shared by the faces
     double localField            = 0.0; ///< average Lbar of the local driving field of the faces
     double nonlocalRadius        = 0.0; ///< average of the nonlocal radii of the faces
+
+    // The same derivatives for a nonlocal field of each face. They are filled together with the ones above.
+    Vector21d dStress_dNonlocalPlus = Vector21d::Zero(); ///< derivative of p with respect to the field of the top face
+    Vector21d
+      dStress_dNonlocalMinus = Vector21d::Zero(); ///< derivative of p with respect to the field of the bottom face
+    Eigen::Matrix< double, 1, 21 >
+      dLocalFieldPlus_dStrain = Eigen::Matrix< double, 1, 21 >::Zero(); ///< derivative of L+ with respect to (w, A+,
+                                                                        ///< A-)
+    Eigen::Matrix< double, 1, 21 >
+      dLocalFieldMinus_dStrain = Eigen::Matrix< double, 1, 21 >::Zero(); ///< derivative of L- with respect to (w, A+,
+                                                                         ///< A-)
+    /// derivative of the local field of a face (row: top, bottom) with respect to the field of a face (column)
+    Eigen::Matrix2d dLocalField_dNonlocalFaces = Eigen::Matrix2d::Zero();
   };
 
   /**

@@ -389,7 +389,9 @@ MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Solution MarmotEquilibrated
   solution.tangent = Kcond;
 
   if ( withNonlocal ) {
-    // The nonlocal field enters both faces, so z depends on it too, and all quantities below share the same <Q>^-1.
+    // The nonlocal field of a face enters its stress, so z depends on it too. The fields of the two faces have a
+    // derivative path each, and all quantities below share the same Qavg^-1. A nonlocal field shared by both faces is
+    // the sum of the two paths.
     Vector9d vecdPPlus_dNonlocal, vecdPMinus_dNonlocal;
     for ( int i = 0; i < 3; ++i )
       for ( int j = 0; j < 3; ++j ) {
@@ -397,23 +399,38 @@ MarmotEquilibratedInterfaceMaterialFiniteStrainBase::Solution MarmotEquilibrated
         vecdPMinus_dNonlocal( flatIndex( i, j ) ) = minusTrial.dP_dNonlocal( i, j );
       }
 
-    const Vector3d ra = Rt * ( vecdPPlus_dNonlocal - vecdPMinus_dNonlocal );
+    // derivative of the residual P+ N - P- N of z with respect to the field of the top and of the bottom face
+    const Vector3d rNPlus  = Rt * vecdPPlus_dNonlocal;
+    const Vector3d rNMinus = -( Rt * vecdPMinus_dNonlocal );
 
-    const Vector21d pa = sideThickness *
-                         ( BxPlus.transpose() * vecdPPlus_dNonlocal + BxMinus.transpose() * vecdPMinus_dNonlocal );
+    const Vector21d pNPlus  = sideThickness * ( BxPlus.transpose() * vecdPPlus_dNonlocal );
+    const Vector21d pNMinus = sideThickness * ( BxMinus.transpose() * vecdPMinus_dNonlocal );
 
-    // Lbar = ( L+ + L- ) / 2, the two faces carrying half the layer each
-    const Eigen::Matrix< double, 1, 21 > Lx = 0.5 * ( plusTrial.dL_dF.transpose() * BxPlus +
-                                                      minusTrial.dL_dF.transpose() * BxMinus );
-    const Eigen::Matrix< double, 1, 3 >  Lz = 0.5 * ( plusTrial.dL_dF.transpose() * BzPlus +
-                                                     minusTrial.dL_dF.transpose() * BzMinus );
+    const Eigen::Matrix< double, 1, 21 > LxPlus  = plusTrial.dL_dF.transpose() * BxPlus;
+    const Eigen::Matrix< double, 1, 21 > LxMinus = minusTrial.dL_dF.transpose() * BxMinus;
+    const Eigen::Matrix< double, 1, 3 >  LzPlus  = plusTrial.dL_dF.transpose() * BzPlus;
+    const Eigen::Matrix< double, 1, 3 >  LzMinus = minusTrial.dL_dF.transpose() * BzMinus;
 
-    const Matrix3x21RowMajor QavgInverseRx = QavgDecomposition.solve( rx );
-    const Vector3d           QavgInverseRa = QavgDecomposition.solve( ra );
+    const Matrix3x21RowMajor QavgInverseRx      = QavgDecomposition.solve( rx );
+    const Vector3d           QavgInverseRNPlus  = QavgDecomposition.solve( rNPlus );
+    const Vector3d           QavgInverseRNMinus = QavgDecomposition.solve( rNMinus );
 
-    solution.dStress_dNonlocal     = pa - pz * QavgInverseRa;
-    solution.dLocalField_dStrain   = Lx - Lz * QavgInverseRx;
-    solution.dLocalField_dNonlocal = 0.5 * ( plusTrial.dL_dN + minusTrial.dL_dN ) - ( Lz * QavgInverseRa )( 0, 0 );
+    solution.dStress_dNonlocalPlus    = pNPlus - pz * QavgInverseRNPlus;
+    solution.dStress_dNonlocalMinus   = pNMinus - pz * QavgInverseRNMinus;
+    solution.dLocalFieldPlus_dStrain  = LxPlus - LzPlus * QavgInverseRx;
+    solution.dLocalFieldMinus_dStrain = LxMinus - LzMinus * QavgInverseRx;
+
+    Eigen::Matrix2d dL;
+    dL( 0, 0 )                          = plusTrial.dL_dN - ( LzPlus * QavgInverseRNPlus )( 0, 0 );
+    dL( 0, 1 )                          = -( LzPlus * QavgInverseRNMinus )( 0, 0 );
+    dL( 1, 0 )                          = -( LzMinus * QavgInverseRNPlus )( 0, 0 );
+    dL( 1, 1 )                          = minusTrial.dL_dN - ( LzMinus * QavgInverseRNMinus )( 0, 0 );
+    solution.dLocalField_dNonlocalFaces = dL;
+
+    // a nonlocal field that is shared by both faces, with Lbar = ( L+ + L- ) / 2: the faces carry half the layer each
+    solution.dStress_dNonlocal     = solution.dStress_dNonlocalPlus + solution.dStress_dNonlocalMinus;
+    solution.dLocalField_dStrain   = 0.5 * ( solution.dLocalFieldPlus_dStrain + solution.dLocalFieldMinus_dStrain );
+    solution.dLocalField_dNonlocal = 0.5 * dL.sum();
     solution.localField            = 0.5 * ( plusTrial.L + minusTrial.L );
     solution.nonlocalRadius        = 0.5 * ( plusTrial.nonlocalRadius + minusTrial.nonlocalRadius );
   }

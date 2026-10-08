@@ -621,6 +621,177 @@ namespace {
                              "The density is the one of the bulk material." );
   }
 
+  /// The displacements, and a nonlocal field for each face: the bottom nodes carry the field of the bottom face.
+  template < class ElementType >
+  Eigen::VectorXd makeDisplacementsAndFaceFields( double scale, int pattern, double nonlocalBottom, double nonlocalTop )
+  {
+    constexpr int nPerFace = ElementType::nExtraDofs / 2;
+
+    Eigen::VectorXd Q = makeDisplacements< ElementType::sizeLoadVector >( scale, pattern );
+    for ( int i = 0; i < nPerFace; ++i ) {
+      Q( ElementType::nDofDisplacement + i )            = nonlocalBottom + 1.0e-4 * i;
+      Q( ElementType::nDofDisplacement + nPerFace + i ) = nonlocalTop + 1.0e-4 * i;
+    }
+    return Q;
+  }
+
+  /// The element with a nonlocal field for each face: the tangent over the displacements and the fields of both faces,
+  /// with different fields on the faces and the damage active.
+  void testFaceFieldsElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Element3d8  = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+    using Element3d16 = GY2InterfaceFiniteElementFiniteStrain< 3, 16 >;
+    using Element2d   = GY2InterfaceFiniteElementFiniteStrain< 2, 4 >;
+
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              gradientEnhancedProperties( hn ),
+                                                              makeDisplacementsAndFaceFields< Element3d8 >( 3e-3,
+                                                                                                            1,
+                                                                                                            3e-3,
+                                                                                                            5e-3 ),
+                                                              "GY2 3D, inclined",
+                                                              gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d16, 3, 16 >( serendipityQuadrilateral( gap ),
+                                                                gradientEnhancedProperties( gap ),
+                                                                makeDisplacementsAndFaceFields< Element3d16 >( 3e-3,
+                                                                                                               2,
+                                                                                                               4e-3,
+                                                                                                               2e-3 ),
+                                                                "GY2 3D, serendipity",
+                                                                gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element2d, 2, 4 >( inclinedLine( angle, gap ),
+                                                             gradientEnhancedProperties( hn ),
+                                                             makeDisplacementsAndFaceFields< Element2d >( 5e-3,
+                                                                                                          3,
+                                                                                                          3e-3,
+                                                                                                          6e-3 ),
+                                                             "GY2 2D, inclined",
+                                                             gradientEnhancedMaterial );
+  }
+
+  /// A rigid rotation without nonlocal fields is stress free.
+  void testFaceFieldsElementIsObjective()
+  {
+    const double angle       = 10.0 * pi / 180.0;
+    const double gap         = 0.1;
+    const double theta       = 0.3;
+    const auto   coordinates = inclinedQuadrilateral( angle, gap );
+
+    using Element = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    Eigen::Matrix3d R;
+    R << std::cos( theta ), 0.0, std::sin( theta ), 0.0, 1.0, 0.0, -std::sin( theta ), 0.0, std::cos( theta );
+
+    Eigen::VectorXd Q = Eigen::VectorXd::Zero( Element::sizeLoadVector );
+    for ( int node = 0; node < 8; ++node ) {
+      const Eigen::Vector3d X( coordinates[3 * node], coordinates[3 * node + 1], coordinates[3 * node + 2] );
+      Q.segment< 3 >( 3 * node ) = ( R - Eigen::Matrix3d::Identity() ) * X;
+    }
+
+    const auto properties = gradientEnhancedProperties( gap * std::cos( angle ) );
+    const auto rotated    = evaluate< Element, 3, 8 >( coordinates, properties, Q, gradientEnhancedMaterial );
+    const auto stretched  = evaluate< Element, 3, 8 >( coordinates,
+                                                      properties,
+                                                      makeDisplacementsAndFaceFields< Element >( 1e-2, 1, 0.0, 0.0 ),
+                                                      gradientEnhancedMaterial );
+
+    throwExceptionOnFailure( rotated.residual.norm() < 1e-9 * stretched.residual.norm(),
+                             "A rigid rotation must be stress free, residual " +
+                               std::to_string( rotated.residual.norm() ) );
+  }
+
+  /// A nonlocal field on every node, and the faces damage independently.
+  void testFaceFieldsAreIndependent()
+  {
+    using Element = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    Element element( 1, FiniteElement::Quadrature::IntegrationTypes::FullIntegration, Element::SectionType::Interface );
+
+    throwExceptionOnFailure( element.getNDofPerElement() == 8 * 3 + 8,
+                             "The displacements and a nonlocal field on every node." );
+
+    const auto fields = element.getNodeFields();
+    throwExceptionOnFailure( fields.size() == 8, "One list of fields per node." );
+    for ( const auto& nodeFields : fields )
+      throwExceptionOnFailure( nodeFields.size() == 2 && nodeFields[1] == "nonlocal damage",
+                               "Every node carries the field." );
+
+    // node by node: every node has [u, N], the bottom nodes before the top nodes
+    auto permutation = element.getDofIndicesPermutationPattern();
+    throwExceptionOnFailure( permutation.size() == 32, "A place for every dof." );
+    throwExceptionOnFailure( permutation[0] == 0 && permutation[3] == 4 && permutation[12] == 16 &&
+                               permutation[24] == 3 && permutation[28] == 19 && permutation[31] == 31,
+                             "The permutation places the degrees of freedom node by node." );
+    std::sort( permutation.begin(), permutation.end() );
+    for ( int i = 0; i < 32; ++i )
+      throwExceptionOnFailure( permutation[i] == i, "The permutation is a bijection." );
+
+    // The field of the top face stays below the damage threshold kappa0 = 1e-3 while the one of the bottom face is
+    // above it: only the bottom face is damaged.
+    const auto coordinates = inclinedQuadrilateral( 0.0, 0.1 );
+    element.assignNodeCoordinates( coordinates.data() );
+    const auto properties = gradientEnhancedProperties( 0.1 );
+    element.assignMaterial( gradientEnhancedMaterial, properties.data(), static_cast< int >( properties.size() ) );
+
+    std::vector< double > stateVars( element.getNumberOfRequiredStateVars(), 0.0 );
+    element.assignStateVars( stateVars.data(), static_cast< int >( stateVars.size() ) );
+    element.initializeYourself();
+    element.setInitialConditions( MarmotElement::MarmotMaterialInitialization, nullptr );
+
+    Eigen::VectorXd Q = Eigen::VectorXd::Zero( Element::sizeLoadVector );
+    for ( int node = 4; node < 8; ++node )
+      Q.segment< 3 >( 3 * node ) = Eigen::Vector3d( 1.5e-3, -0.8e-3, 2.0e-3 );
+    const double nonlocalBottom = 3.0e-3;
+    const double nonlocalTop    = 0.5e-3;
+    Q.segment< 4 >( Element::nDofDisplacement ).setConstant( nonlocalBottom );
+    Q.segment< 4 >( Element::nDofDisplacement + 4 ).setConstant( nonlocalTop );
+
+    std::vector< double > Pe( Element::sizeLoadVector, 0.0 ),
+      Ke( Element::sizeLoadVector * Element::sizeLoadVector, 0.0 );
+    element.computeKernels( Q.data(), Q.data(), Pe.data(), Ke.data(), 0.0, 1.0 );
+
+    const double kappaTop    = element.getStateView( "topMaterialStateVars", 0 ).stateLocation[0];
+    const double kappaBottom = element.getStateView( "bottomMaterialStateVars", 0 ).stateLocation[0];
+    throwExceptionOnFailure( kappaTop <= 1.0e-3 + 1e-14 && std::abs( kappaBottom - nonlocalBottom ) < 1e-14,
+                             "Only the face whose field exceeds the threshold is damaged." );
+
+    // The residual of the nonlocal field of a face is the integral of h/2 ( N - L ) over the midsurface of area 1.
+    const double localTop    = element.getStateView( "localFieldPlus", 0 ).stateLocation[0];
+    const double localBottom = element.getStateView( "localFieldMinus", 0 ).stateLocation[0];
+    double       residualTop = 0.0, residualBottom = 0.0;
+    for ( int i = 0; i < 4; ++i ) {
+      residualBottom += Pe[Element::nDofDisplacement + i];
+      residualTop += Pe[Element::nDofDisplacement + 4 + i];
+    }
+    throwExceptionOnFailure( std::abs( residualTop - 0.05 * ( nonlocalTop - localTop ) ) < 1e-12 &&
+                               std::abs( residualBottom - 0.05 * ( nonlocalBottom - localBottom ) ) < 1e-12,
+                             "The nonlocal residual of a face is the integral of h/2 ( N - L )." );
+  }
+
+  /// The element with a field for each face and the viscoplastic damage model.
+  void testFaceFieldsElementWithTheDufourModel()
+  {
+    using Element = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    assertTangentMatchesFiniteDifference< Element, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                           dufourProperties( gap * std::cos( angle ) ),
+                                                           makeDisplacementsAndFaceFields< Element >( 6e-3,
+                                                                                                      1,
+                                                                                                      0.05,
+                                                                                                      0.02 ),
+                                                           "GY2 with the Dufour model",
+                                                           "DUFOURMODEL" );
+  }
+
   void testRegistration()
   {
     for ( const std::string name : { "ILINE2UL",
@@ -631,7 +802,10 @@ namespace {
                                      "YIQUAD8UL",
                                      "GYILINE2UL",
                                      "GYIQUAD4UL",
-                                     "GYIQUAD8UL" } )
+                                     "GYIQUAD8UL",
+                                     "GY2ILINE2UL",
+                                     "GY2IQUAD4UL",
+                                     "GY2IQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -648,6 +822,10 @@ int main()
                                                    testGradientEnhancedElementDofs,
                                                    testGradientEnhancedElementNamedState,
                                                    testGradientEnhancedElementWithTheDufourModel,
+                                                   testFaceFieldsElement,
+                                                   testFaceFieldsElementIsObjective,
+                                                   testFaceFieldsAreIndependent,
+                                                   testFaceFieldsElementWithTheDufourModel,
                                                    testEquilibratedElement,
                                                    testEquilibratedElementAgreesWithThePlainElementForAUniformShift,
                                                    testRigidTranslationIsStressFree,
