@@ -385,15 +385,19 @@ namespace Marmot::Elements {
    * In contrast to GradientEnhancedEquilibratedTwoSidedFormulation, the faces of the layer have independent nonlocal
    * fields @f$ \bar N^\pm @f$, and so independent damage. The top nodes carry the field of the top face and the
    * bottom nodes the field of the bottom face, after the displacements in the vectors of the element, the bottom
-   * side first. Each face has its own nonlocal equation on the midsurface, with half of the thickness of the layer,
+   * side first. The field varies linearly through the thickness @f$ h @f$ of the layer. Each face has its own
+   * nonlocal equation on the midsurface, with half of the thickness of the layer, and the derivative through the
+   * thickness couples the faces,
    *
    * @f[
    *   \frac{h}{2} \left[ \mathbf{N}^\mathsf{T} ( \bar N^\pm - L^\pm ) + (l^\pm)^2 \nabla\mathbf{N}^\mathsf{T}
-   *   \nabla\bar N^\pm \right] = 0,
+   *   \nabla\bar N^\pm \right] \pm \frac{(l^\pm)^2}{h}\, \mathbf{N}^\mathsf{T} ( \bar N^+ - \bar N^- ) = 0,
    * @f]
    *
-   * where @f$ L^\pm @f$ is the local driving field of the face. The faces do not exchange nonlocal information through
-   * the thickness, and interact through the traction equilibrium of the normal-gradient jump only.
+   * where @f$ L^\pm @f$ is the local driving field of the face. The coupling comes from the derivative of the field
+   * through the thickness for the linear profile, and each face has the coefficient of its own nonlocal radius, so
+   * that the radii of the faces may differ. It vanishes for a small radius, where the faces are independent, and forces
+   * @f$ \bar N^+ = \bar N^- @f$ for a radius that is large against the thickness.
    */
   template < int nDim, int nNodes >
   struct GradientEnhancedFaceFieldsFormulation {
@@ -668,6 +672,16 @@ namespace Marmot::Elements {
                                                   lTop * lTop * qp.gradN.transpose() *
                                                     ( qp.gradN * nodalNonlocalTop ) ) *
                                                 qp.J0xW;
+      // The derivative through the thickness couples the faces. Each face has the coefficient of its own nonlocal
+      // radius.
+      const double couplingTop    = lTop * lTop / ( 2.0 * half );
+      const double couplingBottom = lBottom * lBottom / ( 2.0 * half );
+
+      Pe.template segment< nDofA >( offTop ) += couplingTop * qp.N.transpose() * ( nonlocalTop - nonlocalBottom ) *
+                                                qp.J0xW;
+      Pe.template segment< nDofA >( offBottom ) -= couplingBottom * qp.N.transpose() *
+                                                   ( nonlocalTop - nonlocalBottom ) * qp.J0xW;
+
       Pe.template segment< nDofA >( offBottom ) += half *
                                                    ( qp.N.transpose() * ( nonlocalBottom - state.localFieldBottom ) +
                                                      lBottom * lBottom * qp.gradN.transpose() *
@@ -691,6 +705,11 @@ namespace Marmot::Elements {
                                                         ( NN * ( 1.0 - tangents.dLocalFieldBottom_dNonlocalBottom ) +
                                                           lBottom * lBottom * qp.gradN.transpose() * qp.gradN ) *
                                                         qp.J0xW;
+      Ke.template block< nDofA, nDofA >( offTop, offTop ) += couplingTop * NN * qp.J0xW;
+      Ke.template block< nDofA, nDofA >( offBottom, offBottom ) += couplingBottom * NN * qp.J0xW;
+      Ke.template block< nDofA, nDofA >( offTop, offBottom ) -= couplingTop * NN * qp.J0xW;
+      Ke.template block< nDofA, nDofA >( offBottom, offTop ) -= couplingBottom * NN * qp.J0xW;
+
       Ke.template block< nDofA, nDofA >( offTop, offBottom ) -= half * NN * tangents.dLocalFieldTop_dNonlocalBottom *
                                                                 qp.J0xW;
       Ke.template block< nDofA, nDofA >( offBottom, offTop ) -= half * NN * tangents.dLocalFieldBottom_dNonlocalTop *

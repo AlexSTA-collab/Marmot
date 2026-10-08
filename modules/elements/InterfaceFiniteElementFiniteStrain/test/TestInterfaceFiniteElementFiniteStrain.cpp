@@ -706,7 +706,7 @@ namespace {
                                std::to_string( rotated.residual.norm() ) );
   }
 
-  /// A nonlocal field on every node, and the faces damage independently.
+  /// A nonlocal field on every node, the faces damage independently, and they are coupled through the thickness.
   void testFaceFieldsAreIndependent()
   {
     using Element = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
@@ -761,17 +761,54 @@ namespace {
     throwExceptionOnFailure( kappaTop <= 1.0e-3 + 1e-14 && std::abs( kappaBottom - nonlocalBottom ) < 1e-14,
                              "Only the face whose field exceeds the threshold is damaged." );
 
-    // The residual of the nonlocal field of a face is the integral of h/2 ( N - L ) over the midsurface of area 1.
+    // The residual of the nonlocal field of a face is the integral over the midsurface of area 1 of h/2 ( N - L ) and
+    // of the coupling through the thickness, l^2 / h ( N+ - N- ) with the sign + on the top and - on the bottom face.
+    // The radius is 0.2 and the thickness 0.1.
     const double localTop    = element.getStateView( "localFieldPlus", 0 ).stateLocation[0];
     const double localBottom = element.getStateView( "localFieldMinus", 0 ).stateLocation[0];
+    const double coupling    = 0.2 * 0.2 / 0.1 * ( nonlocalTop - nonlocalBottom );
     double       residualTop = 0.0, residualBottom = 0.0;
     for ( int i = 0; i < 4; ++i ) {
       residualBottom += Pe[Element::nDofDisplacement + i];
       residualTop += Pe[Element::nDofDisplacement + 4 + i];
     }
-    throwExceptionOnFailure( std::abs( residualTop - 0.05 * ( nonlocalTop - localTop ) ) < 1e-12 &&
-                               std::abs( residualBottom - 0.05 * ( nonlocalBottom - localBottom ) ) < 1e-12,
-                             "The nonlocal residual of a face is the integral of h/2 ( N - L )." );
+    throwExceptionOnFailure( std::abs( residualTop - ( 0.05 * ( nonlocalTop - localTop ) + coupling ) ) < 1e-12 &&
+                               std::abs( residualBottom - ( 0.05 * ( nonlocalBottom - localBottom ) - coupling ) ) <
+                                 1e-12,
+                             "The nonlocal residual of a face is the integral of h/2 ( N - L ) plus the coupling "
+                             "through the thickness." );
+  }
+
+  /// For the same field on both faces, the coupling through the thickness cancels in the sum over the faces, and the
+  /// nonlocal residual of the element with a field for each face sums to the one of the element with a shared field.
+  void testFaceFieldsElementAgreesWithTheSharedFieldInTheSum()
+  {
+    const auto coordinates = inclinedQuadrilateral( 0.0, 0.1 );
+    const auto properties  = gradientEnhancedProperties( 0.1 );
+
+    using Shared = GYInterfaceFiniteElementFiniteStrain< 3, 8 >;
+    using Faces  = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    const double nonlocal = 2.0e-3;
+
+    Eigen::VectorXd QShared = Eigen::VectorXd::Zero( Shared::sizeLoadVector );
+    Eigen::VectorXd QFaces  = Eigen::VectorXd::Zero( Faces::sizeLoadVector );
+    for ( int node = 4; node < 8; ++node ) {
+      QShared.segment< 3 >( 3 * node ) = Eigen::Vector3d( 1.5e-3, -0.8e-3, 2.0e-3 );
+      QFaces.segment< 3 >( 3 * node )  = Eigen::Vector3d( 1.5e-3, -0.8e-3, 2.0e-3 );
+    }
+    QShared.tail( Shared::nExtraDofs ).setConstant( nonlocal );
+    QFaces.tail( Faces::nExtraDofs ).setConstant( nonlocal );
+
+    const auto shared = evaluate< Shared, 3, 8 >( coordinates, properties, QShared, gradientEnhancedMaterial );
+    const auto faces  = evaluate< Faces, 3, 8 >( coordinates, properties, QFaces, gradientEnhancedMaterial );
+
+    throwExceptionOnFailure( std::abs( shared.residual.tail( Shared::nExtraDofs ).sum() -
+                                       faces.residual.tail( Faces::nExtraDofs ).sum() ) < 1e-12,
+                             "The nonlocal residuals must sum to the same value." );
+    throwExceptionOnFailure( ( shared.residual.head( 24 ) - faces.residual.head( 24 ) ).norm() <
+                               1e-12 * shared.residual.head( 24 ).norm(),
+                             "The momentum residuals agree for the same fields." );
   }
 
   /// The element with a field for each face and the viscoplastic damage model.
@@ -825,6 +862,7 @@ int main()
                                                    testFaceFieldsElement,
                                                    testFaceFieldsElementIsObjective,
                                                    testFaceFieldsAreIndependent,
+                                                   testFaceFieldsElementAgreesWithTheSharedFieldInTheSum,
                                                    testFaceFieldsElementWithTheDufourModel,
                                                    testEquilibratedElement,
                                                    testEquilibratedElementAgreesWithThePlainElementForAUniformShift,

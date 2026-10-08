@@ -176,9 +176,18 @@ nonlocal equation on the midsurface, with half of the thickness of the layer,
    \frac{h}{2} \left[ \mathbf{N}^\mathsf{T} \big( \bar N^{\pm} - L^{\pm} \big)
    + l^2\, \nabla\mathbf{N}^\mathsf{T} \nabla\bar N^{\pm} \right] = 0 ,
 
-where :math:`L^{\pm}` is the local driving field of the face, its plastic strain. The faces do not exchange nonlocal
-information through the thickness. They interact through the traction equilibrium of the normal-gradient jump only, which
-also gives each field a derivative path to the stress and to the local field of the other face.
+where :math:`L^{\pm}` is the local driving field of the face, its plastic strain. The coupling through the thickness :math:`h`
+of the layer comes from the derivative of the field through the thickness, for a field that varies linearly between the faces,
+
+.. math::
+
+   \pm \frac{(l^{\pm})^2}{h}\, \mathbf{N}^\mathsf{T} \big( \bar N^{+} - \bar N^{-} \big),
+
+with the sign :math:`+` on the top and :math:`-` on the bottom face. Each face has the coefficient of its own nonlocal radius,
+so that the radii of the faces may differ. The coupling vanishes for a small radius, where the faces are independent, and forces
+:math:`\bar N^{+} = \bar N^{-}` for a radius that is large against the thickness, which is the element ``GYIQUAD4UL``. The
+faces also interact through the traction equilibrium of the normal-gradient jump, which gives each field a derivative path to
+the stress and to the local field of the other face.
 
 Properties
 ----------
