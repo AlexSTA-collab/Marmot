@@ -1,3 +1,4 @@
+#include "Marmot/GYHInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/GYSInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
@@ -1183,6 +1184,124 @@ namespace {
     }
   }
 
+  /// the card of the two-sided graded gradient-enhanced layer, with the flag of the tangential gradient
+  std::vector< double > twoSidedStationCard( double                       thickness,
+                                             const std::vector< double >& positions,
+                                             const std::vector< double >& bulk,
+                                             int                          tangentialGradient )
+  {
+    std::vector< double > card = stationCard( thickness, positions, bulk );
+    card.push_back( double( tangentialGradient ) );
+    return card;
+  }
+
+  /// The two-sided element with a nonlocal field at every station: the tangent over the displacements and fields.
+  void testTwoSidedStationFieldsElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Element3d8  = GYHInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
+    using Element3d16 = GYHInterfaceFiniteElementFiniteStrain< 3, 16, 3 >;
+    using Element2d   = GYHInterfaceFiniteElementFiniteStrain< 2, 4, 4 >;
+
+    // without the closure of the tangential gradient of the correction the tangent is exact
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              twoSidedStationCard( hn,
+                                                                                   { 0.0, 0.5, 1.0 },
+                                                                                   neoHookeDamageBulk,
+                                                                                   0 ),
+                                                              makeDisplacementsAndStationFields< Element3d8,
+                                                                                                 3 >( 3e-3, 1, 3e-3 ),
+                                                              "GYH3 3D, inclined",
+                                                              gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d16, 3, 16 >( serendipityQuadrilateral( gap ),
+                                                                twoSidedStationCard( gap,
+                                                                                     { 0.0, 0.3, 1.0 },
+                                                                                     neoHookeDamageBulk,
+                                                                                     0 ),
+                                                                makeDisplacementsAndStationFields< Element3d16,
+                                                                                                   3 >( 3e-3, 2, 4e-3 ),
+                                                                "GYH3 3D, serendipity",
+                                                                gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element2d, 2, 4 >( inclinedLine( angle, gap ),
+                                                             twoSidedStationCard( hn,
+                                                                                  { 0.0, 0.25, 0.7, 1.0 },
+                                                                                  neoHookeDamageBulk,
+                                                                                  0 ),
+                                                             makeDisplacementsAndStationFields< Element2d, 4 >( 5e-3,
+                                                                                                                3,
+                                                                                                                3e-3 ),
+                                                             "GYH4 2D, inclined",
+                                                             gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              twoSidedStationCard( hn,
+                                                                                   { 0.0, 0.5, 1.0 },
+                                                                                   dufourBulk,
+                                                                                   0 ),
+                                                              makeDisplacementsAndStationFields< Element3d8,
+                                                                                                 3 >( 6e-3, 1, 0.05 ),
+                                                              "GYH3 with the Dufour model",
+                                                              "DUFOURMODEL" );
+
+    // with the closure, the tangent neglects the dependence of the derivative of the correction on the state
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              twoSidedStationCard( hn,
+                                                                                   { 0.0, 0.5, 1.0 },
+                                                                                   neoHookeDamageBulk,
+                                                                                   1 ),
+                                                              makeDisplacementsAndStationFields< Element3d8,
+                                                                                                 3 >( 3e-3, 1, 3e-3 ),
+                                                              "GYH3 3D with the closure",
+                                                              gradientEnhancedMaterial,
+                                                              1e-1 );
+  }
+
+  /**
+   * With two stations at the faces and without the tangential gradient of the correction, the element is the element
+   * with a nonlocal field for each face, to the residual of the displacements and the full tangent. The element with
+   * the one-sided kinematics is equal to it only for the virtual displacements with a common surface gradient.
+   */
+  void testTwoStationsAreTheFaceFieldsElementExactly()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Stations = GYHInterfaceFiniteElementFiniteStrain< 3, 8, 2 >;
+    using Faces    = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    for ( const std::string name : std::vector< std::string >{ "DUFOURMODEL", gradientEnhancedMaterial } ) {
+      const bool                  dufour         = name == "DUFOURMODEL";
+      const std::vector< double > faceProperties = dufour ? dufourProperties( hn ) : gradientEnhancedProperties( hn );
+      const std::vector< double > stationProperties = twoSidedStationCard( hn,
+                                                                           { 0.0, 1.0 },
+                                                                           dufour ? dufourBulk : neoHookeDamageBulk,
+                                                                           0 );
+
+      const Eigen::VectorXd Q = makeDisplacementsAndFaceFields< Faces >( dufour ? 6e-3 : 3e-3,
+                                                                         1,
+                                                                         dufour ? 0.05 : 3e-3,
+                                                                         dufour ? 0.02 : 5e-3 );
+
+      const auto faces    = evaluate< Faces, 3, 8 >( inclinedQuadrilateral( angle, gap ), faceProperties, Q, name );
+      const auto stations = evaluate< Stations, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                        stationProperties,
+                                                        Q,
+                                                        name );
+
+      throwExceptionOnFailure( faces.residual.norm() > 0.0, name + ": the test needs a residual." );
+      throwExceptionOnFailure( ( faces.residual - stations.residual ).norm() <= 1e-9 * faces.residual.norm(),
+                               name + ": the residual of two stations is not the one of the faces." );
+      throwExceptionOnFailure( ( faces.tangent - stations.tangent ).norm() <= 1e-8 * faces.tangent.norm(),
+                               name + ": the tangent of two stations is not the one of the faces." );
+    }
+  }
+
   /// A material with a different number of stations than the element has fields is refused.
   void testStationCountMismatchIsRefused()
   {
@@ -1208,7 +1327,8 @@ namespace {
             "GYILINE2UL",   "GYIQUAD4UL",   "GYIQUAD8UL",   "GY2ILINE2UL",  "GY2IQUAD4UL",  "GY2IQUAD8UL",
             "HILINE2UL",    "HIQUAD4UL",    "HIQUAD8UL",    "HYLINE2UL",    "HYQUAD4UL",    "HYQUAD8UL",
             "GYS2ILINE2UL", "GYS2IQUAD4UL", "GYS2IQUAD8UL", "GYS3ILINE2UL", "GYS3IQUAD4UL", "GYS3IQUAD8UL",
-            "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL" } )
+            "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL", "GYH2ILINE2UL", "GYH2IQUAD4UL", "GYH2IQUAD8UL",
+            "GYH3ILINE2UL", "GYH3IQUAD4UL", "GYH3IQUAD8UL", "GYH4ILINE2UL", "GYH4IQUAD4UL", "GYH4IQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -1242,6 +1362,8 @@ int main()
                                                    testGradedEquilibratedElementTangentAndRotation,
                                                    testStationFieldsElement,
                                                    testTwoStationsAreTheFaceFieldsElement,
+                                                   testTwoSidedStationFieldsElement,
+                                                   testTwoStationsAreTheFaceFieldsElementExactly,
                                                    testStationCountMismatchIsRefused,
                                                    testRegistration };
   executeTestsAndCollectExceptions( tests );

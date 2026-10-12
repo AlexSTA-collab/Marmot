@@ -4,9 +4,7 @@
 #include "Marmot/MarmotFastorTensorBasics.h"
 #include "Marmot/MarmotInterfaceFiniteStrainHelperFunctions.h"
 #include "Marmot/MarmotJournal.h"
-#include "Marmot/MarmotMaterialGradientEnhancedFiniteStrainFactory.h"
 #include "Marmot/MarmotThicknessMicroproblem.h"
-#include "Marmot/MarmotThicknessProfile.h"
 #include "Marmot/MarmotUtils.h"
 
 #include "Fastor/Fastor.h"
@@ -43,48 +41,11 @@ MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::MarmotGradedGradientE
   const double*      matProperties,
   int                nMaterialProperties,
   int                materialNumber_ )
-  : materialNumber( materialNumber_ ), h( checkedMaterialProperty( matProperties, nMaterialProperties, 0 ) )
+  : MarmotGradedFiniteStrainLayer( materialName, matProperties, nMaterialProperties, materialNumber_ )
 {
   if ( static_cast< int >( checkedMaterialProperty( matProperties, nMaterialProperties, 1 ) ) != 2 )
     throw std::invalid_argument( "MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain requires the mode 2 of "
                                  "the thickness profile: the nonlocal fields live at the stations" );
-
-  auto profile = Marmot::Materials::ThicknessProfile::fromMaterialProperties( matProperties, nMaterialProperties );
-
-  std::size_t offset = 0;
-  for ( auto& profilePoint : profile.points ) {
-    Station station;
-    station.weight     = profilePoint.weight;
-    station.position   = profilePoint.position;
-    station.properties = std::move( profilePoint.properties );
-
-    station.material = std::unique_ptr< MarmotMaterialGradientEnhancedFiniteStrain >(
-      MarmotLibrary::MarmotMaterialGradientEnhancedFiniteStrainFactory::createMaterial( materialName,
-                                                                                        station.properties.data(),
-                                                                                        static_cast< int >(
-                                                                                          station.properties.size() ),
-                                                                                        materialNumber ) );
-    if ( !station.material )
-      throw std::invalid_argument(
-        "Unknown base material for MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain: " + materialName );
-
-    station.nBaseStateVars = station.material->getNumberOfRequiredStateVars();
-    station.offset         = offset;
-    offset += 3 + station.nBaseStateVars;
-    points.push_back( std::move( station ) );
-  }
-
-  for ( std::size_t q = 0; q < points.size(); q++ ) {
-    stateLayout.add( "correction" + std::to_string( q ), 3 );
-    stateLayout.add( "baseMaterialStateVars" + std::to_string( q ), points[q].nBaseStateVars );
-  }
-  stateLayout.finalize();
-}
-
-void MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::setCharacteristicElementLength( double length )
-{
-  for ( auto& station : points )
-    station.material->setCharacteristicElementLength( length );
 }
 
 void MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::computeStress( State&               state,
@@ -301,21 +262,4 @@ void MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::computeStress( S
       tangents.dLocal_dNonlocal( q, f ) = sum;
     }
   }
-}
-
-void MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::initializeYourself( double* stateVars, int )
-{
-  for ( auto& station : points ) {
-    std::fill( stateVars + station.offset, stateVars + station.offset + 3, 0.0 );
-    station.material->initializeYourself( stateVars + station.offset + 3,
-                                          static_cast< int >( station.nBaseStateVars ) );
-  }
-}
-
-double MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain::getDensity( const double* stateVars ) const
-{
-  double density = 0.;
-  for ( const auto& station : points )
-    density += station.weight * station.material->getDensity( stateVars + station.offset + 3 );
-  return density;
 }

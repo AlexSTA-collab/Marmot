@@ -29,15 +29,14 @@
 #pragma once
 
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedFiniteStrainLayer.h"
 #include "Marmot/MarmotInterfaceMaterialFiniteStrain.h"
 #include "Marmot/MarmotMaterialGradientEnhancedFiniteStrain.h"
-#include "Marmot/MarmotStateHelpers.h"
+#include "Marmot/MarmotMaterialGradientEnhancedFiniteStrainFactory.h"
 
 #include <Eigen/Dense>
 
-#include <memory>
 #include <string>
-#include <vector>
 
 /**
  * @brief Gradient-enhanced finite-strain interface material with a nonlocal field at every station through the
@@ -68,7 +67,9 @@
  * The state variables are, for every station, the correction @f$w@f$ of its last converged state, which starts the
  * next iteration, followed by the state variables of its bulk material.
  */
-class MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain {
+class MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain
+  : public MarmotGradedFiniteStrainLayer< MarmotMaterialGradientEnhancedFiniteStrain,
+                                          MarmotLibrary::MarmotMaterialGradientEnhancedFiniteStrainFactory > {
 
 public:
   using Tensor3d    = MarmotInterfaceMaterialFiniteStrain::Tensor3d;    ///< first order tensor in 3D
@@ -79,12 +80,6 @@ public:
   using Tensor18d   = MarmotInterfaceMaterialFiniteStrain::Tensor18d;   ///< vector of 18 components, one per side
 
   using TimeIncrement = MarmotInterfaceMaterialFiniteStrain::TimeIncrement; ///< time data, as in the base
-
-  /// number of the material
-  const int materialNumber;
-
-  /// Layout of the state variables
-  MarmotStateLayoutDynamic stateLayout;
 
   /// Interface response: the updated values on exit.
   struct State {
@@ -140,16 +135,6 @@ public:
                                                              int                nMaterialProperties,
                                                              int                materialNumber_ );
 
-  /// Default destructor
-  virtual ~MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain() = default;
-
-  /**
-   * @brief Set the characteristic element length at the considered quadrature point.
-   *
-   * @param[in] length characteristic length, handed to all bulk materials
-   */
-  void setCharacteristicElementLength( double length );
-
   /**
    * @brief Solve the microproblem of the layer and compute the interface response and the nonlocal couplings.
    *
@@ -169,81 +154,9 @@ public:
                               const TimeIncrement& timeIncrement );
 
   /**
-   * @brief Get a view to the state variables.
-   *
-   * @param[in] stateName name of the state variable
-   * @param[in] stateVars pointer to the state variable array
-   * @return view to the requested state variable
-   */
-  StateView getStateView( const std::string& stateName, double* stateVars ) const
-  {
-    return stateLayout.getStateView( stateVars, stateName );
-  }
-
-  /**
-   * @brief Get the total number of required state variables.
-   *
-   * @return number of state variables of all stations
-   */
-  virtual int getNumberOfRequiredStateVars() const { return stateLayout.totalSize(); }
-
-  /**
-   * @brief Initialize the state variables: zero corrections and initial state of every bulk material.
-   *
-   * @param[in,out] stateVars state variables of the material point
-   * @param[in] nStateVars number of state variables, which this material does not need
-   */
-  virtual void initializeYourself( double* stateVars, int nStateVars );
-
-  /**
-   * @brief Get the density of the material.
-   *
-   * @param[in] stateVars state variables of the material point
-   * @return through-thickness mean of the density of the bulk materials
-   */
-  virtual double getDensity( const double* stateVars ) const;
-
-  /**
    * @brief Number of stations through the thickness, which is the number of nonlocal fields.
    *
    * @return the number of stations
    */
-  int numberOfStations() const { return static_cast< int >( points.size() ); }
-
-  /**
-   * @brief Thickness of the layer.
-   *
-   * @return the constitutive thickness h
-   */
-  double thickness() const { return h; }
-
-  /**
-   * @brief Weight of a station in the integration through the thickness.
-   *
-   * @param[in] station index of the station, from the bottom to the top
-   * @return the weight, the weights of all stations sum up to one
-   */
-  double stationWeight( int station ) const { return points[station].weight; }
-
-  /**
-   * @brief Position of a station in the thickness.
-   *
-   * @param[in] station index of the station, from the bottom to the top
-   * @return the coordinate y in [0, 1]
-   */
-  double stationPosition( int station ) const { return points[station].position; }
-
-private:
-  /// Station through the thickness.
-  struct Station {
-    double                                                        weight;     ///< weight, the weights sum up to one
-    double                                                        position;   ///< coordinate y in [0, 1]
-    std::vector< double >                                         properties; ///< properties of the bulk material
-    std::unique_ptr< MarmotMaterialGradientEnhancedFiniteStrain > material;   ///< bulk material of the station
-    std::size_t                                                   offset;     ///< offset of the state of the station
-    std::size_t nBaseStateVars; ///< number of state variables of the bulk material
-  };
-
-  const double           h;      ///< thickness of the layer
-  std::vector< Station > points; ///< stations through the thickness, from the bottom to the top
+  int numberOfStations() const { return numberOfThicknessPoints(); }
 };

@@ -29,36 +29,26 @@
 #pragma once
 
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedFiniteStrainLayer.h"
 #include "Marmot/MarmotMaterialFiniteStrain.h"
-#include "Marmot/MarmotStateHelpers.h"
+#include "Marmot/MarmotMaterialFiniteStrainFactory.h"
 
-#include <Eigen/Dense>
-
-#include <memory>
 #include <string>
-#include <vector>
 
 /**
  * @brief Integration points through the thickness of a layer with finite-strain bulk materials.
  *
  * This is the part that all graded finite-strain interface materials share (see
- * MarmotGradedInterfaceMaterialFiniteStrain and MarmotGradedEquilibratedInterfaceMaterialFiniteStrain): the
- * integration points through the thickness read from the material properties (see
- * Marmot::Materials::ThicknessProfile), one bulk material and its state at every point, the layout of the state
- * variables and the update of a single point.
- *
- * The state variables are, for every integration point through the thickness, the correction @f$w@f$ of its last
- * converged state, which starts the next iteration, followed by the state variables of its bulk material.
+ * MarmotGradedInterfaceMaterialFiniteStrain and MarmotGradedEquilibratedInterfaceMaterialFiniteStrain), with the
+ * update of a single point added to the points of MarmotGradedFiniteStrainLayer. The state variables are, for every
+ * integration point through the thickness, the correction @f$w@f$ of its last converged state, followed by the
+ * state variables of its bulk material.
  */
-class MarmotGradedInterfaceMaterialFiniteStrainBase {
+class MarmotGradedInterfaceMaterialFiniteStrainBase
+  : public MarmotGradedFiniteStrainLayer< MarmotMaterialFiniteStrain,
+                                          MarmotLibrary::MarmotMaterialFiniteStrainFactory > {
 
 public:
-  /// number of the material
-  const int materialNumber;
-
-  /// Layout of the state variables
-  MarmotStateLayoutDynamic stateLayout;
-
   /**
    * @brief Construct the integration points through the thickness from a registered finite-strain bulk material.
    *
@@ -72,70 +62,21 @@ public:
   MarmotGradedInterfaceMaterialFiniteStrainBase( const std::string& materialName,
                                                  const double*      matProperties,
                                                  int                nMaterialProperties,
-                                                 int                materialNumber_ );
-
-  /// Default destructor
-  virtual ~MarmotGradedInterfaceMaterialFiniteStrainBase() = default;
-
-  /**
-   * @brief Set the characteristic element length at the considered quadrature point.
-   *
-   * @param[in] length characteristic length, handed to all bulk materials
-   */
-  void setCharacteristicElementLength( double length );
-
-  /**
-   * @brief Get a view to the state variables.
-   *
-   * @param[in] stateName name of the state variable
-   * @param[in] stateVars pointer to the state variable array
-   * @return view to the requested state variable
-   */
-  StateView getStateView( const std::string& stateName, double* stateVars ) const
+                                                 int                materialNumber_ )
+    : MarmotGradedFiniteStrainLayer( materialName, matProperties, nMaterialProperties, materialNumber_ )
   {
-    return stateLayout.getStateView( stateVars, stateName );
   }
 
-  /**
-   * @brief Get the total number of required state variables.
-   *
-   * @return number of state variables of all integration points through the thickness
-   */
-  virtual int getNumberOfRequiredStateVars() const { return stateLayout.totalSize(); }
-
-  /**
-   * @brief Initialize the state variables: zero corrections and initial state of every bulk material.
-   *
-   * @param[in,out] stateVars state variables of the material point
-   * @param[in] nStateVars number of state variables, which this material does not need
-   */
-  virtual void initializeYourself( double* stateVars, int nStateVars );
+  using MarmotGradedFiniteStrainLayer::getDensity;
 
   /**
    * @brief Get the density of the material.
    *
    * @return through-thickness mean of the density of the bulk materials
    */
-  virtual double getDensity() const;
-
-  /**
-   * @brief Number of integration points through the thickness.
-   *
-   * @return the number of integration points
-   */
-  int numberOfThicknessPoints() const { return static_cast< int >( points.size() ); }
+  double getDensity() const { return getDensity( nullptr ); }
 
 protected:
-  /// Integration point through the thickness.
-  struct ThicknessPoint {
-    double                                        weight;         ///< weight, the weights sum up to one
-    double                                        position;       ///< coordinate y in [0, 1]
-    std::vector< double >                         properties;     ///< properties of the bulk material
-    std::unique_ptr< MarmotMaterialFiniteStrain > material;       ///< bulk material at the position
-    std::size_t                                   offset;         ///< offset of the state of this point
-    std::size_t                                   nBaseStateVars; ///< number of state variables of the bulk material
-  };
-
   /// Response of a bulk material at an integration point to a deformation gradient.
   struct BulkResponse {
     Marmot::FastorStandardTensors::Tensor33d   P; ///< first Piola-Kirchhoff stress
@@ -159,11 +100,4 @@ protected:
                              const double*                                    stateVars,
                              const Marmot::FastorStandardTensors::Tensor33d&  F,
                              const MarmotMaterialFiniteStrain::TimeIncrement& timeIncrement ) const;
-
-  const double                  h;                  ///< thickness of the layer
-  bool                          tangentialGradient; ///< the tangential gradient of the correction is kept
-  std::vector< ThicknessPoint > points;             ///< integration points through the thickness, bottom to top
-
-  /// weights of the cumulative integral from the bottom to every point, see Marmot::Materials::ThicknessProfile
-  Eigen::MatrixXd cumulativeWeights;
 };

@@ -83,17 +83,23 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     Eigen::Matrix< double, nStrain, 1 >       stress; ///< stress-like measure: Cauchy or first Piola-Kirchhoff
     Eigen::Matrix< double, nStrain, nStrain > D;      ///< derivative of the stress with respect to the strain
     std::vector< double >                     state;  ///< state of the point after the update
+
+    /// derivative of the stress with respect to the nonlocal field of the point, if the material has one
+    Eigen::Matrix< double, nStrain, 1 > dStress_dNonlocal = Eigen::Matrix< double, nStrain, 1 >::Zero();
+    /// derivative of the local driving field with respect to the strain
+    Eigen::Matrix< double, 1, nStrain > dLocal_dStrain   = Eigen::Matrix< double, 1, nStrain >::Zero();
+    double                              dLocal_dNonlocal = 0.; ///< derivative of the local field with respect to the
+                                                               ///< nonlocal field of the point
+    double local  = 0.;                                        ///< local driving field
+    double radius = 0.;                                        ///< nonlocal radius
   };
 
   /// Response of an integration point, as the microproblem requires it.
   template < int nStrain >
-  struct Point {
-    Eigen::Vector3d                           w = Eigen::Vector3d::Zero(); ///< correction w = du1/dy
-    Eigen::Matrix< double, nStrain, 1 >       stress;                      ///< stress-like measure
-    Eigen::Matrix< double, nStrain, nStrain > D;                           ///< derivative of the stress
-    Eigen::Matrix3d                           Qinv;                        ///< inverse of the acoustic tensor
-    Eigen::Vector3d                           a;                           ///< traction plus the closure force
-    std::vector< double >                     state;                       ///< state after the update
+  struct Point : PointResponse< nStrain > {
+    Eigen::Vector3d w = Eigen::Vector3d::Zero(); ///< correction w = du1/dy
+    Eigen::Matrix3d Qinv;                        ///< inverse of the acoustic tensor
+    Eigen::Vector3d a;                           ///< traction plus the closure force
   };
 
   /// Result of the solution of the layer.
@@ -105,7 +111,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
   };
 
   /**
-   * @brief Solve the microproblem of a layer with two surface gradients and compute its generalized stress and tangent.
+   * @brief Solver for the microproblem of a layer with two surface gradients.
    *
    * With the layer coordinate y, the strain-like measure at the integration point q is
    * @f[
@@ -114,14 +120,340 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
    *   (1 - y_q) I + \tfrac{1}{2} B_\tau \right] ,
    * @f]
    * with the generalized strain @f$ x = ( [\![u]\!], A^+, A^- ) @f$, the operator @f$ S = E \, ( \cdot \otimes n ) @f$
-   * of the correction, the tangential gradient @f$ \hat{G}_q x @f$ of the correction, and the traction of the point,
+   * of the correction, and the tangential gradient @f$ \hat{G}_q x @f$ of the correction. The traction of the point,
    * plus the closure force, is equal at all points. The generalized stress and the tangent are the weighted sums
    * over the points, with the tangent condensed over the corrections. See MarmotGradedXInterfaceMaterialHypoElastic
    * for the derivation of the closure of the tangential gradient.
    *
+   * A material with further variables that enter the stress of the points, for example nonlocal fields, adds their
+   * derivative of the traction to the condensation and assembles the derivatives of the generalized stress with
+   * respect to them from the condensed corrections and the accessors of the points.
+   *
    * @tparam nStrain number of components of the strain-like measure of a point
-   * @tparam EvaluateBulk callable `PointResponse< nStrain >( int q, const StrainVector& strain )` that updates the
-   * bulk material of the point q for the strain-like measure from the committed state
+   */
+  template < int nStrain >
+  class LayerSolver {
+
+  public:
+    using StrainVector = Eigen::Matrix< double, nStrain, 1 >;
+    using Matrix3xN    = Eigen::Matrix< double, 3, nStrain >;
+    using MatrixNxN    = Eigen::Matrix< double, nStrain, nStrain >;
+    using MatrixNx3    = Eigen::Matrix< double, nStrain, 3 >;
+    using MatrixNx21   = Eigen::Matrix< double, nStrain, 21 >;
+    using Matrix3x21   = Eigen::Matrix< double, 3, 21 >;
+    using Matrix9x21   = Eigen::Matrix< double, 9, 21 >;
+    using Matrix9x3    = Marmot::Materials::TwoSidedInterface::Matrix9x3;
+    using Matrix9x9    = Marmot::Materials::TwoSidedInterface::Matrix9x9;
+
+    /**
+     * @brief Set up the operators of the layer for a generalized strain.
+     *
+     * @param[in] layer geometry and integration points of the layer, which has to outlive the solver
+     * @param[in] x generalized strain: increments for small strains, totals for finite strains
+     */
+    LayerSolver( const Layer< nStrain >& layer, const Vector21d& x ) : layer_( layer ), x_( x )
+    {
+      using namespace Marmot::Materials::TwoSidedInterface;
+
+      const int nq = static_cast< int >( layer.weights.size() );
+
+      const Matrix9x9 I9   = Matrix9x9::Identity();
+      const Matrix9x9 Hsrf = surfaceToGradient( layer.normal, layer.tangentialSeparation, layer.normalSeparation ) - I9;
+      const Matrix9x3 Bw   = jumpToGradient( layer.normal, layer.normalSeparation );
+      N9_                  = jumpToGradient( layer.normal, 1.0 );
+
+      S_                               = layer.gradientToStrain * N9_;
+      Eigen::Matrix< double, 3, 9 > Rt = Eigen::Matrix< double, 3, 9 >::Zero();
+      for ( int i = 0; i < 3; i++ )
+        for ( int b = 0; b < 3; b++ )
+          Rt( i, 3 * i + b ) = layer.normal( b );
+      St_ = Rt * layer.stressToVector;
+
+      Bx_.resize( nq );
+      EBx_.resize( nq );
+      strain_.resize( nq );
+      for ( int q = 0; q < nq; q++ ) {
+        const double y = layer.positions[q];
+        Bx_[q].setZero();
+        Bx_[q].template block< 9, 3 >( 0, 0 )  = Bw;
+        Bx_[q].template block< 9, 9 >( 0, 3 )  = y * I9 + 0.5 * Hsrf;
+        Bx_[q].template block< 9, 9 >( 0, 12 ) = ( 1. - y ) * I9 + 0.5 * Hsrf;
+        EBx_[q]                                = layer.gradientToStrain * Bx_[q];
+        strain_[q]                             = layer.strainOffset + EBx_[q] * x;
+      }
+
+      dA_ = Eigen::Map< const Matrix3dRowMajor >( x.data() + 3 ) -
+            Eigen::Map< const Matrix3dRowMajor >( x.data() + 12 );
+    }
+
+    /**
+     * @brief Solve the microproblem and the closure of the tangential gradient.
+     *
+     * @tparam EvaluateBulk callable `PointResponse< nStrain >( int q, const StrainVector& strain )` that updates the
+     * bulk material of the point q for the strain-like measure from the committed state
+     * @param[in] initialCorrections first estimate of the corrections of all points
+     * @param[in] tolerance accepted component of the Newton step of the microproblem
+     * @param[in] evaluateBulk update of the bulk material of a point
+     *
+     * @throws StressUpdateFailed if the iteration does not converge or an acoustic tensor is singular
+     */
+    template < class EvaluateBulk >
+    void solve( const std::vector< Eigen::Vector3d >& initialCorrections,
+                double                                tolerance,
+                EvaluateBulk&&                        evaluateBulk )
+    {
+      const int nq = static_cast< int >( layer_.weights.size() );
+
+      const auto makeEvaluate = [&]( const ClosureTerms& terms ) {
+        return [&, terms]( int q, const Eigen::Vector3d& w ) {
+          auto bulk = evaluateBulk( q, StrainVector( strain_[q] + terms.strain[q] + S_ * w ) );
+
+          Point< nStrain > point;
+          static_cast< PointResponse< nStrain >& >( point ) = std::move( bulk );
+          point.w                                           = w;
+          point.a                                           = St_ * point.stress + terms.force[q];
+
+          point.Qinv = ( St_ * point.D * S_ ).inverse();
+          if ( !point.Qinv.allFinite() )
+            throw StressUpdateFailed( MakeString() << __PRETTY_FUNCTION__
+                                                   << ": the acoustic tensor of an integration point through the "
+                                                      "thickness is singular" );
+          return point;
+        };
+      };
+
+      const bool closureActive = layer_.tangentialGradient && dA_.cwiseAbs().maxCoeff() > 0.;
+
+      ClosureTerms none;
+      none.strain.assign( nq, StrainVector::Zero() );
+      none.force.assign( nq, Eigen::Vector3d::Zero() );
+
+      std::vector< Matrix3xN > dw( nq );
+      tangentPoint_.resize( nq );
+
+      ClosureTerms terms = none;
+      if ( closureActive ) {
+        // the derivative of the correction of the state at the start of the increment starts the iteration
+        const auto                      evaluateNone = makeEvaluate( none );
+        std::vector< Point< nStrain > > start;
+        start.reserve( nq );
+        for ( int q = 0; q < nq; q++ )
+          start.push_back( evaluateNone( q, initialCorrections[q] ) );
+
+        dw = condenseOverStrain( start );
+        for ( int q = 0; q < nq; q++ )
+          tangentPoint_[q] = start[q].D;
+        terms = closure( dw, tangentPoint_, dA_ );
+      }
+
+      for ( int pass = 0; pass < maxClosurePasses; pass++ ) {
+        points_ = ThicknessMicroproblem::solve< Point< nStrain > >( layer_.weights,
+                                                                    makeEvaluate( terms ),
+                                                                    initialCorrections,
+                                                                    tolerance );
+        dw      = condenseOverStrain( points_ );
+        for ( int q = 0; q < nq; q++ )
+          tangentPoint_[q] = points_[q].D;
+
+        if ( !closureActive )
+          break;
+
+        const ClosureTerms updated = closure( dw, tangentPoint_, dA_ );
+
+        double change = 0.;
+        double scale  = 0.;
+        for ( int q = 0; q < nq; q++ ) {
+          change = std::max( change, ( updated.strain[q] - terms.strain[q] ).cwiseAbs().maxCoeff() );
+          change = std::max( change, ( updated.force[q] - terms.force[q] ).cwiseAbs().maxCoeff() );
+          scale  = std::max( scale, updated.strain[q].cwiseAbs().maxCoeff() );
+          scale  = std::max( scale, updated.force[q].cwiseAbs().maxCoeff() );
+        }
+        terms = updated;
+        if ( change <= closureTolerance * scale + 1e-300 )
+          break;
+      }
+
+      // linear dependence of the closure terms on the surface gradients A+ and A-, with the derivative of the
+      // correction of the converged state frozen
+      closureStrainTangent_.assign( nq, MatrixNx21::Zero() );
+      closureForceTangent_.assign( nq, Matrix3x21::Zero() );
+      for ( int k = 0; k < ( layer_.tangentialGradient ? 9 : 0 ); k++ ) {
+        Eigen::Matrix3d unit        = Eigen::Matrix3d::Zero();
+        unit( k / 3, k % 3 )        = 1.0;
+        const ClosureTerms response = closure( dw, tangentPoint_, unit );
+        for ( int q = 0; q < nq; q++ ) {
+          closureStrainTangent_[q].col( 3 + k )  = response.strain[q];
+          closureStrainTangent_[q].col( 12 + k ) = -response.strain[q];
+          closureForceTangent_[q].col( 3 + k )   = response.force[q];
+          closureForceTangent_[q].col( 12 + k )  = -response.force[q];
+        }
+      }
+    }
+
+    /// Responses of the integration points at the solution.
+    const std::vector< Point< nStrain > >& points() const { return points_; }
+
+    /// Derivative of the gradient of the point q with respect to the generalized strain, 9 x 21.
+    const Matrix9x21& gradientOperator( int q ) const { return Bx_[q]; }
+
+    /// Derivative of the strain-like measure of the point q with respect to the generalized strain, with the closure.
+    MatrixNx21 strainOperator( int q ) const { return EBx_[q] + closureStrainTangent_[q]; }
+
+    /// Operator S that maps a correction to the strain-like measure.
+    const MatrixNx3& correctionOperator() const { return S_; }
+
+    /// Operator that maps the correction to the 9-vector of the gradient, the normal fibre n (x) w.
+    const Matrix9x3& correctionGradientOperator() const { return N9_; }
+
+    /**
+     * @brief Derivative of the corrections with respect to the generalized strain and further variables.
+     *
+     * @param[in] extraTraction for every point, the derivative of its traction with respect to the further
+     * variables, 3 x nExtra, or an empty vector if there are none
+     * @return for every point, the derivative of its correction with respect to ( x, further variables ),
+     * 3 x ( 21 + nExtra )
+     */
+    std::vector< Eigen::MatrixXd > condensedCorrections( const std::vector< Eigen::MatrixXd >& extraTraction ) const
+    {
+      const int nq     = static_cast< int >( layer_.weights.size() );
+      const int nExtra = extraTraction.empty() ? 0 : static_cast< int >( extraTraction[0].cols() );
+
+      std::vector< Eigen::Matrix< double, 3, Eigen::Dynamic > > B( nq );
+      for ( int q = 0; q < nq; q++ ) {
+        B[q].resize( 3, 21 + nExtra );
+        B[q].leftCols( 21 ) = St_ * points_[q].D * ( EBx_[q] + closureStrainTangent_[q] ) + closureForceTangent_[q];
+        if ( nExtra > 0 )
+          B[q].rightCols( nExtra ) = extraTraction[q];
+      }
+      const auto dw = ThicknessMicroproblem::condensedCorrectionTangents< Eigen::Dynamic >( layer_.weights,
+                                                                                            points_,
+                                                                                            B );
+
+      std::vector< Eigen::MatrixXd > result( nq );
+      for ( int q = 0; q < nq; q++ )
+        result[q] = dw[q];
+      return result;
+    }
+
+    /// Generalized stress ( force, S+, S- ) of the points at the solution.
+    Vector21d stress() const
+    {
+      Vector21d p = Vector21d::Zero();
+      for ( std::size_t q = 0; q < points_.size(); q++ )
+        p += layer_.thickness * layer_.weights[q] * Bx_[q].transpose() * ( layer_.stressToVector * points_[q].stress );
+      return p;
+    }
+
+    /**
+     * @brief Tangent of the generalized stress over the generalized strain.
+     *
+     * @param[in] dw derivative of the corrections, as returned by condensedCorrections()
+     * @return the condensed tangent, 21 x 21
+     */
+    Matrix21d tangent( const std::vector< Eigen::MatrixXd >& dw ) const
+    {
+      Matrix21d K = Matrix21d::Zero();
+      for ( std::size_t q = 0; q < points_.size(); q++ )
+        K += layer_.thickness * layer_.weights[q] * Bx_[q].transpose() * layer_.stressToVector * points_[q].D *
+             ( EBx_[q] + closureStrainTangent_[q] + S_ * dw[q].leftCols( 21 ) );
+      return K;
+    }
+
+  private:
+    /// Terms of the closure of the tangential gradient of the correction at all integration points.
+    struct ClosureTerms {
+      std::vector< StrainVector >    strain; ///< strain of the tangential gradient of the correction
+      std::vector< Eigen::Vector3d > force;  ///< change of the traction from the bottom to the point
+    };
+
+    /// Derivative of the corrections with respect to the strain of the layer, over the points.
+    std::vector< Matrix3xN > condenseOverStrain( const std::vector< Point< nStrain > >& points ) const
+    {
+      const int nq = static_cast< int >( points.size() );
+
+      std::vector< Matrix3xN > B( nq );
+      for ( int q = 0; q < nq; q++ )
+        B[q] = St_ * points[q].D;
+      return ThicknessMicroproblem::condensedCorrectionTangents< nStrain >( layer_.weights, points, B );
+    }
+
+    /// Terms of the closure, linear in the difference of the surface gradients, for the derivative of the
+    /// correction and the tangent of the points.
+    ClosureTerms closure( const std::vector< Matrix3xN >& dw,
+                          const std::vector< MatrixNxN >& D,
+                          const Eigen::Matrix3d&          surfaceGradientDifference ) const
+    {
+      const int    nq  = static_cast< int >( layer_.weights.size() );
+      const auto&  n   = layer_.normal;
+      const double h   = layer_.thickness;
+      const double ell = layer_.normalSeparation;
+
+      ClosureTerms terms;
+      terms.strain.assign( nq, StrainVector::Zero() );
+      terms.force.assign( nq, Eigen::Vector3d::Zero() );
+
+      std::vector< Eigen::Matrix3d > derivativeOfCorrection( nq, Eigen::Matrix3d::Zero() ); // column r: d_r w_q
+      std::vector< Eigen::Vector3d > source( nq, Eigen::Vector3d::Zero() );
+      for ( int r = 0; r < 3; r++ ) {
+        // tangential derivative of the strain-like measure along e_r
+        const Eigen::Vector3d         column = surfaceGradientDifference.col( r );
+        Eigen::Matrix< double, 9, 1 > gradient;
+        for ( int k = 0; k < 3; k++ )
+          for ( int l = 0; l < 3; l++ )
+            gradient( 3 * k + l ) = column( k ) * n( l ) / ell;
+        const StrainVector s = layer_.gradientToStrain * gradient;
+
+        for ( int q = 0; q < nq; q++ ) {
+          const Eigen::Vector3d dwr          = dw[q] * s;
+          derivativeOfCorrection[q].col( r ) = dwr;
+
+          // derivative of the stress along e_r, of which the divergence drives the traction through the thickness
+          const Eigen::Matrix< double, 9, 1 > dStress = layer_.stressToVector * ( D[q] * ( s + S_ * dwr ) );
+          for ( int k = 0; k < 3; k++ )
+            source[q]( k ) += h * dStress( 3 * k + r );
+        }
+      }
+
+      for ( int q = 0; q < nq; q++ ) {
+        Eigen::Matrix3d gradient = Eigen::Matrix3d::Zero();
+        for ( int p = 0; p < nq; p++ ) {
+          terms.force[q] += ( *layer_.cumulativeWeights )( q, p ) * source[p];
+          gradient += ( *layer_.cumulativeWeights )( q, p ) * h * derivativeOfCorrection[p];
+        }
+        // the tangential gradient of u1 as a gradient: entry (k, l) is the derivative of u1_k along e_l
+        Eigen::Matrix< double, 9, 1 > flat;
+        for ( int k = 0; k < 3; k++ )
+          for ( int l = 0; l < 3; l++ )
+            flat( 3 * k + l ) = gradient( k, l );
+        terms.strain[q] = layer_.gradientToStrain * flat;
+      }
+      return terms;
+    }
+
+    const Layer< nStrain >& layer_; ///< geometry and integration points of the layer
+    Vector21d               x_;     ///< generalized strain
+    Eigen::Matrix3d         dA_;    ///< difference A+ - A- of the surface gradients
+
+    MatrixNx3 S_;  ///< operator of the correction
+    Matrix9x3 N9_; ///< normal fibre operator
+    Matrix3xN St_; ///< operator of the traction
+
+    std::vector< Matrix9x21 >   Bx_;     ///< derivative of the gradient of a point with respect to x
+    std::vector< MatrixNx21 >   EBx_;    ///< derivative of the strain-like measure of a point with respect to x
+    std::vector< StrainVector > strain_; ///< strain-like measure of a point without correction and closure
+
+    std::vector< Point< nStrain > > points_;       ///< responses of the points at the solution
+    std::vector< MatrixNxN >        tangentPoint_; ///< tangent of the points at the solution
+
+    std::vector< MatrixNx21 > closureStrainTangent_; ///< derivative of the closure strain with respect to x
+    std::vector< Matrix3x21 > closureForceTangent_;  ///< derivative of the closure force with respect to x
+  };
+
+  /**
+   * @brief Solve the microproblem of a layer and compute its generalized stress and tangent.
+   *
+   * @tparam nStrain number of components of the strain-like measure of a point
+   * @tparam EvaluateBulk callable `PointResponse< nStrain >( int q, const StrainVector& strain )`
    * @param[in] layer geometry and integration points of the layer
    * @param[in] x generalized strain: increments for small strains, totals for finite strains
    * @param[in] initialCorrections first estimate of the corrections of all points
@@ -138,218 +470,15 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
                              double                                tolerance,
                              EvaluateBulk&&                        evaluateBulk )
   {
-    using namespace Marmot::Materials::TwoSidedInterface;
+    LayerSolver< nStrain > solver( layer, x );
+    solver.solve( initialCorrections, tolerance, std::forward< EvaluateBulk >( evaluateBulk ) );
 
-    using StrainVector = Eigen::Matrix< double, nStrain, 1 >;
-    using Matrix3xN    = Eigen::Matrix< double, 3, nStrain >;
-    using MatrixNxN    = Eigen::Matrix< double, nStrain, nStrain >;
-    using MatrixNx21   = Eigen::Matrix< double, nStrain, 21 >;
-    using Matrix3x21   = Eigen::Matrix< double, 3, 21 >;
-    using Matrix9x21   = Eigen::Matrix< double, 9, 21 >;
-
-    const int nq = static_cast< int >( layer.weights.size() );
-
-    const Eigen::Vector3d& n   = layer.normal;
-    const double           ell = layer.normalSeparation;
-    const double           h   = layer.thickness;
-
-    const Matrix9x9 I9   = Matrix9x9::Identity();
-    const Matrix9x9 Hsrf = surfaceToGradient( n, layer.tangentialSeparation, ell ) - I9;
-    const Matrix9x3 Bw   = jumpToGradient( n, ell );
-    const Matrix9x3 N9   = jumpToGradient( n, 1.0 );
-
-    // operator of the correction and of the traction, the transposed one of the stress is its 3 x nStrain image
-    const Eigen::Matrix< double, nStrain, 3 > S  = layer.gradientToStrain * N9;
-    Eigen::Matrix< double, 3, 9 >             Rt = Eigen::Matrix< double, 3, 9 >::Zero();
-    for ( int i = 0; i < 3; i++ )
-      for ( int b = 0; b < 3; b++ )
-        Rt( i, 3 * i + b ) = n( b );
-    const Matrix3xN St = Rt * layer.stressToVector;
-
-    // generalized strain operator and strain of every point
-    std::vector< Matrix9x21 >   Bx( nq );
-    std::vector< MatrixNx21 >   EBx( nq );
-    std::vector< StrainVector > strain( nq );
-    for ( int q = 0; q < nq; q++ ) {
-      const double y = layer.positions[q];
-      Bx[q].setZero();
-      Bx[q].template block< 9, 3 >( 0, 0 )  = Bw;
-      Bx[q].template block< 9, 9 >( 0, 3 )  = y * I9 + 0.5 * Hsrf;
-      Bx[q].template block< 9, 9 >( 0, 12 ) = ( 1. - y ) * I9 + 0.5 * Hsrf;
-      EBx[q]                                = layer.gradientToStrain * Bx[q];
-      strain[q]                             = layer.strainOffset + EBx[q] * x;
-    }
-
-    const Eigen::Matrix3d dA = Eigen::Map< const Matrix3dRowMajor >( x.data() + 3 ) -
-                               Eigen::Map< const Matrix3dRowMajor >( x.data() + 12 );
-
-    struct ClosureTerms {
-      std::vector< StrainVector >    strain; ///< strain of the tangential gradient of the correction
-      std::vector< Eigen::Vector3d > force;  ///< change of the traction from the bottom to the point
-    };
-
-    // Terms of the closure of the tangential gradient of the correction, linear in the difference of the surface
-    // gradients, for the derivative of the correction and the tangent of the points.
-    const auto closure = [&]( const std::vector< Matrix3xN >& dw,
-                              const std::vector< MatrixNxN >& D,
-                              const Eigen::Matrix3d&          surfaceGradientDifference ) {
-      ClosureTerms terms;
-      terms.strain.assign( nq, StrainVector::Zero() );
-      terms.force.assign( nq, Eigen::Vector3d::Zero() );
-
-      std::vector< Eigen::Matrix3d > derivativeOfCorrection( nq, Eigen::Matrix3d::Zero() ); // column r: d_r w_q
-      std::vector< Eigen::Vector3d > source( nq, Eigen::Vector3d::Zero() );
-      for ( int r = 0; r < 3; r++ ) {
-        // tangential derivative of the strain-like measure along e_r
-        const Eigen::Vector3d         column = surfaceGradientDifference.col( r );
-        Eigen::Matrix< double, 9, 1 > gradient;
-        for ( int k = 0; k < 3; k++ )
-          for ( int l = 0; l < 3; l++ )
-            gradient( 3 * k + l ) = column( k ) * n( l ) / ell;
-        const StrainVector s = layer.gradientToStrain * gradient;
-
-        for ( int q = 0; q < nq; q++ ) {
-          const Eigen::Vector3d dwr          = dw[q] * s;
-          derivativeOfCorrection[q].col( r ) = dwr;
-
-          // derivative of the stress along e_r, of which the divergence drives the traction through the thickness
-          const Eigen::Matrix< double, 9, 1 > dStress = layer.stressToVector * ( D[q] * ( s + S * dwr ) );
-          for ( int k = 0; k < 3; k++ )
-            source[q]( k ) += h * dStress( 3 * k + r );
-        }
-      }
-
-      for ( int q = 0; q < nq; q++ ) {
-        Eigen::Matrix3d gradient = Eigen::Matrix3d::Zero();
-        for ( int p = 0; p < nq; p++ ) {
-          terms.force[q] += ( *layer.cumulativeWeights )( q, p ) * source[p];
-          gradient += ( *layer.cumulativeWeights )( q, p ) * h * derivativeOfCorrection[p];
-        }
-        // the tangential gradient of u1 as a gradient: entry (k, l) is the derivative of u1_k along e_l
-        Eigen::Matrix< double, 9, 1 > flat;
-        for ( int k = 0; k < 3; k++ )
-          for ( int l = 0; l < 3; l++ )
-            flat( 3 * k + l ) = gradient( k, l );
-        terms.strain[q] = layer.gradientToStrain * flat;
-      }
-      return terms;
-    };
-
-    const auto makeEvaluate = [&]( const ClosureTerms& terms ) {
-      return [&, terms]( int q, const Eigen::Vector3d& w ) {
-        auto bulk = evaluateBulk( q, StrainVector( strain[q] + terms.strain[q] + S * w ) );
-
-        Point< nStrain > point;
-        point.w      = w;
-        point.stress = bulk.stress;
-        point.D      = bulk.D;
-        point.state  = std::move( bulk.state );
-        point.a      = St * point.stress + terms.force[q];
-
-        point.Qinv = ( St * point.D * S ).inverse();
-        if ( !point.Qinv.allFinite() )
-          throw StressUpdateFailed( MakeString() << __PRETTY_FUNCTION__
-                                                 << ": the acoustic tensor of an integration point through the "
-                                                    "thickness is singular" );
-        return point;
-      };
-    };
-
-    const auto condenseOverStrain = [&]( const std::vector< Point< nStrain > >& points ) {
-      std::vector< Matrix3xN > B( nq );
-      for ( int q = 0; q < nq; q++ )
-        B[q] = St * points[q].D;
-      return ThicknessMicroproblem::condensedCorrectionTangents< nStrain >( layer.weights, points, B );
-    };
-
-    const bool closureActive = layer.tangentialGradient && dA.cwiseAbs().maxCoeff() > 0.;
-
-    ClosureTerms             terms;
-    std::vector< Matrix3xN > dwStrain( nq );
-    std::vector< MatrixNxN > tangentPoint( nq );
-
-    ClosureTerms none;
-    none.strain.assign( nq, StrainVector::Zero() );
-    none.force.assign( nq, Eigen::Vector3d::Zero() );
-
-    if ( closureActive ) {
-      // the derivative of the correction of the state at the start of the increment starts the iteration
-      const auto                      evaluateNone = makeEvaluate( none );
-      std::vector< Point< nStrain > > start;
-      start.reserve( nq );
-      for ( int q = 0; q < nq; q++ )
-        start.push_back( evaluateNone( q, initialCorrections[q] ) );
-
-      dwStrain = condenseOverStrain( start );
-      for ( int q = 0; q < nq; q++ )
-        tangentPoint[q] = start[q].D;
-      terms = closure( dwStrain, tangentPoint, dA );
-    }
-    else {
-      terms = none;
-    }
+    const auto dw = solver.condensedCorrections( {} );
 
     Solution< nStrain > solution;
-    auto&               points = solution.points;
-
-    for ( int pass = 0; pass < maxClosurePasses; pass++ ) {
-      points   = ThicknessMicroproblem::solve< Point< nStrain > >( layer.weights,
-                                                                 makeEvaluate( terms ),
-                                                                 initialCorrections,
-                                                                 tolerance );
-      dwStrain = condenseOverStrain( points );
-      for ( int q = 0; q < nq; q++ )
-        tangentPoint[q] = points[q].D;
-
-      if ( !closureActive )
-        break;
-
-      const ClosureTerms updated = closure( dwStrain, tangentPoint, dA );
-
-      double change = 0.;
-      double scale  = 0.;
-      for ( int q = 0; q < nq; q++ ) {
-        change = std::max( change, ( updated.strain[q] - terms.strain[q] ).cwiseAbs().maxCoeff() );
-        change = std::max( change, ( updated.force[q] - terms.force[q] ).cwiseAbs().maxCoeff() );
-        scale  = std::max( scale, updated.strain[q].cwiseAbs().maxCoeff() );
-        scale  = std::max( scale, updated.force[q].cwiseAbs().maxCoeff() );
-      }
-      terms = updated;
-      if ( change <= closureTolerance * scale + 1e-300 )
-        break;
-    }
-
-    // linear dependence of the closure terms on the surface gradients A+ and A-, with the derivative of the
-    // correction of the converged state frozen
-    std::vector< MatrixNx21 > closureStrainTangent( nq, MatrixNx21::Zero() );
-    std::vector< Matrix3x21 > closureForceTangent( nq, Matrix3x21::Zero() );
-    for ( int k = 0; k < ( layer.tangentialGradient ? 9 : 0 ); k++ ) {
-      Eigen::Matrix3d unit        = Eigen::Matrix3d::Zero();
-      unit( k / 3, k % 3 )        = 1.0;
-      const ClosureTerms response = closure( dwStrain, tangentPoint, unit );
-      for ( int q = 0; q < nq; q++ ) {
-        closureStrainTangent[q].col( 3 + k )  = response.strain[q];
-        closureStrainTangent[q].col( 12 + k ) = -response.strain[q];
-        closureForceTangent[q].col( 3 + k )   = response.force[q];
-        closureForceTangent[q].col( 12 + k )  = -response.force[q];
-      }
-    }
-
-    // condensation of the corrections over the generalized strain
-    std::vector< Matrix3x21 > B( nq );
-    for ( int q = 0; q < nq; q++ )
-      B[q] = St * points[q].D * ( EBx[q] + closureStrainTangent[q] ) + closureForceTangent[q];
-    const auto dw = ThicknessMicroproblem::condensedCorrectionTangents< 21 >( layer.weights, points, B );
-
-    solution.p = Vector21d::Zero();
-    solution.K = Matrix21d::Zero();
-    for ( int q = 0; q < nq; q++ ) {
-      const double                         scale   = h * layer.weights[q];
-      const Eigen::Matrix< double, 9, 21 > dStress = layer.stressToVector * points[q].D *
-                                                     ( EBx[q] + closureStrainTangent[q] + S * dw[q] );
-      solution.p += scale * Bx[q].transpose() * ( layer.stressToVector * points[q].stress );
-      solution.K += scale * Bx[q].transpose() * dStress;
-    }
+    solution.points = solver.points();
+    solution.p      = solver.stress();
+    solution.K      = solver.tangent( dw );
     return solution;
   }
 
