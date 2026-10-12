@@ -181,4 +181,25 @@ namespace Marmot::Elements::Registration {
                        FullIntegration,
                        GYSInterfaceFiniteElementFiniteStrain< 3, 16, 4 >::SectionType::Interface >() );
 
+  const static bool HYLINE2UL_isRegistered = MarmotElementFactory::
+    registerElement( "HYLINE2UL",
+                     makeFactoryFunction<
+                       GradedYInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                       FullIntegration,
+                       GradedYInterfaceFiniteElementFiniteStrain< 2, 4 >::SectionType::Interface >() );
+
+  const static bool HYQUAD4UL_isRegistered = MarmotElementFactory::
+    registerElement( "HYQUAD4UL",
+                     makeFactoryFunction<
+                       GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                       FullIntegration,
+                       GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >::SectionType::Interface >() );
+
+  const static bool HYQUAD8UL_isRegistered = MarmotElementFactory::
+    registerElement( "HYQUAD8UL",
+                     makeFactoryFunction<
+                       GradedYInterfaceFiniteElementFiniteStrain< 3, 16 >,
+                       FullIntegration,
+                       GradedYInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
+
 } // namespace Marmot::Elements::Registration

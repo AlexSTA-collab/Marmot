@@ -149,7 +149,8 @@ namespace {
                                              const std::vector< double >&       materialProperties,
                                              const Eigen::VectorXd&             Q,
                                              const std::string&                 context,
-                                             const std::string&                 materialName = "COMPRESSIBLENEOHOOKE" )
+                                             const std::string&                 materialName = "COMPRESSIBLENEOHOOKE",
+                                             double                             tolerance    = 1e-6 )
   {
     constexpr int nDofs = ElementType::sizeLoadVector;
 
@@ -174,7 +175,7 @@ namespace {
     }
 
     const double error = ( finiteDifference - base.tangent ).norm() / std::max( 1.0, base.tangent.norm() );
-    throwExceptionOnFailure( error < 1e-6,
+    throwExceptionOnFailure( error < tolerance,
                              context +
                                ": the tangent does not match the finite difference of the residual, "
                                "relative error " +
@@ -917,6 +918,123 @@ namespace {
                                                "graded 2D, inclined" );
   }
 
+  /// the card of a two-sided graded layer: the thickness, the mode 2 with two stations and their bulk properties
+  std::vector< double > gradedTwoSidedCard( double thickness, double contrast, int tangentialGradient )
+  {
+    return { thickness,
+             2.0,
+             1.0,
+             2.0,
+             3.0,
+             0.0,
+             3500.0,
+             1500.0,
+             1.0,
+             1.0,
+             contrast * 3500.0,
+             contrast * 1500.0,
+             1.0,
+             double( tangentialGradient ) };
+  }
+
+  /// With two points at the faces and without the tangential gradient, the element is the equilibrated element.
+  void testGradedEquilibratedElementIsTheEquilibratedElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    const auto compare = []( const Evaluation& expected, const Evaluation& actual, const std::string& context ) {
+      throwExceptionOnFailure( ( expected.residual - actual.residual ).norm() <=
+                                 1e-9 * std::max( 1.0, expected.residual.norm() ),
+                               context + ": the residual is not the one of the equilibrated element." );
+      throwExceptionOnFailure( ( expected.tangent - actual.tangent ).norm() <=
+                                 1e-9 * std::max( 1.0, expected.tangent.norm() ),
+                               context + ": the tangent is not the one of the equilibrated element." );
+    };
+
+    {
+      const double thickness = gap * std::cos( angle );
+      const auto   Q         = makeDisplacements< 24 >( 3e-2, 1 );
+      compare( evaluate< YInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                                              equilibratedNeoHookeProperties(
+                                                                                thickness ),
+                                                                              Q ),
+               evaluate< GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                                                    gradedTwoSidedCard( thickness,
+                                                                                                        1.0,
+                                                                                                        0 ),
+                                                                                    Q ),
+               "3D, inclined" );
+    }
+    {
+      const auto Q = makeDisplacements< 8 >( 5e-2, 3 );
+      compare( evaluate< YInterfaceFiniteElementFiniteStrain< 2, 4 >, 2, 4 >( inclinedLine( angle, gap ),
+                                                                              equilibratedNeoHookeProperties(
+                                                                                gap * std::cos( angle ) ),
+                                                                              Q ),
+               evaluate< GradedYInterfaceFiniteElementFiniteStrain< 2, 4 >, 2, 4 >( inclinedLine( angle, gap ),
+                                                                                    gradedTwoSidedCard( gap * std::cos(
+                                                                                                                angle ),
+                                                                                                        1.0,
+                                                                                                        0 ),
+                                                                                    Q ),
+               "2D, inclined" );
+    }
+  }
+
+  /// The tangent of the two-sided graded element, and a rigid rotation of it.
+  void testGradedEquilibratedElementTangentAndRotation()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    // exact without the closure of the tangential gradient, and to the order of the strain with it
+    for ( const int closure : { 0, 1 } )
+      assertTangentMatchesFiniteDifference< GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                                            3,
+                                            8 >( inclinedQuadrilateral( angle, gap ),
+                                                 gradedTwoSidedCard( gap * std::cos( angle ), 6.0, closure ),
+                                                 makeDisplacements< 24 >( 3e-2, 1 ),
+                                                 closure ? "graded two-sided 3D with closure"
+                                                         : "graded two-sided 3D without closure",
+                                                 "COMPRESSIBLENEOHOOKE",
+                                                 closure ? 5e-2 : 1e-6 );
+
+    assertTangentMatchesFiniteDifference< GradedYInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                                          2,
+                                          4 >( inclinedLine( angle, gap ),
+                                               gradedTwoSidedCard( gap * std::cos( angle ), 6.0, 1 ),
+                                               makeDisplacements< 8 >( 5e-2, 3 ),
+                                               "graded two-sided 2D with closure",
+                                               "COMPRESSIBLENEOHOOKE",
+                                               5e-2 );
+
+    // a rigid rotation of a stack with a stiffness contrast is stress free
+    const double theta       = 0.3;
+    const auto   coordinates = inclinedQuadrilateral( angle, gap );
+
+    Eigen::Matrix3d R;
+    R << std::cos( theta ), 0.0, std::sin( theta ), 0.0, 1.0, 0.0, -std::sin( theta ), 0.0, std::cos( theta );
+
+    DofVector< 3, 8 > Q;
+    for ( int node = 0; node < 8; ++node ) {
+      const Eigen::Vector3d X( coordinates[3 * node], coordinates[3 * node + 1], coordinates[3 * node + 2] );
+      Q.segment< 3 >( 3 * node ) = ( R - Eigen::Matrix3d::Identity() ) * X;
+    }
+
+    const auto card    = gradedTwoSidedCard( gap * std::cos( angle ), 6.0, 1 );
+    const auto rotated = evaluate< GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates, card, Q );
+    const auto
+      stretched = evaluate< GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( coordinates,
+                                                                                       card,
+                                                                                       makeDisplacements< 24 >( 1e-2,
+                                                                                                                1 ) );
+
+    throwExceptionOnFailure( rotated.residual.norm() < 1e-9 * stretched.residual.norm(),
+                             "A rigid rotation of a graded two-sided interface must be stress free, residual " +
+                               std::to_string( rotated.residual.norm() ) );
+  }
+
   /// the card of the graded gradient-enhanced layer: the thickness, the mode 2, the stations and their bulk properties
   std::vector< double > stationCard( double                       thickness,
                                      const std::vector< double >& positions,
@@ -1088,8 +1206,9 @@ namespace {
     for ( const std::string name :
           { "ILINE2UL",     "IQUAD4UL",     "IQUAD8UL",     "YILINE2UL",    "YIQUAD4UL",    "YIQUAD8UL",
             "GYILINE2UL",   "GYIQUAD4UL",   "GYIQUAD8UL",   "GY2ILINE2UL",  "GY2IQUAD4UL",  "GY2IQUAD8UL",
-            "HILINE2UL",    "HIQUAD4UL",    "HIQUAD8UL",    "GYS2ILINE2UL", "GYS2IQUAD4UL", "GYS2IQUAD8UL",
-            "GYS3ILINE2UL", "GYS3IQUAD4UL", "GYS3IQUAD8UL", "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL" } )
+            "HILINE2UL",    "HIQUAD4UL",    "HIQUAD8UL",    "HYLINE2UL",    "HYQUAD4UL",    "HYQUAD8UL",
+            "GYS2ILINE2UL", "GYS2IQUAD4UL", "GYS2IQUAD8UL", "GYS3ILINE2UL", "GYS3IQUAD4UL", "GYS3IQUAD8UL",
+            "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -1119,6 +1238,8 @@ int main()
                                                    testMaterialAccessors,
                                                    testGradedElementEqualsThePlainElementForAHomogeneousLayer,
                                                    testGradedElementTangentMatchesFiniteDifference,
+                                                   testGradedEquilibratedElementIsTheEquilibratedElement,
+                                                   testGradedEquilibratedElementTangentAndRotation,
                                                    testStationFieldsElement,
                                                    testTwoStationsAreTheFaceFieldsElement,
                                                    testStationCountMismatchIsRefused,
