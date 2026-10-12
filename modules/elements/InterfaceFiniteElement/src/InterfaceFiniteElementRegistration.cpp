@@ -78,4 +78,22 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           GradedInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
 
+  const static bool HYLINE2_isRegistered = MarmotElementFactory::
+    registerElement( "HYLINE2",
+                     makeFactoryFunction< GradedYInterfaceFiniteElement< 2, 4 >,
+                                          FullIntegration,
+                                          GradedYInterfaceFiniteElement< 2, 4 >::SectionType::Interface >() );
+
+  const static bool HYQUAD4_isRegistered = MarmotElementFactory::
+    registerElement( "HYQUAD4",
+                     makeFactoryFunction< GradedYInterfaceFiniteElement< 3, 8 >,
+                                          FullIntegration,
+                                          GradedYInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
+
+  const static bool HYQUAD8_isRegistered = MarmotElementFactory::
+    registerElement( "HYQUAD8",
+                     makeFactoryFunction< GradedYInterfaceFiniteElement< 3, 16 >,
+                                          FullIntegration,
+                                          GradedYInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
+
 } // namespace Marmot::Elements::Registration

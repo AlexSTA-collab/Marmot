@@ -54,11 +54,16 @@ namespace Marmot::Materials {
     if ( nGauss < 1 || m < 1 || K < ( mode == 0 ? 1 : 2 ) )
       throw std::invalid_argument( "ThicknessProfile: nGauss and m must be positive, and K at least one layer or two "
                                    "stations" );
-    if ( nMaterialProperties != 5 + K * ( 1 + m ) )
+    if ( nMaterialProperties != 5 + K * ( 1 + m ) && nMaterialProperties != 6 + K * ( 1 + m ) )
       throw std::invalid_argument( "ThicknessProfile: " + std::to_string( 5 + K * ( 1 + m ) ) +
-                                   " material properties are required for K = " + std::to_string( K ) +
-                                   " and m = " + std::to_string( m ) + ", but " +
+                                   " material properties (and optionally the flag of the tangential gradient) are "
+                                   "required for K = " +
+                                   std::to_string( K ) + " and m = " + std::to_string( m ) + ", but " +
                                    std::to_string( nMaterialProperties ) + " are given" );
+
+    // optional last property: 0 switches the tangential gradient of the correction off, anything else keeps it
+    if ( nMaterialProperties == 6 + K * ( 1 + m ) )
+      profile.tangentialGradient = matProperties[5 + K * ( 1 + m )] != 0.;
 
     const auto position = [&]( int k ) { return matProperties[5 + k * ( 1 + m )]; };
     const auto property = [&]( int k, int i ) { return matProperties[5 + k * ( 1 + m ) + 1 + i]; };
@@ -106,6 +111,15 @@ namespace Marmot::Materials {
             point.properties[i] = property( k, i );
           profile.points.push_back( std::move( point ) );
         }
+
+        // the integral up to a station is the trapezoidal rule over the intervals below it
+        const int nStations = K;
+        profile.cumulativeWeights.assign( nStations, std::vector< double >( nStations, 0. ) );
+        for ( int s = 1; s < nStations; s++ ) {
+          for ( int j = 0; j < s; j++ )
+            profile.cumulativeWeights[s][j] = profile.points[j].weight;
+          profile.cumulativeWeights[s][s] = 0.5 * ( position( s ) - position( s - 1 ) );
+        }
         return profile;
       }
     }
@@ -124,6 +138,22 @@ namespace Marmot::Materials {
           point.properties[i] = ( 1. - s ) * property( segment.kA, i ) + s * property( segment.kB, i );
 
         profile.points.push_back( std::move( point ) );
+      }
+    }
+
+    // the integral up to a point is the one over the segments below it, and the part of its own segment below the
+    // point, for which the mean over the segment is taken
+    const int nPoints = static_cast< int >( profile.points.size() );
+    profile.cumulativeWeights.assign( nPoints, std::vector< double >( nPoints, 0. ) );
+    for ( std::size_t iSegment = 0; iSegment < segments.size(); iSegment++ ) {
+      const auto& segment = segments[iSegment];
+      for ( int g = 0; g < nGauss; g++ ) {
+        const int    q        = static_cast< int >( iSegment ) * nGauss + g;
+        const double fraction = ( profile.points[q].position - segment.a ) / ( segment.b - segment.a );
+        for ( int p = 0; p < q - g; p++ )
+          profile.cumulativeWeights[q][p] = profile.points[p].weight;
+        for ( int p = q - g; p < q - g + nGauss; p++ )
+          profile.cumulativeWeights[q][p] = fraction * profile.points[p].weight;
       }
     }
     return profile;

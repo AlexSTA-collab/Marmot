@@ -24,85 +24,6 @@ using namespace Marmot;
 using namespace Marmot::FastorIndices;
 using namespace Marmot::FastorStandardTensors;
 
-namespace {
-
-  /**
-   * @brief Operator S that maps a vector w to the strain sym( w (x) n ) in Voigt notation.
-   *
-   * With the engineering shear strains of the Voigt notation, the transpose of S maps a stress in Voigt notation
-   * to the traction sigma n.
-   *
-   * @param[in] n the normal
-   * @return the 6x3 operator
-   */
-  Eigen::Matrix< double, 6, 3 > normalStrainOperator( const Eigen::Vector3d& n )
-  {
-    Eigen::Matrix< double, 6, 3 > S;
-    for ( int j = 0; j < 3; j++ ) {
-      Eigen::Vector3d e            = Eigen::Vector3d::Zero();
-      e( j )                       = 1.0;
-      const Eigen::Matrix3d strain = 0.5 * ( e * n.transpose() + n * e.transpose() );
-      S.col( j )                   = ContinuumMechanics::VoigtNotation::strainToVoigt( strain );
-    }
-    return S;
-  }
-
-  /// Response of an integration point through the thickness to the strain of a trial value of w.
-  struct PointEvaluation {
-    Eigen::Vector3d       w = Eigen::Vector3d::Zero(); ///< first-order strain correction w = du1/dy
-    Vector6d              sigma;                       ///< stress
-    Matrix6d              D;                           ///< tangent
-    Eigen::Matrix3d       Qinv;                        ///< inverse of the acoustic tensor
-    Eigen::Vector3d       a;                           ///< traction sigma n
-    std::vector< double > state;                       ///< stress and state variables after the update
-  };
-
-} // namespace
-
-MarmotGradedInterfaceMaterialHypoElastic::MarmotGradedInterfaceMaterialHypoElastic( const std::string& materialName,
-                                                                                    const double*      matProperties,
-                                                                                    int nMaterialProperties,
-                                                                                    int materialNumber_ )
-  : materialNumber( materialNumber_ ), h( checkedMaterialProperty( matProperties, nMaterialProperties, 0 ) )
-{
-  auto profile = Marmot::Materials::ThicknessProfile::fromMaterialProperties( matProperties, nMaterialProperties );
-
-  std::size_t offset = 0;
-  for ( auto& profilePoint : profile.points ) {
-    ThicknessPoint point;
-    point.weight     = profilePoint.weight;
-    point.position   = profilePoint.position;
-    point.properties = std::move( profilePoint.properties );
-
-    point.material = std::unique_ptr< MarmotMaterialHypoElastic >(
-      MarmotLibrary::MarmotMaterialHypoElasticFactory::createMaterial( materialName,
-                                                                       point.properties.data(),
-                                                                       static_cast< int >( point.properties.size() ),
-                                                                       materialNumber ) );
-    if ( !point.material )
-      throw std::invalid_argument( "Unknown base material for MarmotGradedInterfaceMaterialHypoElastic: " +
-                                   materialName );
-
-    point.nBaseStateVars = point.material->getNumberOfRequiredStateVars();
-    point.offset         = offset;
-    offset += 6 + point.nBaseStateVars;
-    points.push_back( std::move( point ) );
-  }
-
-  for ( std::size_t q = 0; q < points.size(); q++ ) {
-    stateLayout.add( "stress" + std::to_string( q ), 6 );
-    stateLayout.add( "baseMaterialStateVars" + std::to_string( q ), points[q].nBaseStateVars );
-  }
-  stateLayout.finalize();
-}
-
-void MarmotGradedInterfaceMaterialHypoElastic::setCharacteristicElementLength( double length )
-{
-  characteristicElementLength = length;
-  for ( auto& point : points )
-    point.material->setCharacteristicElementLength( length );
-}
-
 void MarmotGradedInterfaceMaterialHypoElastic::computeStress( State&               state,
                                                               Tangents&            tangents,
                                                               const Deformation&   deformation,
@@ -136,23 +57,13 @@ void MarmotGradedInterfaceMaterialHypoElastic::computeStress( State&            
 
   // Evaluate the point q for the trial value w of the correction, starting from the state of the previous increment.
   const auto evaluate = [&]( int q, const Eigen::Vector3d& w ) {
-    const auto& point = points[q];
+    auto bulk = evaluateBulk( q, state.stateVars, dE0 + S * w, timeInfo );
 
     PointEvaluation evaluation;
-    evaluation.w = w;
-    evaluation.state.assign( state.stateVars + point.offset,
-                             state.stateVars + point.offset + 6 + point.nBaseStateVars );
-
-    MarmotMaterialHypoElastic::state3D baseState;
-    baseState.stress    = Eigen::Map< const Vector6d >( evaluation.state.data() );
-    baseState.stateVars = evaluation.state.data() + 6;
-
-    evaluation.D.setZero();
-    point.material->computeStress( baseState, evaluation.D, dE0 + S * w, timeInfo );
-
-    Eigen::Map< Vector6d > storedStress( evaluation.state.data() );
-    storedStress     = baseState.stress;
-    evaluation.sigma = baseState.stress;
+    evaluation.w     = w;
+    evaluation.sigma = bulk.sigma;
+    evaluation.D     = bulk.D;
+    evaluation.state = std::move( bulk.state );
     evaluation.a     = St * evaluation.sigma;
 
     evaluation.Qinv = ( St * evaluation.D * S ).inverse();
@@ -200,20 +111,4 @@ void MarmotGradedInterfaceMaterialHypoElastic::computeStress( State&            
 
   mapEigenToFastor( state.surfaceStress ) = h * ContinuumMechanics::VoigtNotation::voigtToStress( meanStress );
   state.force                             = ( 1. / h ) * Fastor::einsum< ij, j, to_i >( state.surfaceStress, normal );
-}
-
-void MarmotGradedInterfaceMaterialHypoElastic::initializeYourself( double* stateVars, int )
-{
-  for ( auto& point : points ) {
-    std::fill( stateVars + point.offset, stateVars + point.offset + 6, 0.0 );
-    point.material->initializeYourself( stateVars + point.offset + 6, static_cast< int >( point.nBaseStateVars ) );
-  }
-}
-
-double MarmotGradedInterfaceMaterialHypoElastic::getDensity()
-{
-  double density = 0.;
-  for ( auto& point : points )
-    density += point.weight * point.material->getDensity( nullptr );
-  return density;
 }

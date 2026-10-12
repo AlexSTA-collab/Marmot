@@ -28,13 +28,10 @@
 #pragma once
 
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedInterfaceMaterialHypoElasticBase.h"
 #include "Marmot/MarmotInterfaceMaterialHypoElastic.h"
-#include "Marmot/MarmotMaterialHypoElastic.h"
-#include "Marmot/MarmotStateHelpers.h"
 
-#include <memory>
 #include <string>
-#include <vector>
 
 /**
  * @brief Hypoelastic interface material with a stiffness that varies through the thickness of the layer.
@@ -102,7 +99,7 @@
  * @note Like the other interface materials, this class is the material of the interface finite elements (see
  * Marmot::Elements::DisplacementJumpFormulation), and the name given to the element is the name of the bulk material.
  */
-class MarmotGradedInterfaceMaterialHypoElastic {
+class MarmotGradedInterfaceMaterialHypoElastic : public MarmotGradedInterfaceMaterialHypoElasticBase {
 
 public:
   using Tensor3d    = MarmotInterfaceMaterialHypoElastic::Tensor3d;    ///< first order tensor in 3D
@@ -116,15 +113,6 @@ public:
   using Tangents      = MarmotInterfaceMaterialHypoElastic::Tangents;      ///< tangent terms, as in the base
   using Deformation   = MarmotInterfaceMaterialHypoElastic::Deformation;   ///< interface kinematics, as in the base
   using TimeIncrement = MarmotInterfaceMaterialHypoElastic::TimeIncrement; ///< time data, as in the base
-
-  /// number of the material
-  const int materialNumber;
-
-  /// Layout of the state variables
-  MarmotStateLayoutDynamic stateLayout;
-
-  /// Characteristic element length
-  double characteristicElementLength = 0.0;
 
   /**
    * @brief Construct the graded interface material from a registered hypoelastic bulk material.
@@ -141,17 +129,10 @@ public:
   MarmotGradedInterfaceMaterialHypoElastic( const std::string& materialName,
                                             const double*      matProperties,
                                             int                nMaterialProperties,
-                                            int                materialNumber_ );
-
-  /// Default destructor
-  virtual ~MarmotGradedInterfaceMaterialHypoElastic() = default;
-
-  /**
-   * @brief Set the characteristic element length at the considered quadrature point.
-   *
-   * @param[in] length characteristic length, handed to all bulk materials
-   */
-  void setCharacteristicElementLength( double length );
+                                            int                materialNumber_ )
+    : MarmotGradedInterfaceMaterialHypoElasticBase( materialName, matProperties, nMaterialProperties, materialNumber_ )
+  {
+  }
 
   /**
    * @brief Solve the microproblem of the layer and compute the interface response.
@@ -168,59 +149,4 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
-
-  /**
-   * @brief Get a view to the state variables.
-   *
-   * @param[in] stateName name of the state variable
-   * @param[in] stateVars pointer to the state variable array
-   * @return view to the requested state variable
-   */
-  StateView getStateView( const std::string& stateName, double* stateVars ) const
-  {
-    return stateLayout.getStateView( stateVars, stateName );
-  }
-
-  /**
-   * @brief Get the total number of required state variables.
-   *
-   * @return number of state variables of all integration points through the thickness
-   */
-  virtual int getNumberOfRequiredStateVars() const { return stateLayout.totalSize(); }
-
-  /**
-   * @brief Initialize the state variables: zero stress and initial state of every bulk material.
-   *
-   * @param[in,out] stateVars state variables of the material point
-   * @param[in] nStateVars number of state variables, which this material does not need
-   */
-  virtual void initializeYourself( double* stateVars, int nStateVars );
-
-  /**
-   * @brief Get the density of the material.
-   *
-   * @return through-thickness mean of the density of the bulk materials
-   */
-  virtual double getDensity();
-
-  /**
-   * @brief Number of integration points through the thickness.
-   *
-   * @return the number of integration points
-   */
-  int numberOfThicknessPoints() const { return static_cast< int >( points.size() ); }
-
-private:
-  /// Integration point through the thickness.
-  struct ThicknessPoint {
-    double                                       weight;     ///< weight, the weights of all points sum up to one
-    double                                       position;   ///< coordinate y in [0, 1]
-    std::vector< double >                        properties; ///< properties of the bulk material, which it refers to
-    std::unique_ptr< MarmotMaterialHypoElastic > material;   ///< bulk material at the position
-    std::size_t                                  offset; ///< offset of the state of this point in the state variables
-    std::size_t                                  nBaseStateVars; ///< number of state variables of the bulk material
-  };
-
-  const double                  h;      ///< thickness of the layer
-  std::vector< ThicknessPoint > points; ///< integration points through the thickness, from the bottom to the top
 };

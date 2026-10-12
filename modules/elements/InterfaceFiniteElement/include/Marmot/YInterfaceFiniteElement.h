@@ -42,6 +42,7 @@
 #include "Marmot/InterfaceFiniteElementBase.h"
 #include "Marmot/MarmotEquilibratedXInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedXInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotStateVarVectorManager.h"
 
 #include <Eigen/Dense>
@@ -307,6 +308,8 @@ namespace Marmot::Elements {
    * @struct EquilibratedTwoSidedFormulation
    * @tparam nDim Spatial embedding dimension.
    * @tparam nNodes Number of element nodes.
+   * @tparam MaterialType Interface material with the contract of MarmotEquilibratedXInterfaceMaterialHypoElastic,
+   * which is that material or MarmotGradedXInterfaceMaterialHypoElastic.
    * @brief Formulation of the interface element with equilibrated two-sided kinematics.
    *
    * The equilibrated interface material receives the increment of the displacement of both interface sides and of
@@ -317,7 +320,7 @@ namespace Marmot::Elements {
    * top and of the bottom side of the quadrature point. The formulation uses linearized, small-deformation
    * kinematics.
    */
-  template < int nDim, int nNodes >
+  template < int nDim, int nNodes, class MaterialType = MarmotEquilibratedXInterfaceMaterialHypoElastic >
   struct EquilibratedTwoSidedFormulation {
 
     static constexpr int nTensor        = nDim * nDim;
@@ -340,7 +343,7 @@ namespace Marmot::Elements {
     using QAwMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
     using QAAMatrixSized = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
 
-    using Material = MarmotEquilibratedXInterfaceMaterialHypoElastic; ///< interface material of the element
+    using Material = MaterialType; ///< interface material of the element
 
     /**
      * @brief Named state-variable manager for interface quadrature points.
@@ -413,7 +416,7 @@ namespace Marmot::Elements {
        * The state variables are restored at the beginning of every iteration, so this memory is kept outside of
        * them, see MarmotEquilibratedXInterfaceMaterialHypoElastic::IncrementMemory.
        */
-      Material::IncrementMemory gaugeMemory;
+      typename Material::IncrementMemory gaugeMemory;
     };
 
     /**
@@ -474,31 +477,31 @@ namespace Marmot::Elements {
       auto& material = element.material;
       auto& data     = qp.formulationData;
 
-      Material::State state{ embedVectorIn3D< nDim >( qp.managedStateVars->generalizedForce.data() ),
-                             embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressPlus.data() ),
-                             embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressMinus.data() ),
-                             qp.managedStateVars->materialStateVars.data(),
-                             &data.gaugeMemory };
+      typename Material::State state{ embedVectorIn3D< nDim >( qp.managedStateVars->generalizedForce.data() ),
+                                      embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressPlus.data() ),
+                                      embedTensorIn3D< nDim >( qp.managedStateVars->surfaceStressMinus.data() ),
+                                      qp.managedStateVars->materialStateVars.data(),
+                                      &data.gaugeMemory };
 
-      Material::Tangents tangents{ Material::Tensor33d( 0.0 ),
-                                   Material::Tensor333d( 0.0 ),
-                                   Material::Tensor333d( 0.0 ),
-                                   Material::Tensor333d( 0.0 ),
-                                   Material::Tensor3333d( 0.0 ),
-                                   Material::Tensor3333d( 0.0 ),
-                                   Material::Tensor333d( 0.0 ),
-                                   Material::Tensor3333d( 0.0 ),
-                                   Material::Tensor3333d( 0.0 ) };
+      typename Material::Tangents tangents{ typename Material::Tensor33d( 0.0 ),
+                                            typename Material::Tensor333d( 0.0 ),
+                                            typename Material::Tensor333d( 0.0 ),
+                                            typename Material::Tensor333d( 0.0 ),
+                                            typename Material::Tensor3333d( 0.0 ),
+                                            typename Material::Tensor3333d( 0.0 ),
+                                            typename Material::Tensor333d( 0.0 ),
+                                            typename Material::Tensor3333d( 0.0 ),
+                                            typename Material::Tensor3333d( 0.0 ) };
 
       // the materials are fixed to three dimensions, a two-dimensional element embeds its kinematics
       const Eigen::Matrix< double, 6, 1 >  dU3d             = expandSidesTo3D< nDim, 1 >( dU_GPs );
       const Eigen::Matrix< double, 18, 1 > dSurfaceStrain3d = expandSidesTo3D< nDim, 2 >( dSurface_strain_GPs );
 
-      Material::Deformation   deformation{ Material::Tensor6d( dU3d.data() ),
-                                         Material::Tensor18d( dSurfaceStrain3d.data() ),
-                                         embedVectorIn3D< nDim >( qp.normal.data() ),
-                                         embedVectorIn3D< nDim >( data.separationVector.data() ) };
-      Material::TimeIncrement timeIncrement{ time, dT };
+      typename Material::Deformation   deformation{ typename Material::Tensor6d( dU3d.data() ),
+                                                  typename Material::Tensor18d( dSurfaceStrain3d.data() ),
+                                                  embedVectorIn3D< nDim >( qp.normal.data() ),
+                                                  embedVectorIn3D< nDim >( data.separationVector.data() ) };
+      typename Material::TimeIncrement timeIncrement{ time, dT };
 
       material->computeStress( state, tangents, deformation, timeIncrement );
 
@@ -519,5 +522,21 @@ namespace Marmot::Elements {
   using YInterfaceFiniteElement = InterfaceFiniteElementBase< nDim,
                                                               nNodes,
                                                               EquilibratedTwoSidedFormulation< nDim, nNodes > >;
+
+  /**
+   * @brief Equilibrated two-sided interface finite element for a layer with a stiffness varying through the
+   * thickness.
+   *
+   * The element has the formulation of YInterfaceFiniteElement with the material
+   * MarmotGradedXInterfaceMaterialHypoElastic, which has several integration points through the thickness.
+   *
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   */
+  template < int nDim, int nNodes >
+  using GradedYInterfaceFiniteElement = InterfaceFiniteElementBase<
+    nDim,
+    nNodes,
+    EquilibratedTwoSidedFormulation< nDim, nNodes, MarmotGradedXInterfaceMaterialHypoElastic > >;
 
 } // namespace Marmot::Elements

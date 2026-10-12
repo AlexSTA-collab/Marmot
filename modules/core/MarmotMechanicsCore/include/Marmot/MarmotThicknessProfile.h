@@ -50,6 +50,10 @@ namespace Marmot::Materials {
    * increasing positions in between. In the mode 2, the integration points are the stations themselves, with the
    * weights of the trapezoidal rule, and the properties of a point are the ones given at its station. This is the
    * layout of the faces of a two-sided layer and of the nonlocal fields at the stations.
+   *
+   * One more property may follow the groups. It is the flag of the tangential gradient of the correction of the
+   * microproblem, which the two-sided materials keep when the flag is not zero or absent, and which the one-sided
+   * materials ignore.
    */
   struct ThicknessProfile {
 
@@ -60,8 +64,17 @@ namespace Marmot::Materials {
       std::vector< double > properties; ///< properties of the bulk material at the position
     };
 
-    double               thickness = 0.; ///< thickness h of the layer
-    std::vector< Point > points;         ///< integration points, from the bottom to the top
+    double               thickness          = 0.;   ///< thickness h of the layer
+    bool                 tangentialGradient = true; ///< keep the tangential gradient of the correction, see above
+    std::vector< Point > points;                    ///< integration points, from the bottom to the top
+
+    /**
+     * Weights of the cumulative integral from the bottom to the position of every point: row q holds the weights
+     * @f$ c_{qp} @f$ with @f$ \int_0^{y_q} f \, \mathrm{d}y \approx \sum_p c_{qp} f_p @f$ for values @f$ f_p @f$
+     * of a function at the points. Every row sums to the position of the point, and the integral of a function
+     * that is constant on every layer or between two stations is exact. The row of the last point sums to one.
+     */
+    std::vector< std::vector< double > > cumulativeWeights;
 
     /**
      * @brief Read the integration points from the material properties of the layer.
