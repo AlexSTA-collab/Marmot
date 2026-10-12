@@ -22,6 +22,7 @@ This section contains the ready to use available material models.
   interfacematerialhypoelastic
   equilibratedinterfacematerialhypoelastic
   equilibratedinterfacematerialfinitestrain
+  gradedinterfacematerial
   vonmises
   advonmises
   hugheswinget

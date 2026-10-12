@@ -399,7 +399,7 @@ namespace {
     throwExceptionOnFailure( rejected( thickness ), "A vanishing thickness was accepted." );
 
     auto mode = valid;
-    mode[1]   = 2.;
+    mode[1]   = 3.;
     throwExceptionOnFailure( rejected( mode ), "An unknown mode was accepted." );
 
     auto gauss = valid;
