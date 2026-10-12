@@ -66,17 +66,17 @@ namespace Marmot::Elements {
   struct GradientEnhancedTwoSidedStationFieldsFormulation
     : GradientEnhancedStationFieldsFormulation< nDim, nNodes, nStations > {
 
-    using Base = GradientEnhancedStationFieldsFormulation< nDim, nNodes, nStations >;
+    using Base = GradientEnhancedStationFieldsFormulation< nDim, nNodes, nStations >; ///< one-sided formulation
 
-    static constexpr int nTensor      = Base::nTensor;
-    static constexpr int nDofD        = Base::nDofD;
-    static constexpr int nDofA        = Base::nDofA;
+    static constexpr int nTensor      = Base::nTensor;      ///< components of a second order tensor
+    static constexpr int nDofD        = Base::nDofD;        ///< degrees of freedom of the displacements
+    static constexpr int nDofA        = Base::nDofA;        ///< degrees of freedom of the field of a station
     static constexpr int nGeneralized = nDim + 2 * nTensor; ///< components of ( w, A+, A- )
 
-    using ForceSized                = typename Base::ForceSized;
-    using SurfaceStressSized        = typename Base::SurfaceStressSized;
-    using InterfaceDisplSized       = typename Base::InterfaceDisplSized;
-    using InterfaceSurfaceGradSized = typename Base::InterfaceSurfaceGradSized;
+    using ForceSized                = typename Base::ForceSized;                ///< force
+    using SurfaceStressSized        = typename Base::SurfaceStressSized;        ///< surface stress of a face
+    using InterfaceDisplSized       = typename Base::InterfaceDisplSized;       ///< displacements of both sides
+    using InterfaceSurfaceGradSized = typename Base::InterfaceSurfaceGradSized; ///< surface gradients of both sides
 
     using Material = MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain; ///< interface material
 
@@ -89,6 +89,7 @@ namespace Marmot::Elements {
        * Persistent state layout for the generalized force, the two surface stresses, the total displacement, the
        * total surface strain, the local and the nonlocal field of every station, and the material state variables.
        */
+      /// layout of the state variables of the quadrature point
       inline const static auto layout = makeLayout( {
         { .name = "generalizedForce", .length = nDim },
         { .name = "surfaceStressPlus", .length = nTensor },
@@ -104,15 +105,15 @@ namespace Marmot::Elements {
       } );
 
     public:
-      Eigen::Map< ForceSized >                            generalizedForce;
-      Eigen::Map< SurfaceStressSized >                    surfaceStressPlus;
-      Eigen::Map< SurfaceStressSized >                    surfaceStressMinus;
-      Eigen::Map< InterfaceDisplSized >                   displacement;
-      Eigen::Map< InterfaceSurfaceGradSized >             surfaceStrain;
-      Eigen::Map< Eigen::Matrix< double, nStations, 1 > > localFields;
-      Eigen::Map< Eigen::Matrix< double, nStations, 1 > > nonlocalFields;
+      Eigen::Map< ForceSized >                            generalizedForce;   ///< force conjugate to the jump
+      Eigen::Map< SurfaceStressSized >                    surfaceStressPlus;  ///< surface stress of the top face
+      Eigen::Map< SurfaceStressSized >                    surfaceStressMinus; ///< surface stress of the bottom face
+      Eigen::Map< InterfaceDisplSized >                   displacement;       ///< total displacements of the sides
+      Eigen::Map< InterfaceSurfaceGradSized >             surfaceStrain;      ///< total surface gradients of the sides
+      Eigen::Map< Eigen::Matrix< double, nStations, 1 > > localFields;        ///< local field of every station
+      Eigen::Map< Eigen::Matrix< double, nStations, 1 > > nonlocalFields;     ///< local field of every station
 
-      Eigen::Map< Eigen::VectorXd > materialStateVars;
+      Eigen::Map< Eigen::VectorXd > materialStateVars; ///< state variables of the material
 
       /**
        * @brief Number of state variables of the quadrature point itself, without the material state variables.

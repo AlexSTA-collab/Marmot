@@ -121,6 +121,21 @@ Elements
      - ``HIQUAD4UL`` with a gradient-enhanced bulk material and a nonlocal field at each of 2, 3 or 4 stations through
        the thickness. The same for ``IQUAD8`` (16 nodes) and ``ILINE2`` (4 nodes) as ``GYSnIQUAD8UL`` and
        ``GYSnILINE2UL``
+   * - ``HYQUAD4``, ``HYQUAD8``, ``HYLINE2``
+     - 8, 16, 4
+     - As ``YIQUAD4``, ``YIQUAD8`` and ``YILINE2`` (equilibrated two-sided kinematics), for a layer whose stiffness
+       varies through the thickness, with the two-sided :ref:`graded interface material <gradedinterfacematerial>`,
+       which keeps the surface gradients of both faces and the tangential gradient of the correction of the
+       microproblem
+   * - ``HYQUAD4UL``, ``HYQUAD8UL``, ``HYLINE2UL``
+     - 8, 16, 4
+     - As ``HYQUAD4``, ``HYQUAD8`` and ``HYLINE2`` at finite strain
+   * - ``GYH2IQUAD4UL``, ``GYH3IQUAD4UL``, ``GYH4IQUAD4UL``
+     - 8
+     - ``HYQUAD4UL`` with a gradient-enhanced bulk material and a nonlocal field at each of 2, 3 or 4 stations through
+       the thickness. The same for ``IQUAD8`` (16 nodes) and ``ILINE2`` (4 nodes) as ``GYHnIQUAD8UL`` and
+       ``GYHnILINE2UL``. For two stations and without the tangential gradient of the correction, the element is
+       ``GY2IQUAD4UL``
 
 The element is a template in the spatial dimension and the number of nodes. Besides the registered
 three-dimensional ``IQUAD4``, a two-dimensional instantiation embeds its quadrature-point state in the

@@ -60,7 +60,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
    */
   template < int nStrain >
   struct Layer {
-    using StrainVector = Eigen::Matrix< double, nStrain, 1 >;
+    using StrainVector = Eigen::Matrix< double, nStrain, 1 >; ///< strain-like measure of a point
 
     Eigen::Vector3d                     normal;               ///< unit normal, from the bottom to the top face
     double                              normalSeparation;     ///< separation of the faces along the normal
@@ -135,15 +135,15 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
   class LayerSolver {
 
   public:
-    using StrainVector = Eigen::Matrix< double, nStrain, 1 >;
-    using Matrix3xN    = Eigen::Matrix< double, 3, nStrain >;
-    using MatrixNxN    = Eigen::Matrix< double, nStrain, nStrain >;
-    using MatrixNx3    = Eigen::Matrix< double, nStrain, 3 >;
-    using MatrixNx21   = Eigen::Matrix< double, nStrain, 21 >;
-    using Matrix3x21   = Eigen::Matrix< double, 3, 21 >;
-    using Matrix9x21   = Eigen::Matrix< double, 9, 21 >;
-    using Matrix9x3    = Marmot::Materials::TwoSidedInterface::Matrix9x3;
-    using Matrix9x9    = Marmot::Materials::TwoSidedInterface::Matrix9x9;
+    using StrainVector = Eigen::Matrix< double, nStrain, 1 >;       ///< strain-like measure of a point
+    using Matrix3xN    = Eigen::Matrix< double, 3, nStrain >;       ///< maps a strain-like measure to a traction
+    using MatrixNxN    = Eigen::Matrix< double, nStrain, nStrain >; ///< tangent of a point
+    using MatrixNx3    = Eigen::Matrix< double, nStrain, 3 >;       ///< maps a correction to a strain-like measure
+    using MatrixNx21   = Eigen::Matrix< double, nStrain, 21 >;      ///< maps the generalized strain
+    using Matrix3x21   = Eigen::Matrix< double, 3, 21 >;            ///< traction over the generalized strain
+    using Matrix9x21   = Eigen::Matrix< double, 9, 21 >;            ///< gradient over the generalized strain
+    using Matrix9x3    = Marmot::Materials::TwoSidedInterface::Matrix9x3; ///< maps a vector to the normal fibre
+    using Matrix9x9    = Marmot::Materials::TwoSidedInterface::Matrix9x9; ///< map between 9-vectors
 
     /**
      * @brief Set up the operators of the layer for a generalized strain.
@@ -290,19 +290,41 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       }
     }
 
-    /// Responses of the integration points at the solution.
+    /**
+     * @brief Responses of the integration points at the solution.
+     *
+     * @return the responses, from the bottom to the top
+     */
     const std::vector< Point< nStrain > >& points() const { return points_; }
 
-    /// Derivative of the gradient of the point q with respect to the generalized strain, 9 x 21.
+    /**
+     * @brief Derivative of the gradient of a point with respect to the generalized strain.
+     *
+     * @param[in] q index of the integration point
+     * @return the derivative, 9 x 21
+     */
     const Matrix9x21& gradientOperator( int q ) const { return Bx_[q]; }
 
-    /// Derivative of the strain-like measure of the point q with respect to the generalized strain, with the closure.
+    /**
+     * @brief Derivative of the strain-like measure of a point with respect to the generalized strain.
+     *
+     * @param[in] q index of the integration point
+     * @return the derivative with the closure of the tangential gradient, nStrain x 21
+     */
     MatrixNx21 strainOperator( int q ) const { return EBx_[q] + closureStrainTangent_[q]; }
 
-    /// Operator S that maps a correction to the strain-like measure.
+    /**
+     * @brief Operator S that maps a correction to the strain-like measure.
+     *
+     * @return the operator, nStrain x 3
+     */
     const MatrixNx3& correctionOperator() const { return S_; }
 
-    /// Operator that maps the correction to the 9-vector of the gradient, the normal fibre n (x) w.
+    /**
+     * @brief Operator that maps a correction to the 9-vector of the gradient, the normal fibre n (x) w.
+     *
+     * @return the operator, 9 x 3
+     */
     const Matrix9x3& correctionGradientOperator() const { return N9_; }
 
     /**
@@ -335,7 +357,11 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       return result;
     }
 
-    /// Generalized stress ( force, S+, S- ) of the points at the solution.
+    /**
+     * @brief Generalized stress of the points at the solution.
+     *
+     * @return the force conjugate to the jump and the surface stresses of the two faces
+     */
     Vector21d stress() const
     {
       Vector21d p = Vector21d::Zero();
@@ -366,7 +392,12 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       std::vector< Eigen::Vector3d > force;  ///< change of the traction from the bottom to the point
     };
 
-    /// Derivative of the corrections with respect to the strain of the layer, over the points.
+    /**
+     * @brief Derivative of the corrections with respect to the strain of the layer.
+     *
+     * @param[in] points responses of the integration points
+     * @return for every point, the derivative of its correction with respect to the strain-like measure
+     */
     std::vector< Matrix3xN > condenseOverStrain( const std::vector< Point< nStrain > >& points ) const
     {
       const int nq = static_cast< int >( points.size() );
@@ -377,8 +408,17 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       return ThicknessMicroproblem::condensedCorrectionTangents< nStrain >( layer_.weights, points, B );
     }
 
-    /// Terms of the closure, linear in the difference of the surface gradients, for the derivative of the
-    /// correction and the tangent of the points.
+    /**
+     * @brief Terms of the closure of the tangential gradient of the correction.
+     *
+     * They are linear in the difference of the surface gradients, for the derivative of the correction and the
+     * tangent of the points.
+     *
+     * @param[in] dw derivative of the correction of every point with respect to the strain-like measure
+     * @param[in] D tangent of every point
+     * @param[in] surfaceGradientDifference difference A+ - A- of the surface gradients
+     * @return the strain of the tangential gradient and the force of the traction of every point
+     */
     ClosureTerms closure( const std::vector< Matrix3xN >& dw,
                           const std::vector< MatrixNxN >& D,
                           const Eigen::Matrix3d&          surfaceGradientDifference ) const
