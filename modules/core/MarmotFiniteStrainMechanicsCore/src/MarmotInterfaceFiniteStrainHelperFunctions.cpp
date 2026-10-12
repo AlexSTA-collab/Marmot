@@ -52,6 +52,40 @@ namespace Marmot::Materials::InterfaceFiniteStrainHelperFunctions {
     A = einsum< imkl, mj, to_ijkl >( dTau_dF, FInvT ) - einsum< im, kj, ml, to_ijkl >( tau, FInvT, FInvT );
   }
 
+  void reduceStress( const Tensor33d&   P,
+                     const Tensor3d&    normal,
+                     const NormalFibre& fibre,
+                     double             h,
+                     Tensor3d&          force,
+                     Tensor33d&         surfaceStress )
+  {
+    Tensor33d T( 0.0 );
+    T.eye();
+    T -= einsum< i, j, to_ij >( normal, normal );
+
+    const double   hOverEll = h / fibre.ell;
+    const Tensor3d traction = einsum< ij, j, to_i >( P, normal );
+
+    force         = hOverEll * traction;
+    surfaceStress = h * einsum< ij, kj, to_ik >( P, T ) - hOverEll * einsum< i, k, to_ik >( traction, fibre.dTau );
+  }
+
+  void reduceDerivative( const Tensor33d&   G,
+                         const Tensor3d&    normal,
+                         const NormalFibre& fibre,
+                         Tensor3d&          dJump,
+                         Tensor33d&         dAverage )
+  {
+    Tensor33d T( 0.0 );
+    T.eye();
+    T -= einsum< i, j, to_ij >( normal, normal );
+
+    const Tensor3d GN = einsum< ij, j, to_i >( G, normal );
+
+    dJump    = ( 1.0 / fibre.ell ) * GN;
+    dAverage = einsum< ij, jk, to_ik >( G, T ) - ( 1.0 / fibre.ell ) * einsum< i, k, to_ik >( GN, fibre.dTau );
+  }
+
   ReducedResponse reduceToInterface( const Tensor33d&   P,
                                      const Tensor3333d& A,
                                      const Tensor3d&    normal,

@@ -179,7 +179,7 @@ namespace Marmot::Materials::ThicknessMicroproblem {
    *   \frac{\partial w_q}{\partial E} = Q_q^{-1} ( \partial_E t - B_q ) .
    * @f]
    *
-   * @tparam nStrain number of components of the strain of the layer
+   * @tparam nStrain number of components of the strain of the layer, or Eigen::Dynamic
    * @tparam Point response of an integration point, with the member `Qinv`
    * @param[in] weights weights of the integration points
    * @param[in] evaluations responses of the integration points at the solution of the microproblem
@@ -195,7 +195,7 @@ namespace Marmot::Materials::ThicknessMicroproblem {
     const int nq = static_cast< int >( weights.size() );
 
     Eigen::Matrix3d                     M = Eigen::Matrix3d::Zero();
-    Eigen::Matrix< double, 3, nStrain > G = Eigen::Matrix< double, 3, nStrain >::Zero();
+    Eigen::Matrix< double, 3, nStrain > G = Eigen::Matrix< double, 3, nStrain >::Zero( 3, B[0].cols() );
     for ( int q = 0; q < nq; q++ ) {
       M += weights[q] * evaluations[q].Qinv;
       G += weights[q] * evaluations[q].Qinv * B[q];

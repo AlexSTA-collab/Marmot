@@ -1,4 +1,5 @@
 #include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
+#include "Marmot/GYSInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotElementProperty.h"
@@ -916,23 +917,179 @@ namespace {
                                                "graded 2D, inclined" );
   }
 
+  /// the card of the graded gradient-enhanced layer: the thickness, the mode 2, the stations and their bulk properties
+  std::vector< double > stationCard( double                       thickness,
+                                     const std::vector< double >& positions,
+                                     const std::vector< double >& bulk )
+  {
+    std::vector< double > card = { thickness, 2.0, 1.0, double( positions.size() ), double( bulk.size() ) };
+    for ( const double position : positions ) {
+      card.push_back( position );
+      card.insert( card.end(), bulk.begin(), bulk.end() );
+    }
+    return card;
+  }
+
+  const std::vector< double > neoHookeDamageBulk = { 3500.0, 1500.0, 1.0e-3, 5.0e-3, 0.2, 1.0 };
+  const std::vector< double > dufourBulk         = { 1793.9, 828.0, 12.0,   21.6, 4051.0, 15.8, 552.0, 243.0, 0.0, 0.0,
+                                                     15.4,   1e-6,  0.0435, 0.3,  0.5,    1.75, 0.99,  0.12,  1.0, 1.0 };
+
+  /// The displacements of the element, and a nonlocal field at every station with a value of its own.
+  template < class ElementType, int nStations >
+  Eigen::VectorXd makeDisplacementsAndStationFields( double scale, int pattern, double nonlocal )
+  {
+    constexpr int nPerStation = ElementType::nExtraDofs / nStations;
+
+    Eigen::VectorXd Q = makeDisplacements< ElementType::sizeLoadVector >( scale, pattern );
+    for ( int i = 0; i < ElementType::nExtraDofs; ++i ) {
+      const int station                      = i / nPerStation;
+      Q( ElementType::nDofDisplacement + i ) = nonlocal * ( 1.0 + 0.6 * station ) + 1.0e-4 * ( i % nPerStation );
+    }
+    return Q;
+  }
+
+  /// The element with a nonlocal field at every station: the tangent over the displacements and all fields, with the
+  /// damage active.
+  void testStationFieldsElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Element3d8  = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
+    using Element3d16 = GYSInterfaceFiniteElementFiniteStrain< 3, 16, 3 >;
+    using Element2d   = GYSInterfaceFiniteElementFiniteStrain< 2, 4, 4 >;
+
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              stationCard( hn, { 0.0, 0.5, 1.0 }, neoHookeDamageBulk ),
+                                                              makeDisplacementsAndStationFields< Element3d8,
+                                                                                                 3 >( 3e-3, 1, 3e-3 ),
+                                                              "GYS3 3D, inclined",
+                                                              gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d16, 3, 16 >( serendipityQuadrilateral( gap ),
+                                                                stationCard( gap,
+                                                                             { 0.0, 0.3, 1.0 },
+                                                                             neoHookeDamageBulk ),
+                                                                makeDisplacementsAndStationFields< Element3d16,
+                                                                                                   3 >( 3e-3, 2, 4e-3 ),
+                                                                "GYS3 3D, serendipity",
+                                                                gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element2d, 2, 4 >( inclinedLine( angle, gap ),
+                                                             stationCard( hn,
+                                                                          { 0.0, 0.25, 0.7, 1.0 },
+                                                                          neoHookeDamageBulk ),
+                                                             makeDisplacementsAndStationFields< Element2d, 4 >( 5e-3,
+                                                                                                                3,
+                                                                                                                3e-3 ),
+                                                             "GYS4 2D, inclined",
+                                                             gradientEnhancedMaterial );
+
+    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                              stationCard( hn, { 0.0, 0.5, 1.0 }, dufourBulk ),
+                                                              makeDisplacementsAndStationFields< Element3d8,
+                                                                                                 3 >( 6e-3, 1, 0.05 ),
+                                                              "GYS3 with the Dufour model",
+                                                              "DUFOURMODEL" );
+  }
+
+  /**
+   * With two stations at the faces, the element is the element with a nonlocal field for each face, whenever the two
+   * faces have the same surface gradient. The element of this test has one tangential gradient for the layer, so
+   * that a virtual displacement moves the surface gradient of both faces together, and the surface stress of the
+   * faces works on their sum. The nonlocal residuals are the ones of the other element, and so is the virtual work of
+   * every virtual displacement with a common surface gradient of the faces (the top displacement is the bottom one
+   * plus a constant). The residuals of the displacements differ in general where the faces carry different surface
+   * stresses, which is the modelling difference between the two elements.
+   */
+  void testTwoStationsAreTheFaceFieldsElement()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+    const double hn    = gap * std::cos( angle );
+
+    using Stations = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 2 >;
+    using Faces    = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
+
+    const auto coordinates = inclinedQuadrilateral( angle, gap );
+
+    // a displacement of the faces with a common surface gradient: the top is the bottom plus a constant
+    const auto commonSurfaceGradient = []( Eigen::VectorXd& Q, const Eigen::Vector3d& offset ) {
+      for ( int A = 0; A < 4; ++A )
+        Q.segment< 3 >( 3 * ( 4 + A ) ) = Q.segment< 3 >( 3 * A ) + offset;
+    };
+
+    for ( const std::string name : std::vector< std::string >{ "DUFOURMODEL", gradientEnhancedMaterial } ) {
+      const bool                  dufour         = name == "DUFOURMODEL";
+      const std::vector< double > faceProperties = dufour ? dufourProperties( hn ) : gradientEnhancedProperties( hn );
+      const std::vector< double > stationProperties = stationCard( hn,
+                                                                   { 0.0, 1.0 },
+                                                                   dufour ? dufourBulk : neoHookeDamageBulk );
+
+      Eigen::VectorXd Q = makeDisplacementsAndFaceFields< Faces >( dufour ? 6e-3 : 3e-3,
+                                                                   1,
+                                                                   dufour ? 0.05 : 3e-3,
+                                                                   dufour ? 0.02 : 5e-3 );
+      commonSurfaceGradient( Q, Eigen::Vector3d( 0.002, -0.001, 0.004 ) );
+
+      const auto faces    = evaluate< Faces, 3, 8 >( coordinates, faceProperties, Q, name );
+      const auto stations = evaluate< Stations, 3, 8 >( coordinates, stationProperties, Q, name );
+
+      constexpr int nDofD = 24;
+      constexpr int nDofA = 4;
+
+      throwExceptionOnFailure( faces.residual.head( nDofD ).norm() > 0.0, name + ": the test needs a residual." );
+
+      // the nonlocal equations of both faces are the same
+      throwExceptionOnFailure( ( faces.residual.tail( 2 * nDofA ) - stations.residual.tail( 2 * nDofA ) ).norm() <=
+                                 1e-9 * std::max( 1e-3, faces.residual.tail( 2 * nDofA ).norm() ),
+                               name + ": the nonlocal residuals of two stations are not the ones of the faces." );
+
+      // the virtual work of displacements with a common surface gradient of the faces is the same
+      for ( int pattern = 0; pattern < 4; ++pattern ) {
+        Eigen::VectorXd virtualDisplacement = makeDisplacements< Faces::sizeLoadVector >( 1.0, pattern + 3 );
+        virtualDisplacement.tail( 2 * nDofA ).setZero();
+        commonSurfaceGradient( virtualDisplacement, Eigen::Vector3d( 0.3, -0.2, 0.5 * pattern ) );
+
+        const double workFaces    = faces.residual.dot( virtualDisplacement );
+        const double workStations = stations.residual.dot( virtualDisplacement );
+
+        throwExceptionOnFailure( std::abs( workFaces - workStations ) <= 1e-8 * std::max( 1.0, std::abs( workFaces ) ),
+                                 name + ": the virtual work of two stations is not the one of the faces, " +
+                                   std::to_string( workStations ) + " against " + std::to_string( workFaces ) + "." );
+      }
+
+      // the two elements are different elements: without a common surface gradient the residuals of the
+      // displacements are not the same where the faces carry different surface stresses
+    }
+  }
+
+  /// A material with a different number of stations than the element has fields is refused.
+  void testStationCountMismatchIsRefused()
+  {
+    using Element = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
+
+    bool refused = false;
+    try {
+      evaluate< Element, 3, 8 >( inclinedQuadrilateral( 0.0, 0.1 ),
+                                 stationCard( 0.1, { 0.0, 1.0 }, neoHookeDamageBulk ),
+                                 makeDisplacementsAndStationFields< Element, 3 >( 3e-3, 1, 3e-3 ),
+                                 gradientEnhancedMaterial );
+    }
+    catch ( const std::invalid_argument& ) {
+      refused = true;
+    }
+    throwExceptionOnFailure( refused, "A material with two stations was accepted by an element with three fields." );
+  }
+
   void testRegistration()
   {
-    for ( const std::string name : { "ILINE2UL",
-                                     "IQUAD4UL",
-                                     "IQUAD8UL",
-                                     "YILINE2UL",
-                                     "YIQUAD4UL",
-                                     "YIQUAD8UL",
-                                     "GYILINE2UL",
-                                     "GYIQUAD4UL",
-                                     "GYIQUAD8UL",
-                                     "GY2ILINE2UL",
-                                     "GY2IQUAD4UL",
-                                     "GY2IQUAD8UL",
-                                     "HILINE2UL",
-                                     "HIQUAD4UL",
-                                     "HIQUAD8UL" } )
+    for ( const std::string name :
+          { "ILINE2UL",     "IQUAD4UL",     "IQUAD8UL",     "YILINE2UL",    "YIQUAD4UL",    "YIQUAD8UL",
+            "GYILINE2UL",   "GYIQUAD4UL",   "GYIQUAD8UL",   "GY2ILINE2UL",  "GY2IQUAD4UL",  "GY2IQUAD8UL",
+            "HILINE2UL",    "HIQUAD4UL",    "HIQUAD8UL",    "GYS2ILINE2UL", "GYS2IQUAD4UL", "GYS2IQUAD8UL",
+            "GYS3ILINE2UL", "GYS3IQUAD4UL", "GYS3IQUAD8UL", "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -962,6 +1119,9 @@ int main()
                                                    testMaterialAccessors,
                                                    testGradedElementEqualsThePlainElementForAHomogeneousLayer,
                                                    testGradedElementTangentMatchesFiniteDifference,
+                                                   testStationFieldsElement,
+                                                   testTwoStationsAreTheFaceFieldsElement,
+                                                   testStationCountMismatchIsRefused,
                                                    testRegistration };
   executeTestsAndCollectExceptions( tests );
   return 0;

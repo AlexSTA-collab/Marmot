@@ -39,15 +39,17 @@ namespace Marmot::Materials {
    * | Index | Name | Meaning |
    * |-------|------|---------|
    * | 0 | h | thickness of the layer |
-   * | 1 | mode | 0: layers with constant properties, 1: properties interpolated linearly between stations |
-   * | 2 | nGauss | number of Gauss points per layer (mode 0) or per interval between two stations (mode 1) |
-   * | 3 | K | number of layers (mode 0) or of stations (mode 1, at least two) |
-   * | 4 | m | number of properties of the bulk material |
+   * | 1 | mode | 0: layers with constant properties, 1: properties interpolated linearly between stations, 2: points at
+   * the stations | | 2 | nGauss | number of Gauss points per layer (mode 0) or per interval between two stations (mode
+   * 1), not used in mode 2 | | 3 | K | number of layers (mode 0) or of stations (modes 1 and 2, at least two) | | 4 | m
+   * | number of properties of the bulk material |
    *
    * followed by K groups of the entry @f$p_k@f$ and the m properties of the bulk material. In the mode 0, @f$p_k@f$
    * is the relative thickness of the layer k, which are ordered from the bottom to the top and normalized by their
-   * sum. In the mode 1, @f$p_k@f$ is the position of the station k, with @f$p_0 = 0@f$, @f$p_{K-1} = 1@f$ and
-   * increasing positions in between.
+   * sum. In the modes 1 and 2, @f$p_k@f$ is the position of the station k, with @f$p_0 = 0@f$, @f$p_{K-1} = 1@f$ and
+   * increasing positions in between. In the mode 2, the integration points are the stations themselves, with the
+   * weights of the trapezoidal rule, and the properties of a point are the ones given at its station. This is the
+   * layout of the faces of a two-sided layer and of the nonlocal fields at the stations.
    */
   struct ThicknessProfile {
 

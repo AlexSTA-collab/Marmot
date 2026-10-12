@@ -48,8 +48,9 @@ namespace Marmot::Materials {
     const int K      = static_cast< int >( checkedMaterialProperty( matProperties, nMaterialProperties, 3 ) );
     const int m      = static_cast< int >( checkedMaterialProperty( matProperties, nMaterialProperties, 4 ) );
 
-    if ( mode != 0 && mode != 1 )
-      throw std::invalid_argument( "ThicknessProfile: the mode must be 0 (layers) or 1 (interpolated stations)" );
+    if ( mode < 0 || mode > 2 )
+      throw std::invalid_argument( "ThicknessProfile: the mode must be 0 (layers), 1 (interpolated stations) or 2 "
+                                   "(points at the stations)" );
     if ( nGauss < 1 || m < 1 || K < ( mode == 0 ? 1 : 2 ) )
       throw std::invalid_argument( "ThicknessProfile: nGauss and m must be positive, and K at least one layer or two "
                                    "stations" );
@@ -90,6 +91,22 @@ namespace Marmot::Materials {
         if ( position( k + 1 ) <= position( k ) )
           throw std::invalid_argument( "ThicknessProfile: the stations must be increasing" );
         segments.push_back( { position( k ), position( k + 1 ), k, k + 1 } );
+      }
+
+      if ( mode == 2 ) {
+        // the points are the stations, with the weights of the trapezoidal rule
+        for ( int k = 0; k < K; k++ ) {
+          Point        point;
+          const double below = ( k == 0 ) ? 0. : position( k ) - position( k - 1 );
+          const double above = ( k == K - 1 ) ? 0. : position( k + 1 ) - position( k );
+          point.weight       = 0.5 * ( below + above );
+          point.position     = position( k );
+          point.properties.resize( m );
+          for ( int i = 0; i < m; i++ )
+            point.properties[i] = property( k, i );
+          profile.points.push_back( std::move( point ) );
+        }
+        return profile;
       }
     }
 

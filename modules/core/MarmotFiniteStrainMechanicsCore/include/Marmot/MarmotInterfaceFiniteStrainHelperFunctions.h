@@ -111,6 +111,46 @@ namespace Marmot::Materials::InterfaceFiniteStrainHelperFunctions {
   };
 
   /**
+   * @brief Reduce a first Piola-Kirchhoff stress, or a derivative of it, to the force and the surface stress.
+   *
+   * The reduction is linear in the stress, so that it applies to the derivative of the stress with respect to any
+   * parameter, for example a nonlocal field, as well.
+   *
+   * @param[in] P first Piola-Kirchhoff stress of the layer, or its derivative
+   * @param[in] normal interface normal
+   * @param[in] fibre geometry of the normal fibre
+   * @param[in] h constitutive thickness of the layer
+   * @param[out] force force, conjugate to the jump
+   * @param[out] surfaceStress surface stress, conjugate to the average surface gradient
+   */
+  void reduceStress( const Tensor33d&   P,
+                     const Tensor3d&    normal,
+                     const NormalFibre& fibre,
+                     double             h,
+                     Tensor3d&          force,
+                     Tensor33d&         surfaceStress );
+
+  /**
+   * @brief Derivatives of a quantity with respect to the jump and to the average surface gradient.
+   *
+   * With the deformation gradient of the layer @f$ F = I + \langle \nabla_s u \rangle + \bar{g} \otimes N @f$,
+   * a quantity @f$ q @f$ with the derivative @f$ G = \partial q / \partial F @f$ changes with the jump as
+   * @f$ G N / \ell @f$ and with the average surface gradient as @f$ G T - ( G N ) \otimes d\tau / \ell @f$, where
+   * @f$ T @f$ projects on the tangent plane.
+   *
+   * @param[in] G derivative of the quantity with respect to the deformation gradient
+   * @param[in] normal interface normal
+   * @param[in] fibre geometry of the normal fibre
+   * @param[out] dJump derivative with respect to the jump
+   * @param[out] dAverage derivative with respect to the average surface gradient
+   */
+  void reduceDerivative( const Tensor33d&   G,
+                         const Tensor3d&    normal,
+                         const NormalFibre& fibre,
+                         Tensor3d&          dJump,
+                         Tensor33d&         dAverage );
+
+  /**
    * @brief Reduce the stress state of the layer to the force and the surface stress of the interface.
    *
    * @param[in] P first Piola-Kirchhoff stress of the layer
