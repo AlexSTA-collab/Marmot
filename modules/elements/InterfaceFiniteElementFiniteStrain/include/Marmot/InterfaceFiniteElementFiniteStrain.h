@@ -44,6 +44,7 @@
 #include "Marmot/InterfaceFiniteElementBase.h"
 #include "Marmot/MarmotEquilibratedInterfaceMaterialFiniteStrain.h"
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedInterfaceMaterialFiniteStrain.h"
 #include "Marmot/MarmotInterfaceMaterialFiniteStrain.h"
 #include "Marmot/YInterfaceFiniteElement.h"
 
@@ -55,6 +56,8 @@ namespace Marmot::Elements {
    * @struct FiniteStrainDisplacementJumpFormulation
    * @tparam nDim Spatial embedding dimension.
    * @tparam nNodes Number of element nodes.
+   * @tparam MaterialType Interface material class of the element, with the nested types of
+   * MarmotInterfaceMaterialFiniteStrain.
    * @brief Formulation of the interface element with displacement-jump kinematics at finite strain.
    *
    * The interface material (`MarmotInterfaceMaterialFiniteStrain`) receives the total displacements of both
@@ -64,7 +67,7 @@ namespace Marmot::Elements {
    * gradient of the quadrature point. The state variables of a quadrature point are the ones of the
    * DisplacementJumpFormulation; the displacements and the surface gradients stored in them are the total ones.
    */
-  template < int nDim, int nNodes >
+  template < int nDim, int nNodes, class MaterialType = MarmotInterfaceMaterialFiniteStrain >
   struct FiniteStrainDisplacementJumpFormulation {
 
     static constexpr int nTensor = nDim * nDim;
@@ -83,8 +86,8 @@ namespace Marmot::Elements {
     /// matrix of the derivative of the surface stress with respect to the jump
     using HAverageJumpMatrixSized = Eigen::Matrix< double, nTensor, nDim, Eigen::RowMajor >;
 
-    using Material          = MarmotInterfaceMaterialFiniteStrain; ///< interface material of the element
-    using QPStateVarManager = typename Small::QPStateVarManager;   ///< named state variables of a quadrature point
+    using Material          = MaterialType;                      ///< interface material of the element
+    using QPStateVarManager = typename Small::QPStateVarManager; ///< named state variables of a quadrature point
 
     /// This formulation keeps no data at the quadrature points besides the state variables.
     struct QuadraturePointData {};
@@ -158,20 +161,21 @@ namespace Marmot::Elements {
       HAverageJumpMatrixSized H_iRk;
       ZMatrixSized            A_iRkP;
 
-      Material::State         materialState{ Material::Tensor3d( 0.0 ),
-                                     Material::Tensor33d( 0.0 ),
-                                     qp.managedStateVars->materialStateVars.data() };
-      Material::Tangents      materialTangents{ Material::Tensor33d( 0.0 ),
-                                           Material::Tensor333d( 0.0 ),
-                                           Material::Tensor333d( 0.0 ),
-                                           Material::Tensor3333d( 0.0 ) };
-      Material::TimeIncrement materialTimeIncrement{ time, dT };
+      typename Material::State         materialState{ typename Material::Tensor3d( 0.0 ),
+                                              typename Material::Tensor33d( 0.0 ),
+                                              qp.managedStateVars->materialStateVars.data() };
+      typename Material::Tangents      materialTangents{ typename Material::Tensor33d( 0.0 ),
+                                                    typename Material::Tensor333d( 0.0 ),
+                                                    typename Material::Tensor333d( 0.0 ),
+                                                    typename Material::Tensor3333d( 0.0 ) };
+      typename Material::TimeIncrement materialTimeIncrement{ time, dT };
 
       if constexpr ( nDim == 3 ) {
-        Material::Deformation materialDeformation{ Material::Tensor6d( totalU_GPs.data() ),
-                                                   Material::Tensor18d( totalSurfaceGradient_GPs.data() ),
-                                                   Material::Tensor3d( qp.normal.data() ),
-                                                   Material::Tensor3d( connector.data() ) };
+        typename Material::Deformation materialDeformation{ typename Material::Tensor6d( totalU_GPs.data() ),
+                                                            typename Material::Tensor18d(
+                                                              totalSurfaceGradient_GPs.data() ),
+                                                            typename Material::Tensor3d( qp.normal.data() ),
+                                                            typename Material::Tensor3d( connector.data() ) };
 
         material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
@@ -190,10 +194,12 @@ namespace Marmot::Elements {
         const Eigen::Matrix< double, 6, 1 >  U3d               = expandSidesTo3D< nDim, 1 >( totalU_GPs );
         const Eigen::Matrix< double, 18, 1 > surfaceGradient3d = expandSidesTo3D< nDim, 2 >( totalSurfaceGradient_GPs );
 
-        Material::Deformation materialDeformation{ Material::Tensor6d( U3d.data() ),
-                                                   Material::Tensor18d( surfaceGradient3d.data() ),
-                                                   expandTo3D( Fastor::Tensor< double, 2 >( qp.normal.data() ) ),
-                                                   expandTo3D( Fastor::Tensor< double, 2 >( connector.data() ) ) };
+        typename Material::Deformation materialDeformation{ typename Material::Tensor6d( U3d.data() ),
+                                                            typename Material::Tensor18d( surfaceGradient3d.data() ),
+                                                            expandTo3D(
+                                                              Fastor::Tensor< double, 2 >( qp.normal.data() ) ),
+                                                            expandTo3D(
+                                                              Fastor::Tensor< double, 2 >( connector.data() ) ) };
 
         material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
@@ -237,6 +243,23 @@ namespace Marmot::Elements {
     nDim,
     nNodes,
     FiniteStrainDisplacementJumpFormulation< nDim, nNodes > >;
+
+  /**
+   * @brief Finite-strain interface element with displacement-jump kinematics and a layer whose stiffness varies
+   * through the thickness.
+   *
+   * The element has the kinematics and the assembly of InterfaceFiniteElementFiniteStrain. Its material is
+   * MarmotGradedInterfaceMaterialFiniteStrain, which integrates the stiffness through the thickness and condenses
+   * the first-order displacement of the microproblem of the layer.
+   *
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   */
+  template < int nDim, int nNodes >
+  using GradedInterfaceFiniteElementFiniteStrain = InterfaceFiniteElementBase<
+    nDim,
+    nNodes,
+    FiniteStrainDisplacementJumpFormulation< nDim, nNodes, MarmotGradedInterfaceMaterialFiniteStrain > >;
 
   /**
    * @struct FiniteStrainEquilibratedTwoSidedFormulation

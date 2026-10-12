@@ -829,6 +829,93 @@ namespace {
                                                            "DUFOURMODEL" );
   }
 
+  /// the properties of the graded interface material: the thickness, two layers of the given relative thickness
+  std::vector< double > gradedNeoHookeProperties( double thickness, double softFraction, double contrast )
+  {
+    return { thickness,
+             0.0,
+             2.0,
+             2.0,
+             2.0,
+             softFraction,
+             3500.0,
+             1500.0,
+             1.0 - softFraction,
+             contrast * 3500.0,
+             contrast * 1500.0 };
+  }
+
+  /// A homogeneous graded layer, however it is divided, is the plain element.
+  void testGradedElementEqualsThePlainElementForAHomogeneousLayer()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    const auto compare = []( const Evaluation& expected, const Evaluation& actual, const std::string& context ) {
+      throwExceptionOnFailure( ( expected.residual - actual.residual ).norm() <=
+                                 1e-9 * std::max( 1.0, expected.residual.norm() ),
+                               context + ": the residual of a homogeneous graded layer is not the plain one." );
+      throwExceptionOnFailure( ( expected.tangent - actual.tangent ).norm() <=
+                                 1e-9 * std::max( 1.0, expected.tangent.norm() ),
+                               context + ": the tangent of a homogeneous graded layer is not the plain one." );
+    };
+
+    {
+      const double thickness = gap * std::cos( angle );
+      const auto   Q         = makeDisplacements< 24 >( 3e-2, 1 );
+      compare( evaluate< InterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                                             neoHookeProperties( thickness ),
+                                                                             Q ),
+               evaluate< GradedInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
+                                                                                   gradedNeoHookeProperties( thickness,
+                                                                                                             0.4,
+                                                                                                             1.0 ),
+                                                                                   Q ),
+               "3D, inclined" );
+    }
+    {
+      const auto Q = makeDisplacements< 8 >( 5e-2, 3 );
+      compare( evaluate< InterfaceFiniteElementFiniteStrain< 2, 4 >, 2, 4 >( inclinedLine( angle, gap ),
+                                                                             neoHookeProperties( gap *
+                                                                                                 std::cos( angle ) ),
+                                                                             Q ),
+               evaluate< GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                         2,
+                         4 >( inclinedLine( angle, gap ),
+                              gradedNeoHookeProperties( gap * std::cos( angle ), 0.5, 1.0 ),
+                              Q ),
+               "2D, inclined" );
+    }
+  }
+
+  /// The tangent of the graded element is the derivative of its residual, through a stiffness contrast.
+  void testGradedElementTangentMatchesFiniteDifference()
+  {
+    const double angle = 10.0 * pi / 180.0;
+    const double gap   = 0.1;
+
+    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                                          3,
+                                          8 >( inclinedQuadrilateral( angle, gap ),
+                                               gradedNeoHookeProperties( gap * std::cos( angle ), 0.4, 6.0 ),
+                                               makeDisplacements< 24 >( 3e-2, 1 ),
+                                               "graded 3D, inclined" );
+
+    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 3, 16 >,
+                                          3,
+                                          16 >( serendipityQuadrilateral( gap ),
+                                                gradedNeoHookeProperties( gap, 0.3, 6.0 ),
+                                                makeDisplacements< 48 >( 3e-2, 2 ),
+                                                "graded 3D, serendipity" );
+
+    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                                          2,
+                                          4 >( inclinedLine( angle, gap ),
+                                               gradedNeoHookeProperties( gap * std::cos( angle ), 0.5, 6.0 ),
+                                               makeDisplacements< 8 >( 5e-2, 3 ),
+                                               "graded 2D, inclined" );
+  }
+
   void testRegistration()
   {
     for ( const std::string name : { "ILINE2UL",
@@ -842,7 +929,10 @@ namespace {
                                      "GYIQUAD8UL",
                                      "GY2ILINE2UL",
                                      "GY2IQUAD4UL",
-                                     "GY2IQUAD8UL" } )
+                                     "GY2IQUAD8UL",
+                                     "HILINE2UL",
+                                     "HIQUAD4UL",
+                                     "HIQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
                                name + " is not registered with the element factory." );
@@ -870,6 +960,8 @@ int main()
                                                    testCoincidentFacesAreRejected,
                                                    testInvalidMaterialsAreRejected,
                                                    testMaterialAccessors,
+                                                   testGradedElementEqualsThePlainElementForAHomogeneousLayer,
+                                                   testGradedElementTangentMatchesFiniteDifference,
                                                    testRegistration };
   executeTestsAndCollectExceptions( tests );
   return 0;

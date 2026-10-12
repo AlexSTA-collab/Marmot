@@ -96,4 +96,25 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           GY2InterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
 
+  const static bool HILINE2UL_isRegistered = MarmotElementFactory::
+    registerElement( "HILINE2UL",
+                     makeFactoryFunction<
+                       GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
+                       FullIntegration,
+                       GradedInterfaceFiniteElementFiniteStrain< 2, 4 >::SectionType::Interface >() );
+
+  const static bool HIQUAD4UL_isRegistered = MarmotElementFactory::
+    registerElement( "HIQUAD4UL",
+                     makeFactoryFunction<
+                       GradedInterfaceFiniteElementFiniteStrain< 3, 8 >,
+                       FullIntegration,
+                       GradedInterfaceFiniteElementFiniteStrain< 3, 8 >::SectionType::Interface >() );
+
+  const static bool HIQUAD8UL_isRegistered = MarmotElementFactory::
+    registerElement( "HIQUAD8UL",
+                     makeFactoryFunction<
+                       GradedInterfaceFiniteElementFiniteStrain< 3, 16 >,
+                       FullIntegration,
+                       GradedInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
+
 } // namespace Marmot::Elements::Registration

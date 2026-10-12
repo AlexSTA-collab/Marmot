@@ -29,6 +29,7 @@
 #include "Marmot/MarmotInterfaceMaterialFiniteStrain.h"
 
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotInterfaceFiniteStrainHelperFunctions.h"
 #include "Marmot/MarmotMaterialFiniteStrainFactory.h"
 #include "Marmot/MarmotUtils.h"
 
@@ -76,91 +77,34 @@ void MarmotInterfaceMaterialFiniteStrain::computeStress( State&               st
                                                          const Deformation&   deformation,
                                                          const TimeIncrement& timeIncrement )
 {
-  using namespace Fastor;
+  using namespace Marmot::Materials::InterfaceFiniteStrainHelperFunctions;
 
-  const Tensor3d& normal    = deformation.normal;
-  const Tensor3d& connector = deformation.connector;
+  const Tensor3d& normal = deformation.normal;
 
-  const Tensor3d  jumpU                      = deformation.U( seq( 0, 3 ) ) - deformation.U( seq( 3, last ) );
-  const Tensor9d  averageSurfaceGradientFlat = 0.5 * ( deformation.surfaceGradient( seq( 0, 9 ) ) +
-                                                      deformation.surfaceGradient( seq( 9, last ) ) );
-  const Tensor33d averageSurfaceGradient( reshape< 3, 3 >( averageSurfaceGradientFlat ) );
-
-  // The reduced normal derivative is read off the connector between the paired faces, and not off the jump divided
-  // by the constitutive thickness. With dX = ell N + dTau, the tangential offset dTau is carried by the surface map
-  // rather than by the jump, so that the image of the unit normal fibre is
-  //
-  //     gbar = ( [u] - <grad_s u> dTau ) / ell .
-  //
-  // Leaving the correction out costs the frame indifference of an inclined interface: a rigid rotation of the body
-  // would cause stresses. For a purely normal connector it reduces to [u] / h.
-  const double ell = inner( connector, normal );
-
-  if ( ell <= 0.0 )
-    throw std::invalid_argument(
-      "MarmotInterfaceMaterialFiniteStrain: the paired faces of the interface element must be separated along the "
-      "interface normal, and the normal must point from the first side to the second. A coincident-face mesh "
-      "carries no normal fibre to differentiate along." );
-
-  const Tensor3d dTau = connector - ell * normal;
-
-  const Tensor3d normalGradient = ( 1.0 / ell ) * ( jumpU - einsum< ij, j, to_i >( averageSurfaceGradient, dTau ) );
-
-  Tensor33d F( 0.0 );
-  F.eye();
-  F += averageSurfaceGradient + einsum< i, j, to_ij >( normalGradient, normal );
+  const NormalFibre fibre = normalFibre( deformation.U, deformation.surfaceGradient, normal, deformation.connector );
 
   double* baseMaterialStateVars = stateLayout.getPtr( state.stateVars, "baseMaterialStateVars" );
 
   MarmotMaterialFiniteStrain::ConstitutiveResponse< 3 > response( Tensor33d( 0.0 ), 0.0, 0.0, baseMaterialStateVars );
   MarmotMaterialFiniteStrain::AlgorithmicModuli< 3 >    materialTangents;
-  MarmotMaterialFiniteStrain::Deformation< 3 >          materialDeformation{ F };
+  MarmotMaterialFiniteStrain::Deformation< 3 >          materialDeformation{ fibre.F };
   const MarmotMaterialFiniteStrain::TimeIncrement materialTimeIncrement{ timeIncrement.timeOld, timeIncrement.dT };
 
   baseMaterial->computeStress( response, materialTangents, materialDeformation, materialTimeIncrement );
 
-  const Tensor33d FInvT = transpose( inverse( F ) );
-  const Tensor33d P     = einsum< ij, jk, to_ik >( response.tau, FInvT );
+  Tensor33d   P( 0.0 );
+  Tensor3333d A( 0.0 );
+  firstPiolaKirchhoff( response.tau, materialTangents.dTau_dF, fibre.F, P, A );
 
-  Tensor33d T( 0.0 );
-  T.eye();
-  T -= einsum< i, j, to_ij >( normal, normal );
+  const ReducedResponse reduced = reduceToInterface( P, A, normal, fibre, h );
 
-  const Tensor3333d A = einsum< imkl, mj, to_ijkl >( materialTangents.dTau_dF, FInvT ) -
-                        einsum< im, kj, ml, to_ijkl >( response.tau, FInvT, FInvT );
+  state.force         = reduced.force;
+  state.surfaceStress = reduced.surfaceStress;
 
-  // Work conjugates of the reduced kinematics. With
-  //
-  //     F = I + <grad_s u> + ( [u] - <grad_s u> dTau ) (x) N / ell ,
-  //
-  // the internal work per unit reference midsurface area is h P : dF, so that the jump is conjugate to
-  //
-  //     t      = ( h / ell ) P N                                            and
-  //     Sigma  = h P T - ( h / ell ) ( P N ) (x) dTau
-  //
-  // is conjugate to the average surface gradient. The thicknesses h and ell coincide whenever the faces are
-  // separated by the layer; ell is mesh geometry, h is the constitutive layer.
-  const double hOverEll = h / ell;
-
-  const Tensor3d    traction = einsum< ij, j, to_i >( P, normal );
-  const Tensor33d   ANN      = einsum< ijkl, j, l, to_ik >( A, normal, normal );
-  const Tensor333d  ANT      = einsum< ijkl, j, ml, to_ikm >( A, normal, T );
-  const Tensor333d  ATN      = einsum< ijkl, mj, l, to_imk >( A, T, normal );
-  const Tensor3333d ATT      = einsum< ijkl, mj, nl, to_imkn >( A, T, T );
-
-  // ANN with the tangential offset appended, in both index orders the tangent blocks need
-  const Tensor333d ANNdTauJumpAverage = einsum< ik, m, to_ikm >( ANN, dTau );
-  const Tensor333d ANNdTauAverageJump = einsum< ik, m, to_imk >( ANN, dTau );
-
-  state.force         = hOverEll * traction;
-  state.surfaceStress = h * einsum< ij, kj, to_ik >( P, T ) - hOverEll * einsum< i, k, to_ik >( traction, dTau );
-
-  tangents.Q_ik   = ( hOverEll / ell ) * ANN;
-  tangents.H_ikR  = hOverEll * ( ANT - ( 1.0 / ell ) * ANNdTauJumpAverage );
-  tangents.H_iRk  = hOverEll * ( ATN - ( 1.0 / ell ) * ANNdTauAverageJump );
-  tangents.A_iRkP = h * ATT -
-                    hOverEll * ( einsum< imk, n, to_imkn >( ATN, dTau ) + einsum< m, ikn, to_imkn >( dTau, ANT ) ) +
-                    ( hOverEll / ell ) * einsum< imk, n, to_imkn >( ANNdTauAverageJump, dTau );
+  tangents.Q_ik   = reduced.Q_ik;
+  tangents.H_ikR  = reduced.H_ikR;
+  tangents.H_iRk  = reduced.H_iRk;
+  tangents.A_iRkP = reduced.A_iRkP;
 }
 
 void MarmotInterfaceMaterialFiniteStrain::initializeYourself( double* stateVars, int )

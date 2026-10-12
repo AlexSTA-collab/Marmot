@@ -39,3 +39,6 @@ add_marmot_test("TestMarmotMaterialFiniteStrainFromGradientEnhanced" "${CURR_TES
 
 # Tests for MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain
 add_marmot_test("TestMarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain" "${CURR_TEST_SOURCE_DIR}/TestMarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain.cpp" REQUIRES CompressibleNeoHooke GradientEnhancedCompressibleNeoHookeDamage)
+
+# Tests for MarmotGradedInterfaceMaterialFiniteStrain
+add_marmot_test("TestMarmotGradedInterfaceMaterialFiniteStrain" "${CURR_TEST_SOURCE_DIR}/TestMarmotGradedInterfaceMaterialFiniteStrain.cpp" REQUIRES CompressibleNeoHooke)
