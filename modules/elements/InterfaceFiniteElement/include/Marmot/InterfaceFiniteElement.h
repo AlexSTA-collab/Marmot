@@ -39,6 +39,7 @@
 
 #include "Marmot/InterfaceFiniteElementBase.h"
 #include "Marmot/MarmotFastorTensorBasics.h"
+#include "Marmot/MarmotGradedInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotStateVarVectorManager.h"
 
@@ -50,6 +51,8 @@ namespace Marmot::Elements {
    * @struct DisplacementJumpFormulation
    * @tparam nDim Spatial embedding dimension.
    * @tparam nNodes Number of element nodes.
+   * @tparam MaterialType Interface material class of the element, which provides the nested types `State`,
+   * `Tangents`, `Deformation` and `TimeIncrement` of MarmotInterfaceMaterialHypoElastic.
    * @brief Formulation of the interface element with displacement-jump kinematics.
    *
    * The interface material (`MarmotInterfaceMaterialHypoElastic`) receives the increments of the displacement
@@ -58,7 +61,7 @@ namespace Marmot::Elements {
    * The residual and the tangent are assembled with the jump operator and the operator of the average surface
    * gradient of the quadrature point.
    */
-  template < int nDim, int nNodes >
+  template < int nDim, int nNodes, class MaterialType = MarmotInterfaceMaterialHypoElastic >
   struct DisplacementJumpFormulation {
 
     static constexpr int nTensor = nDim * nDim;
@@ -73,7 +76,7 @@ namespace Marmot::Elements {
     using HMatrixSized = Eigen::Matrix< double, nDim, nTensor, Eigen::RowMajor >;
     using YMatrixSized = Eigen::Matrix< double, nTensor, nTensor, Eigen::RowMajor >;
 
-    using Material = MarmotInterfaceMaterialHypoElastic; ///< interface material of the element
+    using Material = MaterialType; ///< interface material of the element
 
     /// This formulation keeps no data at the quadrature points besides the state variables.
     struct QuadraturePointData {};
@@ -201,17 +204,17 @@ namespace Marmot::Elements {
       Y_ijkl.setZero();
 
       if constexpr ( nDim == 3 ) {
-        Material::State         materialState{ Material::Tensor3d( force.data() ),
-                                       Material::Tensor33d( surface_stress.data() ),
-                                       qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents      materialTangents{ Material::Tensor33d( 0.0 ),
-                                             Material::Tensor3333d( 0.0 ),
-                                             Material::Tensor333d( 0.0 ),
-                                             Material::Tensor3333d( 0.0 ) };
-        Material::Deformation   materialDeformation{ Material::Tensor6d( dU_GPs.data() ),
-                                                   Material::Tensor18d( dSurface_strain_GPs.data() ),
-                                                   Material::Tensor3d( qp.normal.data() ) };
-        Material::TimeIncrement materialTimeIncrement{ time, dT };
+        typename Material::State         materialState{ typename Material::Tensor3d( force.data() ),
+                                                typename Material::Tensor33d( surface_stress.data() ),
+                                                qp.managedStateVars->materialStateVars.data() };
+        typename Material::Tangents      materialTangents{ typename Material::Tensor33d( 0.0 ),
+                                                      typename Material::Tensor3333d( 0.0 ),
+                                                      typename Material::Tensor333d( 0.0 ),
+                                                      typename Material::Tensor3333d( 0.0 ) };
+        typename Material::Deformation   materialDeformation{ typename Material::Tensor6d( dU_GPs.data() ),
+                                                            typename Material::Tensor18d( dSurface_strain_GPs.data() ),
+                                                            typename Material::Tensor3d( qp.normal.data() ) };
+        typename Material::TimeIncrement materialTimeIncrement{ time, dT };
 
         material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
@@ -239,15 +242,17 @@ namespace Marmot::Elements {
         const Eigen::Matrix< double, 6, 1 >  dU3d             = expandSidesTo3D< nDim, 1 >( dU_GPs );
         const Eigen::Matrix< double, 18, 1 > dSurfaceStrain3d = expandSidesTo3D< nDim, 2 >( dSurface_strain_GPs );
 
-        Material::State       materialState{ force3d, surfaceStress3d, qp.managedStateVars->materialStateVars.data() };
-        Material::Tangents    materialTangents{ Material::Tensor33d( 0.0 ),
-                                             Material::Tensor3333d( 0.0 ),
-                                             Material::Tensor333d( 0.0 ),
-                                             Material::Tensor3333d( 0.0 ) };
-        Material::Deformation materialDeformation{ Material::Tensor6d( dU3d.data() ),
-                                                   Material::Tensor18d( dSurfaceStrain3d.data() ),
-                                                   normal3d };
-        Material::TimeIncrement materialTimeIncrement{ time, dT };
+        typename Material::State         materialState{ force3d,
+                                                surfaceStress3d,
+                                                qp.managedStateVars->materialStateVars.data() };
+        typename Material::Tangents      materialTangents{ typename Material::Tensor33d( 0.0 ),
+                                                      typename Material::Tensor3333d( 0.0 ),
+                                                      typename Material::Tensor333d( 0.0 ),
+                                                      typename Material::Tensor3333d( 0.0 ) };
+        typename Material::Deformation   materialDeformation{ typename Material::Tensor6d( dU3d.data() ),
+                                                            typename Material::Tensor18d( dSurfaceStrain3d.data() ),
+                                                            normal3d };
+        typename Material::TimeIncrement materialTimeIncrement{ time, dT };
 
         material->computeStress( materialState, materialTangents, materialDeformation, materialTimeIncrement );
 
@@ -290,5 +295,22 @@ namespace Marmot::Elements {
   using InterfaceFiniteElement = InterfaceFiniteElementBase< nDim,
                                                              nNodes,
                                                              DisplacementJumpFormulation< nDim, nNodes > >;
+
+  /**
+   * @brief Interface finite element with displacement-jump kinematics and a layer whose stiffness varies through
+   * the thickness.
+   *
+   * The element has the kinematics and the assembly of InterfaceFiniteElement. Its material is
+   * MarmotGradedInterfaceMaterialHypoElastic, which integrates the stiffness through the thickness and condenses
+   * the first-order displacement of the microproblem of the layer.
+   *
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   */
+  template < int nDim, int nNodes >
+  using GradedInterfaceFiniteElement = InterfaceFiniteElementBase<
+    nDim,
+    nNodes,
+    DisplacementJumpFormulation< nDim, nNodes, MarmotGradedInterfaceMaterialHypoElastic > >;
 
 } // namespace Marmot::Elements

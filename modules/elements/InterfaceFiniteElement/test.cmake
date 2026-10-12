@@ -6,3 +6,6 @@ add_marmot_test("TestInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestInterf
 
 # Tests for YInterfaceFiniteElement
 add_marmot_test("TestYInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestYInterfaceFiniteElement.cpp" REQUIRES LinearElastic VonMises)
+
+# Tests for GradedInterfaceFiniteElement
+add_marmot_test("TestGradedInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestGradedInterfaceFiniteElement.cpp" REQUIRES LinearElastic VonMises)
