@@ -346,6 +346,46 @@ namespace {
                                  reference.name );
   }
 
+  /**
+   * The second bending mode of the same stack: the top face stretches along the interface, u_x = 2e-3 x at the top and
+   * zero at the bottom, so that the axial strain of the layer varies linearly through the thickness. The exact
+   * solution of plane strain was derived with sympy as above. The mean of the stress and the moments at x = 0 are
+   * the generalized stresses.
+   */
+  void testLayeredStackInDifferentialStretchAgainstExactPlaneStrainSolution()
+  {
+    const auto  layers = card( 0, 3, { { 0.4, { 4000., 0.3 } }, { 0.6, { 20000., 0.2 } } } );
+    GradedPoint point( "LINEARELASTIC", layers );
+
+    Kinematics kinematics;
+    kinematics.normal = Eigen::Vector3d( 0., 0., 1. );
+    kinematics.x( 3 ) = 2e-3; // A+_xx
+
+    const Response response = evaluate( *point.material, point.stateVars.data(), kinematics );
+
+    const auto S = [&]( int offset, int i, int j ) { return response.p( offset + 3 * i + j ); };
+
+    struct Reference {
+      const char* name;
+      double      value;
+      double      actual;
+    };
+    const Reference references[] = {
+      { "S+ xx", 0.33095616396676775, S( 3, 0, 0 ) },
+      { "S- xx", 0.16398835317089433, S( 12, 0, 0 ) },
+      { "S+ yy", 0.07183969810331392, S( 3, 1, 1 ) },
+      { "S- yy", 0.047201204576516824, S( 12, 1, 1 ) },
+      { "S+ zz", 0.019579021303833103, S( 3, 2, 2 ) },
+      { "S- zz", 0.03965934258897367, S( 12, 2, 2 ) },
+      { "force z", 2.9619181946403383, response.p( 2 ) },
+    };
+    for ( const auto& reference : references )
+      throwExceptionOnFailure( std::abs( reference.actual - reference.value ) < 1e-8 * std::abs( reference.value ),
+                               std::string( "The stack in differential stretch differs from the exact plane strain "
+                                            "solution in " ) +
+                                 reference.name );
+  }
+
   /// A homogeneous layer does not depend on its decomposition into layers.
   void testHomogeneousLayerDoesNotDependOnItsDecomposition()
   {
@@ -378,14 +418,16 @@ namespace {
 
 int main()
 {
-  auto tests = std::vector< std::function< void() > >{ testElasticTwoFacesAreEquilibratedMaterial,
-                                                       testPlasticTwoFacesAreEquilibratedMaterial,
-                                                       testTangentOfElasticStackIsConsistent,
-                                                       testTangentOfPlasticStackIsConsistent,
-                                                       testClosureOfLayeredStackAgainstAnalyticalValue,
-                                                       testLayeredStackAgainstExactPlaneStrainSolution,
-                                                       testHomogeneousLayerDoesNotDependOnItsDecomposition,
-                                                       testInvalidPropertiesAreRefused };
+  auto tests = std::vector<
+    std::function< void() > >{ testElasticTwoFacesAreEquilibratedMaterial,
+                               testPlasticTwoFacesAreEquilibratedMaterial,
+                               testTangentOfElasticStackIsConsistent,
+                               testTangentOfPlasticStackIsConsistent,
+                               testClosureOfLayeredStackAgainstAnalyticalValue,
+                               testLayeredStackAgainstExactPlaneStrainSolution,
+                               testLayeredStackInDifferentialStretchAgainstExactPlaneStrainSolution,
+                               testHomogeneousLayerDoesNotDependOnItsDecomposition,
+                               testInvalidPropertiesAreRefused };
 
   executeTestsAndCollectExceptions( tests );
 
