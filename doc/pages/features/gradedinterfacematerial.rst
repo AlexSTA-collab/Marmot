@@ -82,9 +82,24 @@ each of them. The gradient at the height :math:`y` is
    + \mathbf{B}_\tau \bar{\mathbf{A}} + \mathbf{w}(y) \otimes \mathbf{n} + h\,\nabla_T \mathbf{u}^1(y),
 
 with the normal separation :math:`\ell` of the faces and the correction :math:`\mathbf{B}_\tau \bar{\mathbf{A}}` of
-their tangential separation, as for the equilibrated material. The generalized stress is
-:math:`\mathbf{p} = h \sum_q \omega_q \mathbf{B}_q^\mathsf{T} \boldsymbol{\sigma}_q`, which for a homogeneous layer of
-two points at the faces is that of the equilibrated material.
+their tangential separation, as for the equilibrated material. The generalized stress is the derivative of the energy
+of the layer with respect to the generalized strain :math:`\mathbf{x} = ( [\![\mathbf{u}]\!], \mathbf{A}^+,
+\mathbf{A}^- )`,
+
+.. math::
+
+   \mathbf{p} = h \sum_q \omega_q\, \hat{\mathbf{B}}_q^\mathsf{T} \boldsymbol{\sigma}_q, \qquad
+   \hat{\mathbf{B}}_q = \frac{\partial \mathbf{G}(y_q)}{\partial \mathbf{x}},
+
+where the derivative contains, besides the direct dependence, the response :math:`\mathbf{w}(\mathbf{x})` of the
+microproblem and the tangential gradient of the correction. The test function of the variational form is therefore
+built from the same operator as the strain, and the tangent :math:`h \sum_q \omega_q \hat{\mathbf{B}}_q^\mathsf{T}
+\mathbf{D}_q \hat{\mathbf{B}}_q` is symmetric for an elastic layer, with and without the closure below. For a
+homogeneous layer of two points at the faces, without the closure, it is the generalized stress of the equilibrated
+material, because the work of the traction on the response of the microproblem vanishes if the traction is the same
+at all points. With the closure the generalized stress differs from the resultants of the stress through the
+thickness (the mean and the moments) by a divergence along the surface, which does not change the solution of the
+assembled problem; the resultants are available as ``stressResultant()`` of the materials.
 
 The last term of the gradient, which comes from the term :math:`h\,u^1_{k,r} T_{rl}` of the variational form, is of
 the same order as the terms of the surface gradients, because :math:`\mathbf{u}^1` follows the strain of the layer and
@@ -109,11 +124,12 @@ and the second derivatives of the displacement of the faces are neglected. Two t
 
 The derivative of the correction is the one of the converged state of the increment, which is iterated until it does
 not change. The tangent neglects the dependence of that derivative on the state, which is of the order of the second
-derivative of the stress, so that the tangent is exact without the closure and to the order of the strain times the
-closure terms with it. A layered strip with a jump varying linearly along the interface has a polynomial plane-strain
-solution, in which the shear stress varies linearly through every layer; the material reproduces it, also the
-moments :math:`h\int y\,\boldsymbol{\sigma}\,\mathrm{d}y` of the stress, which are the surface stresses of the
-faces, to the precision of the arithmetic. The closure is switched off by the optional last material property, which
+derivative of the stress, so that the tangent is exact without the closure and for an elastic layer, and quasi-Newton
+to the order of the strain times the closure terms with a nonlinear bulk material; the dependence of the response of
+the microproblem on the nonlocal fields is included. A layered strip with a jump varying linearly along the interface
+has a polynomial plane-strain solution, in which the shear stress varies linearly through every layer; the material
+reproduces it, also the moments :math:`h\int y\,\boldsymbol{\sigma}\,\mathrm{d}y` of the stress, which are the
+resultants through the thickness, to the precision of the arithmetic. The closure is switched off by the optional last material property, which
 makes the material the equilibrated one for two points at the faces.
 
 .. note::

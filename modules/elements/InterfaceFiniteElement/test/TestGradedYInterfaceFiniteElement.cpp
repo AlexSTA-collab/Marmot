@@ -220,6 +220,47 @@ namespace {
                                                                                     1e-5 );
   }
 
+  /**
+   * The stiffness of a patch of elastic graded elements is symmetric: the test function of the variational form is
+   * the derivative of the strain of the layer, which contains the response of the microproblem and the tangential
+   * gradient of the correction. This holds with the closure of the tangential gradient, and between all nodes, also
+   * between the nodes of the two faces.
+   */
+  void TestStiffnessOfPatchIsSymmetric()
+  {
+    constexpr int nElements = 3;
+    constexpr int nSide     = nElements + 1;
+    constexpr int nDof      = 2 * 2 * nSide;
+
+    const auto layers = gradedCard( { { 0.4, { 4000., 0.3 } }, { 0.6, { 20000., 0.2 } } } );
+
+    Eigen::MatrixXd K = Eigen::MatrixXd::Zero( nDof, nDof );
+    for ( int e = 0; e < nElements; e++ ) {
+      const double x0 = 0.5 * e, x1 = 0.5 * ( e + 1 );
+      // nodes of the bottom side, then of the top side, which lies at the thickness above
+      const std::array< double, 8 > coordinates = { x0, 0., x1, 0., x0, thickness, x1, thickness };
+
+      std::vector< double > dU( 8 );
+      for ( int i = 0; i < 8; i++ )
+        dU[i] = 1e-3 * std::sin( 0.9 * i + 0.3 + e );
+
+      const auto evaluation = evaluateIncrement< GradedYInterfaceFiniteElement< 2, 4 >, 8 >( "LINEARELASTIC",
+                                                                                             layers,
+                                                                                             coordinates.data(),
+                                                                                             dU );
+
+      const int global[4] = { e, e + 1, nSide + e, nSide + e + 1 };
+      for ( int a = 0; a < 4; a++ )
+        for ( int b = 0; b < 4; b++ )
+          for ( int i = 0; i < 2; i++ )
+            for ( int j = 0; j < 2; j++ )
+              K( 2 * global[a] + i, 2 * global[b] + j ) += evaluation.Ke[( 2 * b + j ) * 8 + 2 * a + i];
+    }
+
+    throwExceptionOnFailure( ( K - K.transpose() ).norm() < 1e-10 * K.norm(),
+                             "The stiffness of a patch of graded elements is not symmetric." );
+  }
+
   void TestElementsAreRegistered()
   {
     for ( const std::string name : { "HYLINE2", "HYQUAD4", "HYQUAD8" } ) {
@@ -238,6 +279,7 @@ int main()
   auto tests = std::vector< std::function< void() > >{ TestTwoFacesAreEquilibratedElement3D,
                                                        TestTwoFacesAreEquilibratedElement2D,
                                                        TestTangentOfStackIsConsistent,
+                                                       TestStiffnessOfPatchIsSymmetric,
                                                        TestElementsAreRegistered };
 
   executeTestsAndCollectExceptions( tests );

@@ -26,8 +26,9 @@ namespace {
 
   /// Generalized stress p = ( force, S+, S- ) and the tangent over the generalized strain ( w, A+, A- ).
   struct Response {
-    Eigen::Matrix< double, 21, 1 >  p = Eigen::Matrix< double, 21, 1 >::Zero();
-    Eigen::Matrix< double, 21, 21 > K = Eigen::Matrix< double, 21, 21 >::Zero();
+    Eigen::Matrix< double, 21, 1 >  p         = Eigen::Matrix< double, 21, 1 >::Zero();
+    Eigen::Matrix< double, 21, 1 >  resultant = Eigen::Matrix< double, 21, 1 >::Zero(); ///< moments of the stress
+    Eigen::Matrix< double, 21, 21 > K         = Eigen::Matrix< double, 21, 21 >::Zero();
   };
 
   /// Generalized strain increment ( w, A+, A- ) and the geometry of an interface point.
@@ -93,6 +94,8 @@ namespace {
     material.computeStress( state, tangents, deformation, timeIncrement );
 
     Response response;
+    if constexpr ( requires { material.stressResultant(); } )
+      response.resultant = material.stressResultant();
     response.p.segment< 3 >( 0 )  = Eigen::Map< const Eigen::Vector3d >( state.generalizedForce.data() );
     response.p.segment< 9 >( 3 )  = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( state.surfaceStressPlus.data() );
     response.p.segment< 9 >( 12 ) = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >(
@@ -322,7 +325,7 @@ namespace {
     const Response response = evaluate( *point.material, point.stateVars.data(), kinematics );
 
     // row-major index of the entry (i, j) of the surface stress, which starts at 3 for S+ and at 12 for S-
-    const auto S = [&]( int offset, int i, int j ) { return response.p( offset + 3 * i + j ); };
+    const auto S = [&]( int offset, int i, int j ) { return response.resultant( offset + 3 * i + j ); };
 
     struct Reference {
       const char* name;
@@ -330,8 +333,8 @@ namespace {
       double      actual;
     };
     const Reference references[] = {
-      { "force x", 2.8004826074396316, response.p( 0 ) },
-      { "force z", 14.809590973201692, response.p( 2 ) },
+      { "force x", 2.8004826074396316, response.resultant( 0 ) },
+      { "force z", 14.809590973201692, response.resultant( 2 ) },
       { "S+ xx", 0.041255289139633285, S( 3, 0, 0 ) },
       { "S+ yy", 0.041255289139633285, S( 3, 1, 1 ) },
       { "S+ zz", 0.14809590973201692, S( 3, 2, 2 ) },
@@ -363,7 +366,7 @@ namespace {
 
     const Response response = evaluate( *point.material, point.stateVars.data(), kinematics );
 
-    const auto S = [&]( int offset, int i, int j ) { return response.p( offset + 3 * i + j ); };
+    const auto S = [&]( int offset, int i, int j ) { return response.resultant( offset + 3 * i + j ); };
 
     struct Reference {
       const char* name;
@@ -377,13 +380,42 @@ namespace {
       { "S- yy", 0.047201204576516824, S( 12, 1, 1 ) },
       { "S+ zz", 0.019579021303833103, S( 3, 2, 2 ) },
       { "S- zz", 0.03965934258897367, S( 12, 2, 2 ) },
-      { "force z", 2.9619181946403383, response.p( 2 ) },
+      { "force z", 2.9619181946403383, response.resultant( 2 ) },
     };
     for ( const auto& reference : references )
       throwExceptionOnFailure( std::abs( reference.actual - reference.value ) < 1e-8 * std::abs( reference.value ),
                                std::string( "The stack in differential stretch differs from the exact plane strain "
                                             "solution in " ) +
                                  reference.name );
+  }
+
+  /**
+   * The generalized stress is the derivative of the energy of the layer: its test function is the derivative of the
+   * strain of the points, including the response of the microproblem and the tangential gradient of the correction.
+   * For an elastic stack the tangent is therefore symmetric, with and without the closure, and the generalized stress
+   * is the tangent applied to the generalized strain.
+   */
+  void testGeneralizedStressIsTheDerivativeOfAnEnergy()
+  {
+    for ( int closure = 0; closure <= 1; closure++ ) {
+      GradedPoint point( "LINEARELASTIC",
+                         card( 0, 3, { { 0.4, { 4000., 0.3 } }, { 0.6, { 20000., 0.2 } } }, closure ) );
+
+      const Kinematics kinematics = makeKinematics( 1e-3, true );
+      const Response   response   = evaluate( *point.material, point.stateVars.data(), kinematics );
+
+      const Eigen::Matrix< double, 21, 21 > asymmetry = response.K - response.K.transpose();
+      throwExceptionOnFailure( asymmetry.norm() < 1e-12 * response.K.norm(),
+                               "The tangent of the elastic stack is not symmetric, closure " +
+                                 std::to_string( closure ) + "." );
+
+      // the increment of the generalized strain has the jump scaled by the thickness in makeKinematics
+      const Eigen::Matrix< double, 21, 1 > expected = response.K * kinematics.x;
+      throwExceptionOnFailure( checkIfEqual< double >( response.p, expected, 1e-9 * ( 1. + expected.norm() ) ),
+                               "The generalized stress of the elastic stack is not the tangent applied to the "
+                               "strain, closure " +
+                                 std::to_string( closure ) + "." );
+    }
   }
 
   /// A homogeneous layer does not depend on its decomposition into layers.
@@ -426,6 +458,7 @@ int main()
                                testClosureOfLayeredStackAgainstAnalyticalValue,
                                testLayeredStackAgainstExactPlaneStrainSolution,
                                testLayeredStackInDifferentialStretchAgainstExactPlaneStrainSolution,
+                               testGeneralizedStressIsTheDerivativeOfAnEnergy,
                                testHomogeneousLayerDoesNotDependOnItsDecomposition,
                                testInvalidPropertiesAreRefused };
 

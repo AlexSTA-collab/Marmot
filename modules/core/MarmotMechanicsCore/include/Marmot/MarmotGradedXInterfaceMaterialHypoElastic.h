@@ -56,10 +56,14 @@
  * @f$\sigma_q n@f$ is the same at all points (see Marmot::Materials::ThicknessMicroproblem), and is solved at every
  * call. The generalized stress is
  * @f[
- *   p = h \sum_q \omega_q B_q^T \sigma_q , \qquad B_q = \frac{\partial G_q}{\partial (w, A^+, A^-)} ,
+ *   p = h \sum_q \omega_q \hat{B}_q^T \sigma_q , \qquad
+ *   \hat{B}_q = \frac{\partial G_q}{\partial (w, A^+, A^-)} ,
  * @f]
- * and the tangent is the one condensed over the corrections. With two integration points at the faces (mode 2 of
- * the profile), the response is identical to the one of the equilibrated material.
+ * where the derivative of the gradient of the point contains the response of the microproblem and the tangential
+ * gradient of the correction below. The test function is therefore built from the same operator as the strain, the
+ * generalized stress is the derivative of the energy of the layer, and the tangent, condensed over the corrections,
+ * is symmetric for an elastic layer. With two integration points at the faces (mode 2 of the profile) and without
+ * the closure below, the response is identical to the one of the equilibrated material.
  *
  * @par Tangential gradient of the correction
  * The variational form has the terms @f$h \, \nabla_T u^1@f$, which are kept. The correction @f$u^1@f$ varies along
@@ -136,4 +140,20 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
+
+  /**
+   * @brief Resultants of the stress through the thickness of the last call of computeStress().
+   *
+   * The generalized stress of the state is the derivative of the energy of the layer, which has the response of the
+   * microproblem and the tangential gradient of the correction in its test function. The resultants are the mean of
+   * the stress and its moments @f$ h \int y \sigma \, dy @f$ and @f$ h \int (1 - y) \sigma \, dy @f$, which are
+   * what the exact solution of the layer is compared with. They differ from the generalized stress by a divergence
+   * along the surface.
+   *
+   * @return force, moment with respect to the top face and moment with respect to the bottom face
+   */
+  const Eigen::Matrix< double, 21, 1 >& stressResultant() const { return resultant_; }
+
+private:
+  Eigen::Matrix< double, 21, 1 > resultant_ = Eigen::Matrix< double, 21, 1 >::Zero(); ///< resultants of the last call
 };

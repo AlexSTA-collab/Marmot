@@ -80,6 +80,7 @@ void MarmotGradedXInterfaceMaterialHypoElastic::computeStress( State&           
     std::copy( solution.points[q].state.begin(), solution.points[q].state.end(), state.stateVars + points[q].offset );
 
   const Vector21d& p = solution.p;
+  resultant_         = solution.resultant;
   const Matrix21d& K = solution.K;
 
   state.generalizedForce   = Tensor3d( p.data() );

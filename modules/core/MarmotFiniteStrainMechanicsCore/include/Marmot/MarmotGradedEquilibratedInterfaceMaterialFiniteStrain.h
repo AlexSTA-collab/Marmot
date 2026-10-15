@@ -112,4 +112,17 @@ public:
                               Tangents&            tangents,
                               const Deformation&   deformation,
                               const TimeIncrement& timeIncrement );
+
+  /**
+   * @brief Resultants of the stress through the thickness of the last call of computeStress().
+   *
+   * The generalized stress of the state is the derivative of the energy of the layer. The resultants are the mean of
+   * the stress and its moments through the thickness, which differ from it by a divergence along the surface.
+   *
+   * @return force, moment with respect to the top face and moment with respect to the bottom face
+   */
+  const Eigen::Matrix< double, 21, 1 >& stressResultant() const { return resultant_; }
+
+private:
+  Eigen::Matrix< double, 21, 1 > resultant_ = Eigen::Matrix< double, 21, 1 >::Zero(); ///< resultants of the last call
 };

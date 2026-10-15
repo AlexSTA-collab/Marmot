@@ -87,6 +87,7 @@ void MarmotGradedEquilibratedInterfaceMaterialFiniteStrain::computeStress( State
   }
 
   const Vector21d& p = solution.p;
+  resultant_         = solution.resultant;
   const Matrix21d& K = solution.K;
 
   state.generalizedForce   = Tensor3d( p.data() );

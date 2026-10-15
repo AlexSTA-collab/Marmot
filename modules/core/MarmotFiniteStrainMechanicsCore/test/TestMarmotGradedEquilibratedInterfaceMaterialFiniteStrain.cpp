@@ -25,8 +25,9 @@ namespace {
 
   /// Generalized stress p = ( force, S+, S- ) and the tangent over the generalized strain ( w, A+, A- ).
   struct Response {
-    Eigen::Matrix< double, 21, 1 >  p = Eigen::Matrix< double, 21, 1 >::Zero();
-    Eigen::Matrix< double, 21, 21 > K = Eigen::Matrix< double, 21, 21 >::Zero();
+    Eigen::Matrix< double, 21, 1 >  p         = Eigen::Matrix< double, 21, 1 >::Zero();
+    Eigen::Matrix< double, 21, 1 >  resultant = Eigen::Matrix< double, 21, 1 >::Zero(); ///< moments of the stress
+    Eigen::Matrix< double, 21, 21 > K         = Eigen::Matrix< double, 21, 21 >::Zero();
   };
 
   /// Total kinematics of an interface point.
@@ -85,6 +86,8 @@ namespace {
     material.computeStress( state, tangents, deformation, timeIncrement );
 
     Response response;
+    if constexpr ( requires { material.stressResultant(); } )
+      response.resultant = material.stressResultant();
     response.p.segment< 3 >( 0 )  = Eigen::Map< const Eigen::Vector3d >( state.generalizedForce.data() );
     response.p.segment< 9 >( 3 )  = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >( state.surfaceStressPlus.data() );
     response.p.segment< 9 >( 12 ) = Eigen::Map< const Eigen::Matrix< double, 9, 1 > >(
@@ -276,7 +279,7 @@ namespace {
 
     const Response response = evaluate( *point.material, point.stateVars.data(), kinematics );
 
-    const auto S = [&]( int offset, int i, int j ) { return response.p( offset + 3 * i + j ); };
+    const auto S = [&]( int offset, int i, int j ) { return response.resultant( offset + 3 * i + j ); };
 
     struct Reference {
       const char* name;
@@ -284,8 +287,8 @@ namespace {
       double      actual;
     };
     const Reference references[] = {
-      { "force x", 0.00563602843723195, response.p( 0 ) },
-      { "force z", 0.08639435025596491, response.p( 2 ) },
+      { "force x", 0.00563602843723195, response.resultant( 0 ) },
+      { "force z", 0.08639435025596491, response.resultant( 2 ) },
       { "S+ xx", 0.0017476343783169167, S( 3, 0, 0 ) },
       { "S+ yy", 0.0017476343783169167, S( 3, 1, 1 ) },
       { "S+ zz", 0.0043197175127982455, S( 3, 2, 2 ) },

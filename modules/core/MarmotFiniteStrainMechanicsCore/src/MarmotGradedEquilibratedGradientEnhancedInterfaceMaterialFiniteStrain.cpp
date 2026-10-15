@@ -85,6 +85,9 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
   const MarmotMaterialGradientEnhancedFiniteStrain::TimeIncrement materialTimeIncrement{ timeIncrement.timeOld,
                                                                                          timeIncrement.dT };
 
+  // shift of the nonlocal fields of the stations, for the derivative of the tangent of a point
+  std::vector< double > nonlocalShift( nq, 0.0 );
+
   // keep the state variables of the points of the committed state for every trial
   const auto evaluateBulkPoint = [&]( int q, const Eigen::Matrix< double, 9, 1 >& Fvector ) {
     const auto& point = points[q];
@@ -102,7 +105,8 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
                                                                                 response.state.data() + 3 );
     MarmotMaterialGradientEnhancedFiniteStrain::AlgorithmicModuli< 3 >    moduli;
     MarmotMaterialGradientEnhancedFiniteStrain::Deformation< 3 >          materialDeformation{ F,
-                                                                                      deformation.nonlocalFields( q ) };
+                                                                                      deformation.nonlocalFields( q ) +
+                                                                                        nonlocalShift[q] };
 
     point.material->computeStress( bulk, moduli, materialDeformation, materialTimeIncrement );
 
@@ -136,6 +140,23 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
 
   const auto& solved = solver.points();
 
+  // derivative of the tangent of a point with respect to the nonlocal field of its station, from the committed
+  // state: the response of the microproblem depends on it through the tangent
+  constexpr double                             fieldStep = 1e-7;
+  std::vector< Eigen::Matrix< double, 9, 9 > > dTangent_dNonlocal( nq, Eigen::Matrix< double, 9, 9 >::Zero() );
+  if ( tangentialGradient ) {
+    for ( int q = 0; q < nq; q++ ) {
+      const Eigen::Matrix< double, 9, 1 > Fvector = layer.strainOffset + solved[q].gradient;
+      Eigen::Matrix< double, 9, 9 >       sides[2];
+      for ( int side = 0; side < 2; side++ ) {
+        nonlocalShift[q] = ( side == 0 ? -fieldStep : fieldStep );
+        sides[side]      = evaluateBulkPoint( q, Fvector ).D;
+      }
+      nonlocalShift[q]      = 0.0;
+      dTangent_dNonlocal[q] = ( sides[1] - sides[0] ) / ( 2. * fieldStep );
+    }
+  }
+
   // commit the corrections and the state of the converged evaluations
   for ( int q = 0; q < nq; q++ ) {
     std::vector< double > pointState = solved[q].state;
@@ -155,7 +176,7 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
 
   const auto dw = solver.condensedCorrections( extraTraction );
 
-  const Vector21d p = solver.stress();
+  const Vector21d p = solver.stress( dw );
   const Matrix21d K = solver.tangent( dw );
 
   // derivative of the generalized stress with respect to the nonlocal fields
@@ -164,6 +185,11 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
   tangents.dStress_dNonlocal = Eigen::MatrixXd::Zero( 21, nq );
   tangents.dLocal_dStrain    = Eigen::MatrixXd::Zero( nq, 21 );
   tangents.dLocal_dNonlocal  = Eigen::MatrixXd::Zero( nq, nq );
+
+  // the test operator depends on the nonlocal field through the tangent of the point, if there is a closure
+  for ( int f = 0; f < nq; f++ )
+    tangents.dStress_dNonlocal.col(
+      f ) += solver.stressDerivativeThroughMicroResponse( f, dTangent_dNonlocal[f], fieldStep );
 
   state.localFields   = Eigen::VectorXd::Zero( nq );
   state.nonlocalRadii = Eigen::VectorXd::Zero( nq );
@@ -175,7 +201,7 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
       Eigen::Matrix< double, 9, 1 > dStress = solved[q].D * N9 * dw[q].col( 21 + f );
       if ( f == q )
         dStress += solved[q].dStress_dNonlocal;
-      tangents.dStress_dNonlocal.col( f ) += scale * solver.gradientOperator( q ).transpose() * dStress;
+      tangents.dStress_dNonlocal.col( f ) += scale * solver.testGradientOperator( q, dw ).transpose() * dStress;
 
       tangents.dLocal_dNonlocal( q, f ) = ( f == q ? solved[q].dLocal_dNonlocal : 0. ) +
                                           ( solved[q].dLocal_dStrain * N9 * dw[q].col( 21 + f ) )( 0, 0 );
