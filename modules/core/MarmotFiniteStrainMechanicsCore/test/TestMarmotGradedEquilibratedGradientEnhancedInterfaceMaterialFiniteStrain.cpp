@@ -327,11 +327,17 @@ namespace {
   void testDerivativesAreConsistent()
   {
     for ( const bool inclined : { false, true } ) {
-      // without the closure of the tangential gradient the derivatives are exact
-      checkDerivatives( card( { 0.0, 0.5, 1.0 }, 0 ), makeKinematics( 0.05, inclined, 3 ), 1e-5, "without closure" );
+      // without the tangential gradient the derivatives are exact
+      checkDerivatives( card( { 0.0, 0.5, 1.0 }, 0 ),
+                        makeKinematics( 0.05, inclined, 3 ),
+                        1e-5,
+                        "without the tangential gradient" );
       // with it, they neglect the dependence of the derivative of the correction on the state and on the fields,
       // which is the second derivative of the damage
-      checkDerivatives( card( { 0.0, 0.4, 1.0 }, 1 ), makeKinematics( 1e-3, inclined, 3 ), 2e-1, "with closure" );
+      checkDerivatives( card( { 0.0, 0.4, 1.0 }, 1 ),
+                        makeKinematics( 1e-3, inclined, 3 ),
+                        2e-1,
+                        "with the tangential gradient" );
     }
   }
 

@@ -40,11 +40,12 @@
 
 namespace Marmot::Materials::TwoSidedGradedLayer {
 
-  /// Maximum number of passes of the iteration for the derivative of the correction of the closure.
-  constexpr int maxClosurePasses = 8;
+  /// Maximum number of passes of the iteration for the derivative of the correction of the tangential gradient.
+  constexpr int maxTangentialGradientPasses = 8;
 
-  /// Largest change of the closure terms, relative to their norm, which ends the closure iteration.
-  constexpr double closureTolerance = 1e-10;
+  /// Largest change of the tangential gradient terms, relative to their norm, which ends the iteration of the
+  /// tangential gradient.
+  constexpr double tangentialGradientTolerance = 1e-10;
 
   /// Generalized strain ( w, A+, A- ) of a two-sided interface layer.
   using Vector21d = Eigen::Matrix< double, 21, 1 >;
@@ -69,7 +70,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     std::vector< double >               weights;           ///< weights of the integration points, which sum up to one
     std::vector< double >               positions;         ///< coordinates y of the integration points
     const Eigen::MatrixXd*              cumulativeWeights; ///< weights of the cumulative integral from the bottom
-    bool                                tangentialGradient; ///< the closure of the tangential gradient is kept
+    bool                                tangentialGradient; ///< the tangential gradient is kept
     Eigen::Matrix< double, nStrain, 9 > gradientToStrain;   ///< maps the 9-vector of a gradient to the strain-like
                                                             ///< measure
     Eigen::Matrix< double, 9, nStrain > stressToVector;     ///< maps the stress-like measure to the 9-vector of the
@@ -97,9 +98,9 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
   /// Response of an integration point, as the microproblem requires it.
   template < int nStrain >
   struct Point : PointResponse< nStrain > {
-    Eigen::Vector3d               w = Eigen::Vector3d::Zero();                      ///< correction w = du1/dy
-    Eigen::Matrix3d               Qinv;                                             ///< inverse of the acoustic tensor
-    Eigen::Vector3d               a;                                                ///< traction plus the closure force
+    Eigen::Vector3d               w = Eigen::Vector3d::Zero(); ///< correction w = du1/dy
+    Eigen::Matrix3d               Qinv;                        ///< inverse of the acoustic tensor
+    Eigen::Vector3d               a;                           ///< traction plus the tangential force
     Eigen::Matrix< double, 9, 1 > gradient = Eigen::Matrix< double, 9, 1 >::Zero(); ///< 9-vector of the gradient
                                                                                     ///< increment of the point
   };
@@ -124,9 +125,9 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
    * @f]
    * with the generalized strain @f$ x = ( [\![u]\!], A^+, A^- ) @f$, the operator @f$ S = E \, ( \cdot \otimes n ) @f$
    * of the correction, and the tangential gradient @f$ \hat{G}_q x @f$ of the correction. The traction of the point,
-   * plus the closure force, is equal at all points. The generalized stress and the tangent are the weighted sums
+   * plus the tangential force, is equal at all points. The generalized stress and the tangent are the weighted sums
    * over the points, with the tangent condensed over the corrections. See MarmotGradedXInterfaceMaterialHypoElastic
-   * for the derivation of the closure of the tangential gradient.
+   * for the derivation of the tangential gradient.
    *
    * A material with further variables that enter the stress of the points, for example nonlocal fields, adds their
    * derivative of the traction to the condensation and assembles the derivatives of the generalized stress with
@@ -190,7 +191,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     }
 
     /**
-     * @brief Solve the microproblem and the closure of the tangential gradient.
+     * @brief Solve the microproblem and the tangential gradient.
      *
      * @tparam EvaluateBulk callable `PointResponse< nStrain >( int q, const StrainVector& strain )` that updates the
      * bulk material of the point q for the strain-like measure from the committed state
@@ -207,7 +208,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     {
       const int nq = static_cast< int >( layer_.weights.size() );
 
-      const auto makeEvaluate = [&]( const ClosureTerms& terms ) {
+      const auto makeEvaluate = [&]( const TangentialGradientTerms& terms ) {
         return [&, terms]( int q, const Eigen::Vector3d& w ) {
           auto bulk = evaluateBulk( q, StrainVector( strain_[q] + terms.strain[q] + S_ * w ) );
 
@@ -226,9 +227,9 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
         };
       };
 
-      const bool closureActive = layer_.tangentialGradient && dA_.cwiseAbs().maxCoeff() > 0.;
+      const bool tangentialGradientActive = layer_.tangentialGradient && dA_.cwiseAbs().maxCoeff() > 0.;
 
-      ClosureTerms none;
+      TangentialGradientTerms none;
       none.strain.assign( nq, StrainVector::Zero() );
       none.force.assign( nq, Eigen::Vector3d::Zero() );
       none.gradient.assign( nq, Eigen::Matrix< double, 9, 1 >::Zero() );
@@ -236,8 +237,8 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       std::vector< Matrix3xN > dw( nq );
       tangentPoint_.resize( nq );
 
-      ClosureTerms terms = none;
-      if ( closureActive ) {
+      TangentialGradientTerms terms = none;
+      if ( tangentialGradientActive ) {
         // the derivative of the correction of the state at the start of the increment starts the iteration
         const auto                      evaluateNone = makeEvaluate( none );
         std::vector< Point< nStrain > > start;
@@ -248,10 +249,10 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
         dw = condenseOverStrain( start );
         for ( int q = 0; q < nq; q++ )
           tangentPoint_[q] = start[q].D;
-        terms = closure( dw, tangentPoint_, dA_ );
+        terms = tangentialGradientTerms( dw, tangentPoint_, dA_ );
       }
 
-      for ( int pass = 0; pass < maxClosurePasses; pass++ ) {
+      for ( int pass = 0; pass < maxTangentialGradientPasses; pass++ ) {
         points_ = ThicknessMicroproblem::solve< Point< nStrain > >( layer_.weights,
                                                                     makeEvaluate( terms ),
                                                                     initialCorrections,
@@ -260,10 +261,10 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
         for ( int q = 0; q < nq; q++ )
           tangentPoint_[q] = points_[q].D;
 
-        if ( !closureActive )
+        if ( !tangentialGradientActive )
           break;
 
-        const ClosureTerms updated = closure( dw, tangentPoint_, dA_ );
+        const TangentialGradientTerms updated = tangentialGradientTerms( dw, tangentPoint_, dA_ );
 
         double change = 0.;
         double scale  = 0.;
@@ -274,16 +275,16 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
           scale  = std::max( scale, updated.force[q].cwiseAbs().maxCoeff() );
         }
         terms = updated;
-        if ( change <= closureTolerance * scale + 1e-300 )
+        if ( change <= tangentialGradientTolerance * scale + 1e-300 )
           break;
       }
 
-      // linear dependence of the closure terms on the surface gradients A+ and A-, with the derivative of the
-      // correction of the converged state frozen
-      const ClosureOperators operators = closureOperators( dw, tangentPoint_ );
-      closureStrainTangent_            = operators.strain;
-      closureForceTangent_             = operators.force;
-      closureGradientTangent_          = operators.gradient;
+      // linear dependence of the tangential gradient terms on the surface gradients A+ and A-, with the derivative of
+      // the correction of the converged state frozen
+      const TangentialGradientOperators operators = tangentialGradientOperators( dw, tangentPoint_ );
+      tangentialStrainTangent_                    = operators.strain;
+      tangentialForceTangent_                     = operators.force;
+      tangentialGradientTangent_                  = operators.gradient;
     }
 
     /**
@@ -305,9 +306,9 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      * @brief Derivative of the strain-like measure of a point with respect to the generalized strain.
      *
      * @param[in] q index of the integration point
-     * @return the derivative with the closure of the tangential gradient, nStrain x 21
+     * @return the derivative with the tangential gradient, nStrain x 21
      */
-    MatrixNx21 strainOperator( int q ) const { return EBx_[q] + closureStrainTangent_[q]; }
+    MatrixNx21 strainOperator( int q ) const { return EBx_[q] + tangentialStrainTangent_[q]; }
 
     /**
      * @brief Operator S that maps a correction to the strain-like measure.
@@ -334,7 +335,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     std::vector< Eigen::MatrixXd > condensedCorrections( const std::vector< Eigen::MatrixXd >& extraTraction ) const
     {
       return condensedCorrectionsOf( points_,
-                                     { closureStrainTangent_, closureForceTangent_, closureGradientTangent_ },
+                                     { tangentialStrainTangent_, tangentialForceTangent_, tangentialGradientTangent_ },
                                      extraTraction );
     }
 
@@ -353,7 +354,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      */
     Matrix9x21 testGradientOperator( int q, const std::vector< Eigen::MatrixXd >& dw ) const
     {
-      return Bx_[q] + closureGradientTangent_[q] + N9_ * dw[q].leftCols( 21 );
+      return Bx_[q] + tangentialGradientTangent_[q] + N9_ * dw[q].leftCols( 21 );
     }
 
     /**
@@ -376,10 +377,10 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      * one point.
      *
      * The generalized stress is the work of the stress on the test operator, which contains the derivative of the
-     * corrections and the closure terms. They depend on the tangent of the points. This is the derivative of the
-     * generalized stress with respect to a scalar, at the stress of the points fixed, if the scalar changes the tangent
-     * of the point f by dD. It is zero without the closure, because the work of the traction on the response of the
-     * microproblem vanishes if the traction is the same at all points.
+     * corrections and the tangential gradient terms. They depend on the tangent of the points. This is the derivative
+     * of the generalized stress with respect to a scalar, at the stress of the points fixed, if the scalar changes the
+     * tangent of the point f by dD. It is zero without the tangential gradient, because the work of the traction on the
+     * response of the microproblem vanishes if the traction is the same at all points.
      *
      * @param[in] f index of the integration point whose tangent depends on the scalar
      * @param[in] dD derivative of the tangent of the point f with respect to the scalar
@@ -401,8 +402,8 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
         for ( std::size_t q = 0; q < perturbed.size(); q++ )
           D[q] = perturbed[q].D;
 
-        const ClosureOperators operators = closureOperators( condenseOverStrain( perturbed ), D );
-        const auto             dw        = condensedCorrectionsOf( perturbed, operators, {} );
+        const TangentialGradientOperators operators = tangentialGradientOperators( condenseOverStrain( perturbed ), D );
+        const auto                        dw        = condensedCorrectionsOf( perturbed, operators, {} );
 
         sides[side].setZero();
         for ( std::size_t q = 0; q < perturbed.size(); q++ )
@@ -435,7 +436,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      *
      * The test operator and the derivative of the strain of a point are the same map, up to the weights of the
      * stress and strain measures. The tangent is therefore symmetric if the tangent of the points is, with the
-     * derivative of the corrections and of the closure terms frozen.
+     * derivative of the corrections and of the tangential gradient terms frozen.
      *
      * @param[in] dw derivative of the corrections, as returned by condensedCorrections()
      * @return the condensed tangent, 21 x 21
@@ -445,44 +446,46 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
       Matrix21d K = Matrix21d::Zero();
       for ( std::size_t q = 0; q < points_.size(); q++ )
         K += layer_.thickness * layer_.weights[q] * testGradientOperator( static_cast< int >( q ), dw ).transpose() *
-             layer_.stressToVector * points_[q].D * ( EBx_[q] + closureStrainTangent_[q] + S_ * dw[q].leftCols( 21 ) );
+             layer_.stressToVector * points_[q].D *
+             ( EBx_[q] + tangentialStrainTangent_[q] + S_ * dw[q].leftCols( 21 ) );
       return K;
     }
 
   private:
-    /// Terms of the closure of the tangential gradient of the correction at all integration points.
-    struct ClosureTerms {
+    /// Terms of the tangential gradient of the correction at all integration points.
+    struct TangentialGradientTerms {
       std::vector< StrainVector >                  strain;   ///< strain of the tangential gradient of the correction
       std::vector< Eigen::Vector3d >               force;    ///< change of the traction from the bottom to the point
       std::vector< Eigen::Matrix< double, 9, 1 > > gradient; ///< tangential gradient of the correction as a 9-vector
     };
 
-    /// Linear dependence of the closure terms of all points on the generalized strain.
-    struct ClosureOperators {
+    /// Linear dependence of the tangential gradient terms of all points on the generalized strain.
+    struct TangentialGradientOperators {
       std::vector< MatrixNx21 > strain;   ///< derivative of the strain of the tangential gradient
-      std::vector< Matrix3x21 > force;    ///< derivative of the closure force
+      std::vector< Matrix3x21 > force;    ///< derivative of the tangential force
       std::vector< Matrix9x21 > gradient; ///< derivative of the tangential gradient of the correction as 9-vector
     };
 
     /**
-     * @brief Linear dependence of the closure terms on the surface gradients A+ and A-.
+     * @brief Linear dependence of the tangential gradient terms on the surface gradients A+ and A-.
      *
      * @param[in] dw derivative of the correction of every point with respect to the strain-like measure
      * @param[in] D tangent of every point
-     * @return the derivative of the closure terms with respect to x, with dw and D frozen
+     * @return the derivative of the tangential gradient terms with respect to x, with dw and D frozen
      */
-    ClosureOperators closureOperators( const std::vector< Matrix3xN >& dw, const std::vector< MatrixNxN >& D ) const
+    TangentialGradientOperators tangentialGradientOperators( const std::vector< Matrix3xN >& dw,
+                                                             const std::vector< MatrixNxN >& D ) const
     {
       const int nq = static_cast< int >( layer_.weights.size() );
 
-      ClosureOperators operators;
+      TangentialGradientOperators operators;
       operators.strain.assign( nq, MatrixNx21::Zero() );
       operators.force.assign( nq, Matrix3x21::Zero() );
       operators.gradient.assign( nq, Matrix9x21::Zero() );
       for ( int k = 0; k < ( layer_.tangentialGradient ? 9 : 0 ); k++ ) {
-        Eigen::Matrix3d unit        = Eigen::Matrix3d::Zero();
-        unit( k / 3, k % 3 )        = 1.0;
-        const ClosureTerms response = closure( dw, D, unit );
+        Eigen::Matrix3d unit                   = Eigen::Matrix3d::Zero();
+        unit( k / 3, k % 3 )                   = 1.0;
+        const TangentialGradientTerms response = tangentialGradientTerms( dw, D, unit );
         for ( int q = 0; q < nq; q++ ) {
           operators.strain[q].col( 3 + k )  = response.strain[q];
           operators.strain[q].col( 12 + k ) = -response.strain[q];
@@ -500,13 +503,13 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      * @brief Derivative of the corrections of the given points with respect to x and further variables.
      *
      * @param[in] points responses of the integration points
-     * @param[in] operators closure operators for the tangents of these points
+     * @param[in] operators tangential gradient term operators for the tangents of these points
      * @param[in] extraTraction for every point, the derivative of its traction with respect to further variables,
      * 3 x nExtra, or an empty vector if there are none
      * @return for every point, the derivative of its correction, 3 x ( 21 + nExtra )
      */
     std::vector< Eigen::MatrixXd > condensedCorrectionsOf( const std::vector< Point< nStrain > >& points,
-                                                           const ClosureOperators&                operators,
+                                                           const TangentialGradientOperators&     operators,
                                                            const std::vector< Eigen::MatrixXd >&  extraTraction ) const
     {
       const int nq     = static_cast< int >( layer_.weights.size() );
@@ -544,7 +547,7 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     }
 
     /**
-     * @brief Terms of the closure of the tangential gradient of the correction.
+     * @brief Terms of the tangential gradient of the correction.
      *
      * They are linear in the difference of the surface gradients, for the derivative of the correction and the
      * tangent of the points.
@@ -554,16 +557,16 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
      * @param[in] surfaceGradientDifference difference A+ - A- of the surface gradients
      * @return the strain of the tangential gradient and the force of the traction of every point
      */
-    ClosureTerms closure( const std::vector< Matrix3xN >& dw,
-                          const std::vector< MatrixNxN >& D,
-                          const Eigen::Matrix3d&          surfaceGradientDifference ) const
+    TangentialGradientTerms tangentialGradientTerms( const std::vector< Matrix3xN >& dw,
+                                                     const std::vector< MatrixNxN >& D,
+                                                     const Eigen::Matrix3d&          surfaceGradientDifference ) const
     {
       const int    nq  = static_cast< int >( layer_.weights.size() );
       const auto&  n   = layer_.normal;
       const double h   = layer_.thickness;
       const double ell = layer_.normalSeparation;
 
-      ClosureTerms terms;
+      TangentialGradientTerms terms;
       terms.strain.assign( nq, StrainVector::Zero() );
       terms.force.assign( nq, Eigen::Vector3d::Zero() );
       terms.gradient.assign( nq, Eigen::Matrix< double, 9, 1 >::Zero() );
@@ -615,16 +618,17 @@ namespace Marmot::Materials::TwoSidedGradedLayer {
     Matrix9x3 N9_; ///< normal fibre operator
     Matrix3xN St_; ///< operator of the traction
 
-    std::vector< Matrix9x21 >   Bx_;     ///< derivative of the gradient of a point with respect to x
-    std::vector< MatrixNx21 >   EBx_;    ///< derivative of the strain-like measure of a point with respect to x
-    std::vector< StrainVector > strain_; ///< strain-like measure of a point without correction and closure
+    std::vector< Matrix9x21 > Bx_;  ///< derivative of the gradient of a point with respect to x
+    std::vector< MatrixNx21 > EBx_; ///< derivative of the strain-like measure of a point with respect to x
+    std::vector< StrainVector >
+      strain_; ///< strain-like measure of a point without correction and tangential gradient term
 
     std::vector< Point< nStrain > > points_;       ///< responses of the points at the solution
     std::vector< MatrixNxN >        tangentPoint_; ///< tangent of the points at the solution
 
-    std::vector< MatrixNx21 > closureStrainTangent_;   ///< derivative of the closure strain with respect to x
-    std::vector< Matrix3x21 > closureForceTangent_;    ///< derivative of the closure force with respect to x
-    std::vector< Matrix9x21 > closureGradientTangent_; ///< derivative of the closure gradient with respect to x
+    std::vector< MatrixNx21 > tangentialStrainTangent_;   ///< derivative of the tangential strain with respect to x
+    std::vector< Matrix3x21 > tangentialForceTangent_;    ///< derivative of the tangential force with respect to x
+    std::vector< Matrix9x21 > tangentialGradientTangent_; ///< derivative of the tangential gradient with respect to x
   };
 
   /**

@@ -181,16 +181,16 @@ namespace {
   }
 
   /**
-   * The tangent is the derivative of the generalized stress through a layered stack. Without the closure of the
-   * tangential gradient it is exact. With it, the tangent neglects the dependence of the derivative of the
-   * correction on the deformation, which is of the order of the strain times the closure terms.
+   * The tangent is the derivative of the generalized stress through a layered stack. Without the tangential gradient of
+   * the tangential gradient it is exact. With it, the tangent neglects the dependence of the derivative of the
+   * correction on the deformation, which is of the order of the strain times the tangential gradient terms.
    */
   void testTangentIsConsistent()
   {
     const std::vector< double > stiff = { 400000., 200000., 1.0 };
 
-    for ( const bool closure : { false, true } ) {
-      const auto layers = card( 0, 2, { { 0.3, neoHooke }, { 0.7, stiff } }, closure ? 1 : 0 );
+    for ( const bool withTangentialGradient : { false, true } ) {
+      const auto layers = card( 0, 2, { { 0.3, neoHooke }, { 0.7, stiff } }, withTangentialGradient ? 1 : 0 );
 
       for ( const bool inclined : { false, true } )
         for ( const double scale : { 1e-3, 0.05 } ) {
@@ -216,7 +216,7 @@ namespace {
             numerical.col( j ) = ( sides[1].p - sides[0].p ) / ( 2. * step );
           }
 
-          const double tolerance = ( closure ? scale : 1e-6 ) * response.K.cwiseAbs().maxCoeff();
+          const double tolerance = ( withTangentialGradient ? scale : 1e-6 ) * response.K.cwiseAbs().maxCoeff();
           for ( int i = 0; i < 21; i++ )
             for ( int j = 0; j < 21; j++ )
               throwExceptionOnFailure( std::abs( numerical( i, j ) - response.K( i, j ) ) < tolerance,

@@ -223,7 +223,7 @@ namespace {
   /**
    * The stiffness of a patch of elastic graded elements is symmetric: the test function of the variational form is
    * the derivative of the strain of the layer, which contains the response of the microproblem and the tangential
-   * gradient of the correction. This holds with the closure of the tangential gradient, and between all nodes, also
+   * gradient of the correction. This holds with the tangential gradient, and between all nodes, also
    * between the nodes of the two faces.
    */
   void TestStiffnessOfPatchIsSymmetric()

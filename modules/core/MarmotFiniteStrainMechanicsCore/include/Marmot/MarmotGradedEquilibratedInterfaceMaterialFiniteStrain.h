@@ -52,16 +52,18 @@
  * @f]
  * with the normal separation @f$\ell@f$ and the tangential separation of the faces from the connector, and the
  * correction @f$g_q = \partial_Y u^1@f$ of the microproblem, which requires that the traction @f$P_q N@f$ is the same
- * at all points. The generalized stress is @f$p = h \sum_q \omega_q B_q^T P_q@f$ with the derivative @f$B_q@f$ of the
- * gradient with respect to @f$([\![u]\!], A^+, A^-)@f$, and the tangent is the one condensed over the corrections.
+ * at all points. The generalized stress is @f$p = h \sum_q \omega_q \hat{B}_q^T P_q@f$ with the derivative
+ * @f$\hat{B}_q@f$ of the gradient of the point with respect to @f$([\![u]\!], A^+, A^-)@f$, including the response of
+ * the microproblem and the tangential gradient of the correction, so that it is the derivative of the energy, and the
+ * tangent is the one condensed over the corrections.
  * The tangential gradient of the correction is kept in the way described in
  * MarmotGradedXInterfaceMaterialHypoElastic, with the derivative of the correction of the first Piola-Kirchhoff
  * tangent and the divergence of the first Piola-Kirchhoff stress in the reference configuration.
  *
- * The material properties and the state variables are those of MarmotGradedInterfaceMaterialFiniteStrain, with the
- * optional last property of Marmot::Materials::ThicknessProfile, which switches the closure of the tangential
- * gradient off. With two integration points at the faces and without the closure, the response is the one of the
- * equilibrated material.
+ * The material properties are described in Marmot::Materials::ThicknessProfile, with the optional last property,
+ * which switches the tangential gradient of the correction off. The state variables are, for every integration point
+ * through the thickness, the correction followed by the state variables of its bulk material. With two integration
+ * points at the faces and without the tangential gradient, the response is the one of the equilibrated material.
  */
 class MarmotGradedEquilibratedInterfaceMaterialFiniteStrain : public MarmotGradedInterfaceMaterialFiniteStrainBase {
 

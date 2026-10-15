@@ -106,21 +106,6 @@ Elements
    * - ``YILINE2``
      - 4
      - Two-dimensional counterpart of ``YIQUAD4`` between two linear lines
-   * - ``HIQUAD4``, ``HIQUAD8``
-     - 8, 16
-     - As ``IQUAD4`` and ``IQUAD8``, for a layer whose stiffness varies through the thickness, with the :ref:`graded
-       interface material <gradedinterfacematerial>`
-   * - ``HILINE2``
-     - 4
-     - Two-dimensional counterpart of ``HIQUAD4``
-   * - ``HIQUAD4UL``, ``HIQUAD8UL``, ``HILINE2UL``
-     - 8, 16, 4
-     - As ``HIQUAD4``, ``HIQUAD8`` and ``HILINE2`` at finite strain
-   * - ``GYS2IQUAD4UL``, ``GYS3IQUAD4UL``, ``GYS4IQUAD4UL``
-     - 8
-     - ``HIQUAD4UL`` with a gradient-enhanced bulk material and a nonlocal field at each of 2, 3 or 4 stations through
-       the thickness. The same for ``IQUAD8`` (16 nodes) and ``ILINE2`` (4 nodes) as ``GYSnIQUAD8UL`` and
-       ``GYSnILINE2UL``
    * - ``HYQUAD4``, ``HYQUAD8``, ``HYLINE2``
      - 8, 16, 4
      - As ``YIQUAD4``, ``YIQUAD8`` and ``YILINE2`` (equilibrated two-sided kinematics), for a layer whose stiffness

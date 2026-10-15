@@ -40,8 +40,8 @@
 /**
  * @brief Integration points through the thickness of a layer with hypoelastic bulk materials.
  *
- * This is the part that all graded hypoelastic interface materials share (see
- * MarmotGradedInterfaceMaterialHypoElastic and MarmotGradedXInterfaceMaterialHypoElastic): the integration points
+ * This is the part that graded hypoelastic interface materials share (see
+ * MarmotGradedXInterfaceMaterialHypoElastic): the integration points
  * through the thickness read from the material properties (see Marmot::Materials::ThicknessProfile), one bulk
  * material and its state at every point, the layout of the state variables and the update of a single point.
  *

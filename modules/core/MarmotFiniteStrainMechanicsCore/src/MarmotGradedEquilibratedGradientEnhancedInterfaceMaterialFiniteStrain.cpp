@@ -186,7 +186,7 @@ void MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain::comp
   tangents.dLocal_dStrain    = Eigen::MatrixXd::Zero( nq, 21 );
   tangents.dLocal_dNonlocal  = Eigen::MatrixXd::Zero( nq, nq );
 
-  // the test operator depends on the nonlocal field through the tangent of the point, if there is a closure
+  // the test operator depends on the nonlocal field through the tangent of the point, if there is a tangential gradient
   for ( int f = 0; f < nq; f++ )
     tangents.dStress_dNonlocal.col(
       f ) += solver.stressDerivativeThroughMicroResponse( f, dTangent_dNonlocal[f], fieldStep );

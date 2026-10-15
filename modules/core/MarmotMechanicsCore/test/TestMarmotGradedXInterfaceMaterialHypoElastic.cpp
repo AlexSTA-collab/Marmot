@@ -249,7 +249,7 @@ namespace {
 
   void testTangentOfElasticStackIsConsistent()
   {
-    // the closure is active: the surface gradients of the two faces differ
+    // the tangential gradient is active: the surface gradients of the two faces differ
     const auto layers = card( 0, 2, { { 0.3, { 4000., 0.3 } }, { 0.7, { 20000., 0.2 } } } );
     checkTangent( "LINEARELASTIC", layers, makeKinematics( 1e-3, false ), 1e-6, "elastic stack" );
     checkTangent( "LINEARELASTIC", layers, makeKinematics( 1e-3, true ), 1e-6, "elastic stack, faces apart" );
@@ -265,14 +265,16 @@ namespace {
                               2,
                               { { 0.4, { 1e4, 0.3, 40., 10., 0., 1., 2400. } },
                                 { 0.6, { 2e4, 0.3, 4000., 10., 0., 1., 2400. } } } );
-    // the tangent neglects the derivative of the closure terms, which is small for small differences of the gradients
+    // the tangent neglects the derivative of the tangential gradient terms, which is small for small differences of the
+    // gradients
     Kinematics kinematics          = makeKinematics( 2e-3, false );
     kinematics.x.segment< 9 >( 3 ) = kinematics.x.segment< 9 >( 12 ) * 1.0001;
     checkTangent( "VONMISES", layers, kinematics, 1e-5, "plastic stack" );
   }
 
-  /// Two elastic layers without lateral contraction: the closure changes the shear traction by a known amount.
-  void testClosureOfLayeredStackAgainstAnalyticalValue()
+  /// Two elastic layers without lateral contraction: the tangential gradient changes the shear traction by a known
+  /// amount.
+  void testTangentialGradientOfLayeredStackAgainstAnalyticalValue()
   {
     const double E1 = 4000., E2 = 16000.;
     const auto   layers = card( 0, 1, { { 0.5, { E1, 0. } }, { 0.5, { E2, 0. } } } );
@@ -392,29 +394,29 @@ namespace {
   /**
    * The generalized stress is the derivative of the energy of the layer: its test function is the derivative of the
    * strain of the points, including the response of the microproblem and the tangential gradient of the correction.
-   * For an elastic stack the tangent is therefore symmetric, with and without the closure, and the generalized stress
-   * is the tangent applied to the generalized strain.
+   * For an elastic stack the tangent is therefore symmetric, with and without the tangential gradient, and the
+   * generalized stress is the tangent applied to the generalized strain.
    */
   void testGeneralizedStressIsTheDerivativeOfAnEnergy()
   {
-    for ( int closure = 0; closure <= 1; closure++ ) {
+    for ( int withTangentialGradient = 0; withTangentialGradient <= 1; withTangentialGradient++ ) {
       GradedPoint point( "LINEARELASTIC",
-                         card( 0, 3, { { 0.4, { 4000., 0.3 } }, { 0.6, { 20000., 0.2 } } }, closure ) );
+                         card( 0, 3, { { 0.4, { 4000., 0.3 } }, { 0.6, { 20000., 0.2 } } }, withTangentialGradient ) );
 
       const Kinematics kinematics = makeKinematics( 1e-3, true );
       const Response   response   = evaluate( *point.material, point.stateVars.data(), kinematics );
 
       const Eigen::Matrix< double, 21, 21 > asymmetry = response.K - response.K.transpose();
       throwExceptionOnFailure( asymmetry.norm() < 1e-12 * response.K.norm(),
-                               "The tangent of the elastic stack is not symmetric, closure " +
-                                 std::to_string( closure ) + "." );
+                               "The tangent of the elastic stack is not symmetric, tangential gradient flag " +
+                                 std::to_string( withTangentialGradient ) + "." );
 
       // the increment of the generalized strain has the jump scaled by the thickness in makeKinematics
       const Eigen::Matrix< double, 21, 1 > expected = response.K * kinematics.x;
       throwExceptionOnFailure( checkIfEqual< double >( response.p, expected, 1e-9 * ( 1. + expected.norm() ) ),
                                "The generalized stress of the elastic stack is not the tangent applied to the "
-                               "strain, closure " +
-                                 std::to_string( closure ) + "." );
+                               "strain, tangential gradient flag " +
+                                 std::to_string( withTangentialGradient ) + "." );
     }
   }
 
@@ -455,7 +457,7 @@ int main()
                                testPlasticTwoFacesAreEquilibratedMaterial,
                                testTangentOfElasticStackIsConsistent,
                                testTangentOfPlasticStackIsConsistent,
-                               testClosureOfLayeredStackAgainstAnalyticalValue,
+                               testTangentialGradientOfLayeredStackAgainstAnalyticalValue,
                                testLayeredStackAgainstExactPlaneStrainSolution,
                                testLayeredStackInDifferentialStretchAgainstExactPlaneStrainSolution,
                                testGeneralizedStressIsTheDerivativeOfAnEnergy,

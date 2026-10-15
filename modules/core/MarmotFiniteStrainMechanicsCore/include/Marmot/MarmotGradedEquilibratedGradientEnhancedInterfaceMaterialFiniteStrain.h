@@ -41,16 +41,15 @@
  * @brief Two-sided gradient-enhanced finite-strain interface material with a nonlocal field at every station through
  * the thickness of the layer.
  *
- * This material is the gradient-enhanced counterpart of MarmotGradedEquilibratedInterfaceMaterialFiniteStrain and
- * the two-sided counterpart of MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain. The surface gradients
- * @f$A^+@f$ and @f$A^-@f$ of the faces are kept separate and interpolated linearly through the thickness, the
- * microproblem and the closure of the tangential gradient of the correction are those of the first one, and the bulk
+ * This material is the gradient-enhanced counterpart of MarmotGradedEquilibratedInterfaceMaterialFiniteStrain. The
+ * surface gradients @f$A^+@f$ and @f$A^-@f$ of the faces are kept separate and interpolated linearly through the
+ * thickness, the microproblem and the tangential gradient of the correction are those of the first one, and the bulk
  * material of every station is a MarmotMaterialGradientEnhancedFiniteStrain with a nonlocal field @f$\bar N_q@f$ of
  * its own, so that the damage, which the nonlocal field drives, varies through the thickness. The stations are the
  * integration points of the thickness, with the weights of the trapezoidal rule (the mode 2 of
- * Marmot::Materials::ThicknessProfile). For two stations at the faces and without the closure of the tangential
- * gradient, the material is the one of MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain with a
- * nonlocal field for each face.
+ * Marmot::Materials::ThicknessProfile). For two stations at the faces and without the tangential gradient of the
+ * tangential gradient, the material is the one of MarmotEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain with
+ * a nonlocal field for each face.
  *
  * The microproblem is solved for given nonlocal fields. Since the fields enter the stress of their point, the
  * corrections depend on them, and so do the generalized stress and the local fields. In addition to the response of

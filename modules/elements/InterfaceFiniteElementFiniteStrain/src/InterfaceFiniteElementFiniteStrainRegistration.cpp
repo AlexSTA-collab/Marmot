@@ -1,6 +1,5 @@
 #include "Marmot/GYHInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
-#include "Marmot/GYSInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotFiniteElement.h"
@@ -97,90 +96,6 @@ namespace Marmot::Elements::Registration {
                      makeFactoryFunction< GY2InterfaceFiniteElementFiniteStrain< 3, 16 >,
                                           FullIntegration,
                                           GY2InterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
-
-  const static bool HILINE2UL_isRegistered = MarmotElementFactory::
-    registerElement( "HILINE2UL",
-                     makeFactoryFunction<
-                       GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
-                       FullIntegration,
-                       GradedInterfaceFiniteElementFiniteStrain< 2, 4 >::SectionType::Interface >() );
-
-  const static bool HIQUAD4UL_isRegistered = MarmotElementFactory::
-    registerElement( "HIQUAD4UL",
-                     makeFactoryFunction<
-                       GradedInterfaceFiniteElementFiniteStrain< 3, 8 >,
-                       FullIntegration,
-                       GradedInterfaceFiniteElementFiniteStrain< 3, 8 >::SectionType::Interface >() );
-
-  const static bool HIQUAD8UL_isRegistered = MarmotElementFactory::
-    registerElement( "HIQUAD8UL",
-                     makeFactoryFunction<
-                       GradedInterfaceFiniteElementFiniteStrain< 3, 16 >,
-                       FullIntegration,
-                       GradedInterfaceFiniteElementFiniteStrain< 3, 16 >::SectionType::Interface >() );
-
-  const static bool GYS2ILINE2UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS2ILINE2UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 2 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 2 >::SectionType::Interface >() );
-
-  const static bool GYS2IQUAD4UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS2IQUAD4UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 2 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 2 >::SectionType::Interface >() );
-
-  const static bool GYS2IQUAD8UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS2IQUAD8UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 2 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 2 >::SectionType::Interface >() );
-
-  const static bool GYS3ILINE2UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS3ILINE2UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 3 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 3 >::SectionType::Interface >() );
-
-  const static bool GYS3IQUAD4UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS3IQUAD4UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >::SectionType::Interface >() );
-
-  const static bool GYS3IQUAD8UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS3IQUAD8UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 3 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 3 >::SectionType::Interface >() );
-
-  const static bool GYS4ILINE2UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS4ILINE2UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 4 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 2, 4, 4 >::SectionType::Interface >() );
-
-  const static bool GYS4IQUAD4UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS4IQUAD4UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 4 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 8, 4 >::SectionType::Interface >() );
-
-  const static bool GYS4IQUAD8UL_isRegistered = MarmotElementFactory::
-    registerElement( "GYS4IQUAD8UL",
-                     makeFactoryFunction<
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 4 >,
-                       FullIntegration,
-                       GYSInterfaceFiniteElementFiniteStrain< 3, 16, 4 >::SectionType::Interface >() );
 
   const static bool HYLINE2UL_isRegistered = MarmotElementFactory::
     registerElement( "HYLINE2UL",

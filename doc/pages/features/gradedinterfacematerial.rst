@@ -7,41 +7,55 @@ Theory
 ------
 
 The interface materials of this page describe a layer of finite thickness :math:`h`, whose stiffness
-:math:`\mathbb{C}(y)` varies through the thickness, with the coordinate :math:`y \in [0, 1]` from the second side
-of the interface to the first one along the normal :math:`\mathbf{N}`. The stiffness may be given by layers of
-constant properties, or by properties that vary continuously, and any bulk material of the library may be used.
+:math:`\mathbb{C}(y)` varies through the thickness, with the coordinate :math:`y \in [0, 1]` from the bottom face to the
+top face along the normal :math:`\mathbf{n}`. The stiffness may be given by layers of constant properties, or by
+properties that vary continuously, and any bulk material of the library may be used.
 
-The kinematics are those of the other interface materials: the displacement jump :math:`[\![\mathbf{u}]\!]` and the
-average surface gradient :math:`\langle \nabla_s \mathbf{u} \rangle` give the strain of the layer
-:math:`\boldsymbol{\varepsilon}^0` (small strains), or the deformation gradient
-:math:`\mathbf{F}^0 = \mathbf{I} + \langle \nabla_s \mathbf{u} \rangle + \bar{\mathbf{g}} \otimes \mathbf{N}` with the
-reduced normal derivative :math:`\bar{\mathbf{g}}` read off the connector between the faces (finite strains). Because
-the stiffness varies, the strain does not: the first-order displacement :math:`\mathbf{u}^1` of the microproblem
-corrects it,
+The displacement of the layer is :math:`\mathbf{u}^0 + h\,\mathbf{u}^1`, with the macroscopic displacement
+:math:`\mathbf{u}^0`, which interpolates the faces, and the displacement :math:`\mathbf{u}^1` of the microproblem,
+which vanishes on both faces. With the normal projection :math:`\mathbf{N} = \mathbf{n}\otimes\mathbf{n}` and the
+tangent projection :math:`\mathbf{T} = \mathbf{I} - \mathbf{N}`, the gradient of the layer at the height :math:`y` is
 
 .. math::
 
-   \boldsymbol{\varepsilon}(y) = \boldsymbol{\varepsilon}^0 + \mathrm{sym}\big( \mathbf{w}(y) \otimes \mathbf{n} \big),
-   \qquad
-   \mathbf{F}(y) = \mathbf{F}^0 + \mathbf{w}(y) \otimes \mathbf{N}, \qquad \mathbf{w} = \partial_y \mathbf{u}^1 .
+   \mathbf{G}(y) = \underbrace{\frac{1}{\ell}\, [\![\mathbf{u}^0]\!] \otimes \mathbf{n} + (1-y)\,\mathbf{A}^- + y\,\mathbf{A}^+
+   + \mathbf{B}_\tau \bar{\mathbf{A}}}_{\mathbf{u}^0} + \underbrace{\mathbf{w}(y) \otimes \mathbf{n}}_{u^1_{k|r} N_{rl}}
+   + \underbrace{h\,\nabla_T \mathbf{u}^1(y)}_{h\,u^1_{k,r} T_{rl}}, \qquad \mathbf{w} = \partial_y \mathbf{u}^1,
 
-The variational form with a vanishing macroscopic test function gives the microproblem: the traction
-:math:`\mathbf{t} = \boldsymbol{\sigma}(y)\,\mathbf{n}` (small strains) or :math:`\mathbf{P}(y)\,\mathbf{N}` (finite
-strains) is the same at every height, and :math:`\mathbf{u}^1` vanishes at both sides,
+with the jump :math:`[\![\mathbf{u}^0]\!]` of the faces, their surface gradients :math:`\mathbf{A}^\pm`, the normal
+separation :math:`\ell` of the faces, and the correction :math:`\mathbf{B}_\tau \bar{\mathbf{A}}` of their tangential
+separation. For finite strains the gradient is the one of the deformation gradient
+:math:`\mathbf{F} = \mathbf{I} + \mathbf{G}` in the reference configuration.
+
+The variational form is the stationarity of the energy :math:`\int_\Gamma h \int_0^1 \psi(\mathbf{G})\,\mathrm{d}y\,
+\mathrm{d}\Gamma` for the test functions of both displacements,
 
 .. math::
 
-   \int_0^1 \mathbf{w} \,\mathrm{d}y = \mathbf{0} .
+   \int_\Gamma h \int_0^1 \boldsymbol{\sigma}(\mathbf{G}) : \hat{\mathbf{G}} \,\mathrm{d}y\,\mathrm{d}\Gamma = 0, \qquad
+   \hat{\mathbf{G}} = \mathbf{G}^0(\hat{\mathbf{u}}^0) + \partial_y \hat{\mathbf{u}}^1 \otimes \mathbf{n}
+   + h\,\nabla_T \hat{\mathbf{u}}^1 .
 
-The materials with one averaged surface gradient (the elements ``HI*`` and ``GYS*``) neglect the terms of
-:math:`\mathbf{u}^1` with the tangential gradient, so that :math:`\mathbf{w}` is a function of the macroscopic strain
-at the quadrature point. The two-sided materials (the elements ``HY*`` and ``GYH*``) keep them, see
-:ref:`below <gradedinterfacematerial-twosided>`. In both cases :math:`\mathbf{u}^1` is condensed at every stress
-update, and the element has the displacements as its only unknown.
+* **Macro problem:** the variation of :math:`\mathbf{u}^0` with :math:`\hat{\mathbf{u}}^1 = \mathbf{0}`.
+* **Microproblem:** the variation of :math:`\mathbf{u}^1` with :math:`\hat{\mathbf{u}}^0 = \mathbf{0}`. It is
+  loaded by the macroscopic gradient, and its strong form is the equilibrium of the **total** traction
+  :math:`\mathbf{t} = \mathbf{t}^0 + \mathbf{t}^1 = \boldsymbol{\sigma}(\mathbf{G}^0 + \mathbf{G}^1)\,\mathbf{n}` (small
+  strains) or :math:`\mathbf{P}\,\mathbf{N}` (finite strains) through the thickness,
 
-With the weights :math:`\omega_q` and the acoustic tensors :math:`\mathbf{Q}_q = \mathbf{n}\cdot\mathbb{C}_q\cdot\mathbf{n}`
-(finite strains: :math:`\mathbb{A}_q[\mathbf{N}, \mathbf{N}]`) of the integration points through the thickness, a
-Newton step for the corrections :math:`\mathbf{w}_q` and the common traction :math:`\mathbf{t}` is
+  .. math::
+
+     \partial_y ( \boldsymbol{\sigma}\,\mathbf{n} ) + h\, \nabla_\Gamma \cdot ( \boldsymbol{\sigma}\,\mathbf{T} ) = \mathbf{0},
+     \qquad \int_0^1 \mathbf{w}\,\mathrm{d}y = \mathbf{0}.
+
+  The traction :math:`\mathbf{t}^0` of the macroscopic gradient alone is not constrained.
+
+For two integration points at the faces, and without the terms of :math:`h\,\nabla_T \mathbf{u}^1`, the layer is the
+equilibrated two-sided interface material.
+
+The microproblem is solved at every stress update. With the weights :math:`\omega_q` and the acoustic tensors
+:math:`\mathbf{Q}_q = \mathbf{n}\cdot\mathbb{C}_q\cdot\mathbf{n}` (finite strains: :math:`\mathbb{A}_q[\mathbf{N},
+\mathbf{N}]`) of the integration points through the thickness, a Newton step for the corrections
+:math:`\mathbf{w}_q` and the common traction :math:`\mathbf{t}` is
 
 .. math::
 
@@ -50,41 +64,43 @@ Newton step for the corrections :math:`\mathbf{w}_q` and the common traction :ma
    \qquad
    \delta \mathbf{w}_q = \mathbf{Q}_q^{-1} \big( \delta \mathbf{t} - ( \mathbf{a}_q - \mathbf{t} ) \big),
 
-where :math:`\mathbf{a}_q` is the traction of the point. A linear material converges in one step. The step is damped by
-a line search on the norm of the residual, because a yielding point has a small tangent along its flow direction. The
-tangent of the layer is condensed over the corrections,
+where :math:`\mathbf{a}_q` is the traction of the point, including the change of the traction through the thickness
+that the tangential gradient causes. A linear material converges in one step. The step is damped by a line search on
+the norm of the residual, because a yielding point has a small tangent along its flow direction.
+
+The tangential gradient of u¹
+-----------------------------
+
+The microproblem is solved locally at every surface point of the element, with the macroscopic gradient as its
+loading, so that :math:`\mathbf{u}^1` is a function of the macroscopic gradient. Its tangential gradient follows from
+the variation of this gradient along the surface, which the faces give: the jump varies along the surface with
+:math:`\nabla_T [\![\mathbf{u}]\!] = \mathbf{A}^+ - \mathbf{A}^-`, so that
 
 .. math::
 
-   \bar{\mathbb{C}} = \sum_q \omega_q \mathbb{C}_q \Big( \mathbb{I} + \frac{\partial\, \mathrm{sym}(\mathbf{w}_q \otimes \mathbf{n})}
-   {\partial \boldsymbol{\varepsilon}^0} \Big),
+   \partial_r \boldsymbol{\varepsilon} = \frac{1}{\ell}\, \mathrm{sym}\big( ( \mathbf{A}^+ - \mathbf{A}^- )\, \mathbf{e}_r
+   \otimes \mathbf{n} \big), \qquad
+   \partial_r \mathbf{w}_q = \frac{\partial \mathbf{w}_q}{\partial \boldsymbol{\varepsilon}}\, \partial_r \boldsymbol{\varepsilon},
+   \qquad
+   \mathbf{u}^1(y) = \int_0^y \mathbf{w}\,\mathrm{d}y,
 
-and the force and the surface stress are those of the plain interface material for the through-thickness mean of the
-stress. For a single homogeneous layer the response is that of the plain interface material.
+with the derivative of the correction with respect to the strain of the layer, which the condensation of the
+microproblem provides. This enters the two equations of the layer, both in proportion to :math:`\mathbf{A}^+ -
+\mathbf{A}^-`:
 
-.. _gradedinterfacematerial-twosided:
+* the strain of the point gains the tangential gradient :math:`h\,\nabla_T \mathbf{u}^1(y_q)`, which is the term
+  :math:`h\,u^1_{k,r} T_{rl}` of the form, and
+* the traction changes through the thickness by the tangential divergence of the stress, which is the same term of
+  the test function integrated by parts along the surface.
 
-Two-sided materials and the tangential gradient of the correction
------------------------------------------------------------------
+The derivative of the correction is the one of the converged state of the increment, which is iterated until it does
+not change. The second derivatives of the displacement of the faces (their curvature) are neglected.
 
-The one-sided materials give the layer one surface gradient, the average of the two faces, so that they carry the
-membrane terms of the layer, of the order of :math:`h`, but not the terms of the order of :math:`h^3` that come from the
-variation of the surface gradient through the thickness, which the equilibrated two-sided materials (the elements
-``YI*``, ``GYI*`` and ``GY2I*``) have. The two-sided graded materials generalize the equilibrated material, which
-has the two faces as its only integration points through the thickness, to any number of integration points with
-different bulk materials. They have the contract of the equilibrated material, and are used by the same element
-formulation: the surface gradients :math:`\mathbf{A}^\pm` of both faces are given, and a surface stress is returned for
-each of them. The gradient at the height :math:`y` is
+Generalized stress and tangent
+------------------------------
 
-.. math::
-
-   \mathbf{G}(y) = \frac{1}{\ell}\, [\![\mathbf{u}]\!] \otimes \mathbf{n} + (1-y)\,\mathbf{A}^- + y\,\mathbf{A}^+
-   + \mathbf{B}_\tau \bar{\mathbf{A}} + \mathbf{w}(y) \otimes \mathbf{n} + h\,\nabla_T \mathbf{u}^1(y),
-
-with the normal separation :math:`\ell` of the faces and the correction :math:`\mathbf{B}_\tau \bar{\mathbf{A}}` of
-their tangential separation, as for the equilibrated material. The generalized stress is the derivative of the energy
-of the layer with respect to the generalized strain :math:`\mathbf{x} = ( [\![\mathbf{u}]\!], \mathbf{A}^+,
-\mathbf{A}^- )`,
+The generalized stress is the derivative of the energy of the layer with respect to the generalized strain
+:math:`\mathbf{x} = ( [\![\mathbf{u}]\!], \mathbf{A}^+, \mathbf{A}^- )`,
 
 .. math::
 
@@ -92,53 +108,49 @@ of the layer with respect to the generalized strain :math:`\mathbf{x} = ( [\![\m
    \hat{\mathbf{B}}_q = \frac{\partial \mathbf{G}(y_q)}{\partial \mathbf{x}},
 
 where the derivative contains, besides the direct dependence, the response :math:`\mathbf{w}(\mathbf{x})` of the
-microproblem and the tangential gradient of the correction. The test function of the variational form is therefore
-built from the same operator as the strain, and the tangent :math:`h \sum_q \omega_q \hat{\mathbf{B}}_q^\mathsf{T}
-\mathbf{D}_q \hat{\mathbf{B}}_q` is symmetric for an elastic layer, with and without the closure below. For a
-homogeneous layer of two points at the faces, without the closure, it is the generalized stress of the equilibrated
-material, because the work of the traction on the response of the microproblem vanishes if the traction is the same
-at all points. With the closure the generalized stress differs from the resultants of the stress through the
-thickness (the mean and the moments) by a divergence along the surface, which does not change the solution of the
-assembled problem; the resultants are available as ``stressResultant()`` of the materials.
-
-The last term of the gradient, which comes from the term :math:`h\,u^1_{k,r} T_{rl}` of the variational form, is of
-the same order as the terms of the surface gradients, because :math:`\mathbf{u}^1` follows the strain of the layer and
-the strain varies along the interface with the jump: :math:`\nabla_T [\![\mathbf{u}]\!] = \mathbf{A}^+ - \mathbf{A}^-`.
-The tangential derivative of the correction of the microproblem is therefore closed with the derivative of the
-correction with respect to the strain of the layer, which the condensation of the microproblem provides,
+microproblem and the tangential gradient of the correction. The test function is therefore built from the same
+operator as the strain, and the tangent
 
 .. math::
 
-   \partial_r \boldsymbol{\varepsilon} = \frac{1}{\ell}\, \mathrm{sym}\big( ( \mathbf{A}^+ - \mathbf{A}^- )\, \mathbf{e}_r
-   \otimes \mathbf{n} \big), \qquad
-   \partial_r \mathbf{w}_q = \frac{\partial \mathbf{w}_q}{\partial \boldsymbol{\varepsilon}}\, \partial_r \boldsymbol{\varepsilon},
+   \mathbf{K} = h \sum_q \omega_q\, \hat{\mathbf{B}}_q^\mathsf{T} \mathbb{C}_q \hat{\mathbf{B}}_q
 
-and the second derivatives of the displacement of the faces are neglected. Two things follow, both proportional to
-:math:`\mathbf{A}^+ - \mathbf{A}^-`:
+is symmetric for an elastic layer. The resultants of the stress through the thickness (the mean and the moments
+:math:`h\int y\,\boldsymbol{\sigma}\,\mathrm{d}y`) are available as ``stressResultant()`` of the materials. They differ
+from the generalized stress by a divergence along the surface, which does not change the solution of the assembled
+problem.
 
-* the strain of the point gains the tangential gradient :math:`h\,\nabla_T \mathbf{u}^1(y_q)` of
-  :math:`\mathbf{u}^1(y) = \int_0^y \mathbf{w}\,\mathrm{d}y`, and
-* the traction is no longer constant through the thickness, because the test function with the tangential gradient
-  brings the tangential divergence of the stress into the microproblem,
-  :math:`\partial_y ( \boldsymbol{\sigma}\,\mathbf{n} ) = - h\, \partial_r ( \boldsymbol{\sigma}\, \mathbf{e}_r )`.
+Without the term of :math:`h\,\nabla_T \mathbf{u}^1` the work of the traction on the response of the microproblem
+vanishes, because the traction is the same at all points, and the generalized stress reduces to the resultants.
 
-The derivative of the correction is the one of the converged state of the increment, which is iterated until it does
-not change. The tangent neglects the dependence of that derivative on the state, which is of the order of the second
-derivative of the stress, so that the tangent is exact without the closure and for an elastic layer, and quasi-Newton
-to the order of the strain times the closure terms with a nonlinear bulk material; the dependence of the response of
-the microproblem on the nonlocal fields is included. A layered strip with a jump varying linearly along the interface
-has a polynomial plane-strain solution, in which the shear stress varies linearly through every layer; the material
-reproduces it, also the moments :math:`h\int y\,\boldsymbol{\sigma}\,\mathrm{d}y` of the stress, which are the
-resultants through the thickness, to the precision of the arithmetic. The closure is switched off by the optional last material property, which
-makes the material the equilibrated one for two points at the faces.
+Validation
+----------
 
-.. note::
+A strip of two elastic layers (:math:`E = 4000, \nu = 0.3` for 40 % of the thickness, :math:`E = 20000, \nu = 0.2`
+for the rest, :math:`h = 0.02`) with the displacement of the top face :math:`u_z = z_0 + g x`, :math:`u_x = 0`, and the
+bottom face fixed, has an exact polynomial solution of plane strain, derived with the computer algebra system sympy.
+Its shear tractions on the faces are independent of :math:`x`, and a patch of elements reproduces them for every
+element width:
 
-   The equilibrated two-point material integrates the surface gradient, which is linear through the thickness, with
-   the trapezoidal rule. The contribution of :math:`\mathbf{A}^+ - \mathbf{A}^-` to the moments
-   :math:`h\int y\,\boldsymbol{\sigma}\,\mathrm{d}y` of a homogeneous layer is then :math:`h/4` times the stiffness,
-   instead of the :math:`h/12` of the exact integral. The two-sided graded materials with Gauss points (modes 0 and
-   1) have the exact one, while the points at the stations (mode 2) have the trapezoidal rule, as the faces have.
+.. list-table::
+   :header-rows: 1
+
+   * - Variant
+     - Shear traction, bottom face
+     - Shear traction, top face
+   * - Exact solution
+     - 6.3971
+     - 0.05013
+   * - ``HY*`` with the tangential gradient of u¹
+     - 6.3971
+     - 0.05013
+   * - ``HY*`` without it (flag 0)
+     - 6.609
+     - 0.2617
+
+The finite-strain element ``HY*UL`` reproduces the same solution for a strain of :math:`10^{-5}` times it, and the
+elements ``GYH*`` the one of a homogeneous strip. The tangent of the elastic stack is symmetric to the precision of
+the arithmetic, also for an assembled patch.
 
 Material properties
 --------------------
@@ -174,24 +186,25 @@ In mode 0, :math:`p_k` is the relative thickness of the layer :math:`k`, counted
 sum of all of them. In modes 1 and 2, :math:`p_k` is the position of the station :math:`k`, with :math:`p_0 = 0`,
 :math:`p_{K-1} = 1` and increasing positions in between.
 
-One more property may follow the groups, the flag of the tangential gradient of the correction: the two-sided
-materials keep it when the flag is absent or not zero, and switch it off when it is zero. The one-sided materials
-ignore it.
+One more property may follow the groups: the flag of the term :math:`h\,\nabla_T \mathbf{u}^1` of the variational
+form. The term is kept when the flag is absent or not zero, and switched off when it is zero.
 
 The materials
 -------------
 
-``MarmotGradedInterfaceMaterialHypoElastic``
-   Small-strain material for the elements ``HILINE2``, ``HIQUAD4`` and ``HIQUAD8``. The bulk material is a
-   hypoelastic material.
+``MarmotGradedXInterfaceMaterialHypoElastic``
+   Small-strain material for the elements ``HYLINE2``, ``HYQUAD4`` and ``HYQUAD8``, with the contract of
+   ``MarmotEquilibratedXInterfaceMaterialHypoElastic``: the surface gradients of both faces are given, and a surface
+   stress is returned for each of them. The bulk material is a hypoelastic material.
 
-``MarmotGradedInterfaceMaterialFiniteStrain``
-   Finite-strain material for the elements ``HILINE2UL``, ``HIQUAD4UL`` and ``HIQUAD8UL``. The bulk material is a
-   finite-strain material. For a homogeneous layer the response is that of ``MarmotInterfaceMaterialFiniteStrain``.
+``MarmotGradedEquilibratedInterfaceMaterialFiniteStrain``
+   Finite-strain material for the elements ``HYLINE2UL``, ``HYQUAD4UL`` and ``HYQUAD8UL``, with the contract of
+   ``MarmotEquilibratedInterfaceMaterialFiniteStrain``, which receives the total kinematics. The bulk material is a
+   finite-strain material.
 
-``MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain``
-   Gradient-enhanced finite-strain material for the elements ``GYSnILINE2UL``, ``GYSnIQUAD4UL`` and
-   ``GYSnIQUAD8UL`` with :math:`n = 2, 3, 4` stations. Its bulk material is gradient-enhanced (for example
+``MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain``
+   Gradient-enhanced finite-strain material for the elements ``GYHnILINE2UL``, ``GYHnIQUAD4UL`` and
+   ``GYHnIQUAD8UL`` with :math:`n = 2, 3, 4` stations. Its bulk material is gradient-enhanced (for example
    ``DUFOURMODEL``), the profile is in mode 2, and every station has a nonlocal field of its own, so that the damage
    varies through the thickness. The nonlocal equation of the station :math:`s` is, reduced to the midsurface,
 
@@ -202,40 +215,30 @@ The materials
       + \frac{\mathbf{N}^\mathsf{T}( \bar N_s - \bar N_{s-1} )}{y_s - y_{s-1}} \Big] = 0,
 
    where :math:`L_s` is the local driving field of the station, :math:`l_s` its nonlocal radius, and the last term the
-   derivative of the field through the thickness. For two stations it is the element with a nonlocal field for each
-   face (``GY2``). Its nonlocal residuals are the same, and the virtual work of every virtual displacement with a
-   common surface gradient of the faces is the same; the displacement residuals differ where the faces carry different
-   surface stresses, because the layer has one tangential gradient. The fields of the bottom station and of the
-   inner stations are degrees of freedom of the nodes of the bottom side, the field of the top station of the nodes of
-   the top side.
+   derivative of the field through the thickness. The momentum equation has the generalized stress of the layer, and
+   the response of the microproblem depends on the nonlocal fields through the tangent of the points, which the
+   tangent of the element includes. For two stations and without the term of :math:`h\,\nabla_T \mathbf{u}^1`, the
+   element is ``GY2`` to the residual of the displacements and the full tangent, for the damage model and for the
+   Dufour model, which is the way to test the Dufour model through a graded layer exactly. The fields of the bottom
+   station and of the inner stations are degrees of freedom of the nodes of the bottom side, the field of the top
+   station of the nodes of the top side.
 
-``MarmotGradedXInterfaceMaterialHypoElastic``
-   Two-sided small-strain material for the elements ``HYLINE2``, ``HYQUAD4`` and ``HYQUAD8``, with the contract of
-   ``MarmotEquilibratedXInterfaceMaterialHypoElastic``.
-
-``MarmotGradedEquilibratedInterfaceMaterialFiniteStrain``
-   Two-sided finite-strain material for the elements ``HYLINE2UL``, ``HYQUAD4UL`` and ``HYQUAD8UL``, with the contract
-   of ``MarmotEquilibratedInterfaceMaterialFiniteStrain``, which receives the total kinematics.
-
-``MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain``
-   Two-sided gradient-enhanced finite-strain material for the elements ``GYHnILINE2UL``, ``GYHnIQUAD4UL`` and
-   ``GYHnIQUAD8UL`` with :math:`n = 2, 3, 4` stations. The nonlocal fields and their equations are those of
-   ``GYSn``, and the momentum equation has the surface stress of each face. For two stations and without the
-   closure, the element is ``GY2`` to the residual of the displacements and the full tangent, for the damage model
-   and for the Dufour model, which is the way to test the Dufour model through a graded layer exactly.
-
-The two-sided materials solve the microproblem and the condensation with the same solver
-(``Marmot::Materials::TwoSidedGradedLayer``) for small and finite strains.
+All materials solve the microproblem and the condensation with the same solver
+(``Marmot::Materials::TwoSidedGradedLayer``) for small and finite strains, with and without damage.
 
 Limitations
 -----------
 
-* The one-sided materials neglect the terms of :math:`\mathbf{u}^1` with the tangential gradient. The two-sided
-  materials keep them in the closure above, which neglects the second derivatives of the displacement of the faces,
-  and the dependence of the derivative of the correction on the state, which is not in the tangent. With a damage
-  model that dependence includes the second derivative of the damage with respect to the nonlocal field, and the
-  tangent with respect to the nonlocal fields has the corresponding error when the faces have very different
-  surface gradients.
+* The tangential gradient of :math:`\mathbf{u}^1` neglects the second derivatives of the displacement of the faces,
+  and the tangent neglects the dependence of the derivative of the correction on the state. The tangent is therefore
+  exact for an elastic layer and without the term of :math:`h\,\nabla_T \mathbf{u}^1`, and quasi-Newton otherwise.
+  With a damage model the dependence on the nonlocal field of the station is included, the remaining error of the
+  tangent with respect to the fields is a few per cent when the faces have very different surface gradients.
+* The equilibrated two-point material integrates the surface gradient, which is linear through the thickness, with
+  the trapezoidal rule. The contribution of :math:`\mathbf{A}^+ - \mathbf{A}^-` to the moments of a homogeneous
+  layer is then :math:`h/4` times the stiffness instead of the :math:`h/12` of the exact integral. The materials with
+  Gauss points (modes 0 and 1) have the exact one, while the points at the stations (mode 2, required by the
+  gradient-enhanced material) have the trapezoidal rule, as the faces have.
 * Where the bulk is nearly perfectly plastic at all points that carry the traction, the acoustic tensor of each of
   them loses its stiffness along the flow direction, and the microproblem has no unique solution. The material then
   throws ``StressUpdateFailed``, which makes the element ask for a smaller time step.
@@ -248,15 +251,6 @@ Implementation
 --------------
 
 .. doxygenstruct:: Marmot::Materials::ThicknessProfile
-   :members:
-
-.. doxygenclass:: MarmotGradedInterfaceMaterialHypoElastic
-   :members:
-
-.. doxygenclass:: MarmotGradedInterfaceMaterialFiniteStrain
-   :members:
-
-.. doxygenclass:: MarmotGradedGradientEnhancedInterfaceMaterialFiniteStrain
    :members:
 
 .. doxygenclass:: MarmotGradedXInterfaceMaterialHypoElastic

@@ -1,6 +1,5 @@
 #include "Marmot/GYHInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
-#include "Marmot/GYSInterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/InterfaceFiniteElementFiniteStrain.h"
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotElementProperty.h"
@@ -13,6 +12,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -832,91 +832,90 @@ namespace {
                                                            "DUFOURMODEL" );
   }
 
-  /// the properties of the graded interface material: the thickness, two layers of the given relative thickness
-  std::vector< double > gradedNeoHookeProperties( double thickness, double softFraction, double contrast )
+  /**
+   * Nodal tractions of an interior node of a patch of elements of a strip, whose faces are displaced as
+   * u_z = z0 + g x at the top and zero at the bottom, with u_x = 0 on both faces. Every element has the width
+   * `width`, and the strip has `nElements` of them. The tractions are the nodal forces divided by the width.
+   */
+  struct PatchTractions {
+    double bottomShear;
+    double topShear;
+    double topNormal;
+  };
+
+  template < class ElementType >
+  PatchTractions patchTractions( const std::vector< double >& card,
+                                 const std::string&           materialName,
+                                 double                       thickness,
+                                 double                       z0,
+                                 double                       g,
+                                 double                       width )
   {
-    return { thickness,
-             0.0,
-             2.0,
-             2.0,
-             2.0,
-             softFraction,
-             3500.0,
-             1500.0,
-             1.0 - softFraction,
-             contrast * 3500.0,
-             contrast * 1500.0 };
+    constexpr int nElements = 6;
+    constexpr int nSide     = nElements + 1;
+    constexpr int nDofs     = ElementType::sizeLoadVector;
+
+    Eigen::VectorXd P = Eigen::VectorXd::Zero( 4 * nSide );
+
+    for ( int e = 0; e < nElements; ++e ) {
+      const double               x0 = width * e, x1 = width * ( e + 1 );
+      const Coordinates< 2, 4 >  coordinates = { x0, 0.0, x1, 0.0, x0, thickness, x1, thickness };
+      const std::array< int, 4 > global      = { e, e + 1, nSide + e, nSide + e + 1 };
+
+      // the displacement of the top nodes: u_z = z0 + g x, all other degrees of freedom vanish
+      Eigen::VectorXd Q = Eigen::VectorXd::Zero( nDofs );
+      for ( int a = 2; a < 4; ++a )
+        Q( 2 * a + 1 ) = z0 + g * width * ( global[a] - nSide );
+
+      const auto evaluation = evaluate< ElementType, 2, 4 >( coordinates, card, Q, materialName );
+      for ( int a = 0; a < 4; ++a )
+        for ( int i = 0; i < 2; ++i )
+          P( 2 * global[a] + i ) += evaluation.residual( 2 * a + i );
+    }
+
+    return { P( 2 * 3 ) / width, P( 2 * ( nSide + 3 ) ) / width, P( 2 * ( nSide + 3 ) + 1 ) / width };
   }
 
-  /// A homogeneous graded layer, however it is divided, is the plain element.
-  void testGradedElementEqualsThePlainElementForAHomogeneousLayer()
+  /**
+   * The exact solution of plane strain for a strip of two elastic layers (derived with sympy for the thickness
+   * 0.02, z0 = 3e-5, g = 2e-3, the lower layer E = 4000, nu = 0.3 of 40 % of the thickness and the upper layer
+   * E = 20000, nu = 0.2) has the face tractions 6.397097558 and 0.05012999813, independently of x. The element at
+   * finite strain reproduces them for the strain of 1e-5 times this solution, up to the nonlinearity of the material.
+   */
+  void testGradedEquilibratedElementReproducesExactPlaneStrainTractions()
   {
-    const double angle = 10.0 * pi / 180.0;
-    const double gap   = 0.1;
+    constexpr double h = 0.02, scale = 1e-5, z0 = 3e-5 * scale, g = 2e-3 * scale;
 
-    const auto compare = []( const Evaluation& expected, const Evaluation& actual, const std::string& context ) {
-      throwExceptionOnFailure( ( expected.residual - actual.residual ).norm() <=
-                                 1e-9 * std::max( 1.0, expected.residual.norm() ),
-                               context + ": the residual of a homogeneous graded layer is not the plain one." );
-      throwExceptionOnFailure( ( expected.tangent - actual.tangent ).norm() <=
-                                 1e-9 * std::max( 1.0, expected.tangent.norm() ),
-                               context + ": the tangent of a homogeneous graded layer is not the plain one." );
-    };
+    const auto K = []( double E, double nu ) { return E / ( 3.0 * ( 1.0 - 2.0 * nu ) ); };
+    const auto G = []( double E, double nu ) { return E / ( 2.0 * ( 1.0 + nu ) ); };
 
-    {
-      const double thickness = gap * std::cos( angle );
-      const auto   Q         = makeDisplacements< 24 >( 3e-2, 1 );
-      compare( evaluate< InterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
-                                                                             neoHookeProperties( thickness ),
-                                                                             Q ),
-               evaluate< GradedInterfaceFiniteElementFiniteStrain< 3, 8 >, 3, 8 >( inclinedQuadrilateral( angle, gap ),
-                                                                                   gradedNeoHookeProperties( thickness,
-                                                                                                             0.4,
-                                                                                                             1.0 ),
-                                                                                   Q ),
-               "3D, inclined" );
+    const std::vector< double > card = { h,
+                                         0.,
+                                         3.,
+                                         2.,
+                                         3.,
+                                         0.4,
+                                         K( 4000., 0.3 ),
+                                         G( 4000., 0.3 ),
+                                         1.0,
+                                         0.6,
+                                         K( 20000., 0.2 ),
+                                         G( 20000., 0.2 ),
+                                         1.0,
+                                         1.0 };
+
+    for ( const double width : { 0.2, 0.05 } ) {
+      const auto tractions = patchTractions<
+        GradedYInterfaceFiniteElementFiniteStrain< 2, 4 > >( card, "COMPRESSIBLENEOHOOKE", h, z0, g, width );
+
+      throwExceptionOnFailure( std::abs( tractions.bottomShear + 6.397097558074329 * scale ) < 1e-5 * 6.4 * scale,
+                               "The finite-strain element has not the exact shear traction of the bottom face." );
+      throwExceptionOnFailure( std::abs( tractions.topShear - 0.05012999813074583 * scale ) < 1e-5 * 6.4 * scale,
+                               "The finite-strain element has not the exact shear traction of the top face." );
+      const double expectedNormal = 14.809590973201692 * scale * ( z0 + g * 3 * width ) / z0;
+      throwExceptionOnFailure( std::abs( tractions.topNormal - expectedNormal ) < 1e-5 * expectedNormal,
+                               "The finite-strain element has not the exact normal traction." );
     }
-    {
-      const auto Q = makeDisplacements< 8 >( 5e-2, 3 );
-      compare( evaluate< InterfaceFiniteElementFiniteStrain< 2, 4 >, 2, 4 >( inclinedLine( angle, gap ),
-                                                                             neoHookeProperties( gap *
-                                                                                                 std::cos( angle ) ),
-                                                                             Q ),
-               evaluate< GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
-                         2,
-                         4 >( inclinedLine( angle, gap ),
-                              gradedNeoHookeProperties( gap * std::cos( angle ), 0.5, 1.0 ),
-                              Q ),
-               "2D, inclined" );
-    }
-  }
-
-  /// The tangent of the graded element is the derivative of its residual, through a stiffness contrast.
-  void testGradedElementTangentMatchesFiniteDifference()
-  {
-    const double angle = 10.0 * pi / 180.0;
-    const double gap   = 0.1;
-
-    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 3, 8 >,
-                                          3,
-                                          8 >( inclinedQuadrilateral( angle, gap ),
-                                               gradedNeoHookeProperties( gap * std::cos( angle ), 0.4, 6.0 ),
-                                               makeDisplacements< 24 >( 3e-2, 1 ),
-                                               "graded 3D, inclined" );
-
-    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 3, 16 >,
-                                          3,
-                                          16 >( serendipityQuadrilateral( gap ),
-                                                gradedNeoHookeProperties( gap, 0.3, 6.0 ),
-                                                makeDisplacements< 48 >( 3e-2, 2 ),
-                                                "graded 3D, serendipity" );
-
-    assertTangentMatchesFiniteDifference< GradedInterfaceFiniteElementFiniteStrain< 2, 4 >,
-                                          2,
-                                          4 >( inclinedLine( angle, gap ),
-                                               gradedNeoHookeProperties( gap * std::cos( angle ), 0.5, 6.0 ),
-                                               makeDisplacements< 8 >( 5e-2, 3 ),
-                                               "graded 2D, inclined" );
   }
 
   /// the card of a two-sided graded layer: the thickness, the mode 2 with two stations and their bulk properties
@@ -989,24 +988,27 @@ namespace {
     const double angle = 10.0 * pi / 180.0;
     const double gap   = 0.1;
 
-    // exact without the closure of the tangential gradient, and to the order of the strain with it
-    for ( const int closure : { 0, 1 } )
+    // exact without the tangential gradient, and to the order of the strain with it
+    for ( const int withTangentialGradient : { 0, 1 } )
       assertTangentMatchesFiniteDifference< GradedYInterfaceFiniteElementFiniteStrain< 3, 8 >,
                                             3,
                                             8 >( inclinedQuadrilateral( angle, gap ),
-                                                 gradedTwoSidedCard( gap * std::cos( angle ), 6.0, closure ),
+                                                 gradedTwoSidedCard( gap * std::cos( angle ),
+                                                                     6.0,
+                                                                     withTangentialGradient ),
                                                  makeDisplacements< 24 >( 3e-2, 1 ),
-                                                 closure ? "graded two-sided 3D with closure"
-                                                         : "graded two-sided 3D without closure",
+                                                 withTangentialGradient
+                                                   ? "graded two-sided 3D with the tangential gradient"
+                                                   : "graded two-sided 3D without the tangential gradient",
                                                  "COMPRESSIBLENEOHOOKE",
-                                                 closure ? 5e-2 : 1e-6 );
+                                                 withTangentialGradient ? 5e-2 : 1e-6 );
 
     assertTangentMatchesFiniteDifference< GradedYInterfaceFiniteElementFiniteStrain< 2, 4 >,
                                           2,
                                           4 >( inclinedLine( angle, gap ),
                                                gradedTwoSidedCard( gap * std::cos( angle ), 6.0, 1 ),
                                                makeDisplacements< 8 >( 5e-2, 3 ),
-                                               "graded two-sided 2D with closure",
+                                               "graded two-sided 2D with the tangential gradient",
                                                "COMPRESSIBLENEOHOOKE",
                                                5e-2 );
 
@@ -1067,123 +1069,6 @@ namespace {
     return Q;
   }
 
-  /// The element with a nonlocal field at every station: the tangent over the displacements and all fields, with the
-  /// damage active.
-  void testStationFieldsElement()
-  {
-    const double angle = 10.0 * pi / 180.0;
-    const double gap   = 0.1;
-    const double hn    = gap * std::cos( angle );
-
-    using Element3d8  = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
-    using Element3d16 = GYSInterfaceFiniteElementFiniteStrain< 3, 16, 3 >;
-    using Element2d   = GYSInterfaceFiniteElementFiniteStrain< 2, 4, 4 >;
-
-    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
-                                                              stationCard( hn, { 0.0, 0.5, 1.0 }, neoHookeDamageBulk ),
-                                                              makeDisplacementsAndStationFields< Element3d8,
-                                                                                                 3 >( 3e-3, 1, 3e-3 ),
-                                                              "GYS3 3D, inclined",
-                                                              gradientEnhancedMaterial );
-
-    assertTangentMatchesFiniteDifference< Element3d16, 3, 16 >( serendipityQuadrilateral( gap ),
-                                                                stationCard( gap,
-                                                                             { 0.0, 0.3, 1.0 },
-                                                                             neoHookeDamageBulk ),
-                                                                makeDisplacementsAndStationFields< Element3d16,
-                                                                                                   3 >( 3e-3, 2, 4e-3 ),
-                                                                "GYS3 3D, serendipity",
-                                                                gradientEnhancedMaterial );
-
-    assertTangentMatchesFiniteDifference< Element2d, 2, 4 >( inclinedLine( angle, gap ),
-                                                             stationCard( hn,
-                                                                          { 0.0, 0.25, 0.7, 1.0 },
-                                                                          neoHookeDamageBulk ),
-                                                             makeDisplacementsAndStationFields< Element2d, 4 >( 5e-3,
-                                                                                                                3,
-                                                                                                                3e-3 ),
-                                                             "GYS4 2D, inclined",
-                                                             gradientEnhancedMaterial );
-
-    assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
-                                                              stationCard( hn, { 0.0, 0.5, 1.0 }, dufourBulk ),
-                                                              makeDisplacementsAndStationFields< Element3d8,
-                                                                                                 3 >( 6e-3, 1, 0.05 ),
-                                                              "GYS3 with the Dufour model",
-                                                              "DUFOURMODEL" );
-  }
-
-  /**
-   * With two stations at the faces, the element is the element with a nonlocal field for each face, whenever the two
-   * faces have the same surface gradient. The element of this test has one tangential gradient for the layer, so
-   * that a virtual displacement moves the surface gradient of both faces together, and the surface stress of the
-   * faces works on their sum. The nonlocal residuals are the ones of the other element, and so is the virtual work of
-   * every virtual displacement with a common surface gradient of the faces (the top displacement is the bottom one
-   * plus a constant). The residuals of the displacements differ in general where the faces carry different surface
-   * stresses, which is the modelling difference between the two elements.
-   */
-  void testTwoStationsAreTheFaceFieldsElement()
-  {
-    const double angle = 10.0 * pi / 180.0;
-    const double gap   = 0.1;
-    const double hn    = gap * std::cos( angle );
-
-    using Stations = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 2 >;
-    using Faces    = GY2InterfaceFiniteElementFiniteStrain< 3, 8 >;
-
-    const auto coordinates = inclinedQuadrilateral( angle, gap );
-
-    // a displacement of the faces with a common surface gradient: the top is the bottom plus a constant
-    const auto commonSurfaceGradient = []( Eigen::VectorXd& Q, const Eigen::Vector3d& offset ) {
-      for ( int A = 0; A < 4; ++A )
-        Q.segment< 3 >( 3 * ( 4 + A ) ) = Q.segment< 3 >( 3 * A ) + offset;
-    };
-
-    for ( const std::string name : std::vector< std::string >{ "DUFOURMODEL", gradientEnhancedMaterial } ) {
-      const bool                  dufour         = name == "DUFOURMODEL";
-      const std::vector< double > faceProperties = dufour ? dufourProperties( hn ) : gradientEnhancedProperties( hn );
-      const std::vector< double > stationProperties = stationCard( hn,
-                                                                   { 0.0, 1.0 },
-                                                                   dufour ? dufourBulk : neoHookeDamageBulk );
-
-      Eigen::VectorXd Q = makeDisplacementsAndFaceFields< Faces >( dufour ? 6e-3 : 3e-3,
-                                                                   1,
-                                                                   dufour ? 0.05 : 3e-3,
-                                                                   dufour ? 0.02 : 5e-3 );
-      commonSurfaceGradient( Q, Eigen::Vector3d( 0.002, -0.001, 0.004 ) );
-
-      const auto faces    = evaluate< Faces, 3, 8 >( coordinates, faceProperties, Q, name );
-      const auto stations = evaluate< Stations, 3, 8 >( coordinates, stationProperties, Q, name );
-
-      constexpr int nDofD = 24;
-      constexpr int nDofA = 4;
-
-      throwExceptionOnFailure( faces.residual.head( nDofD ).norm() > 0.0, name + ": the test needs a residual." );
-
-      // the nonlocal equations of both faces are the same
-      throwExceptionOnFailure( ( faces.residual.tail( 2 * nDofA ) - stations.residual.tail( 2 * nDofA ) ).norm() <=
-                                 1e-9 * std::max( 1e-3, faces.residual.tail( 2 * nDofA ).norm() ),
-                               name + ": the nonlocal residuals of two stations are not the ones of the faces." );
-
-      // the virtual work of displacements with a common surface gradient of the faces is the same
-      for ( int pattern = 0; pattern < 4; ++pattern ) {
-        Eigen::VectorXd virtualDisplacement = makeDisplacements< Faces::sizeLoadVector >( 1.0, pattern + 3 );
-        virtualDisplacement.tail( 2 * nDofA ).setZero();
-        commonSurfaceGradient( virtualDisplacement, Eigen::Vector3d( 0.3, -0.2, 0.5 * pattern ) );
-
-        const double workFaces    = faces.residual.dot( virtualDisplacement );
-        const double workStations = stations.residual.dot( virtualDisplacement );
-
-        throwExceptionOnFailure( std::abs( workFaces - workStations ) <= 1e-8 * std::max( 1.0, std::abs( workFaces ) ),
-                                 name + ": the virtual work of two stations is not the one of the faces, " +
-                                   std::to_string( workStations ) + " against " + std::to_string( workFaces ) + "." );
-      }
-
-      // the two elements are different elements: without a common surface gradient the residuals of the
-      // displacements are not the same where the faces carry different surface stresses
-    }
-  }
-
   /// the card of the two-sided graded gradient-enhanced layer, with the flag of the tangential gradient
   std::vector< double > twoSidedStationCard( double                       thickness,
                                              const std::vector< double >& positions,
@@ -1193,6 +1078,55 @@ namespace {
     std::vector< double > card = stationCard( thickness, positions, bulk );
     card.push_back( double( tangentialGradient ) );
     return card;
+  }
+
+  /**
+   * The exact solution of plane strain for a homogeneous strip (K = 3500, G = 1500, thickness 0.02, z0 = 3e-5,
+   * g = 2e-3; derived with sympy) has the face tractions 4.0 and -1.0, independently of x. The layer with a
+   * nonlocal field at every station reproduces them to the accuracy of the trapezoidal integration of the stations
+   * through the thickness, without damage (here the exactness is not limited by the integration, because the layer is
+   * homogeneous).
+   */
+  void testStationFieldsElementReproducesPlaneStrainTractions()
+  {
+    constexpr double h = 0.02, scale = 1e-5, z0 = 3e-5 * scale, g = 2e-3 * scale;
+
+    for ( const int nStations : { 3, 5 } ) {
+      std::vector< double > positions;
+      for ( int s = 0; s < nStations; ++s )
+        positions.push_back( double( s ) / double( nStations - 1 ) );
+
+      for ( const double width : { 0.2, 0.05 } ) {
+        const auto tractionsOf = [&]( int tangentialGradient ) {
+          const auto card = twoSidedStationCard( h, positions, neoHookeDamageBulk, tangentialGradient );
+          return nStations == 3
+                   ? patchTractions< GYHInterfaceFiniteElementFiniteStrain< 2, 4, 3 > >( card,
+                                                                                         gradientEnhancedMaterial,
+                                                                                         h,
+                                                                                         z0,
+                                                                                         g,
+                                                                                         width )
+                   : patchTractions< GYHInterfaceFiniteElementFiniteStrain< 2, 4, 5 > >( card,
+                                                                                         gradientEnhancedMaterial,
+                                                                                         h,
+                                                                                         z0,
+                                                                                         g,
+                                                                                         width );
+        };
+
+        const auto   exact          = tractionsOf( 1 );
+        const double expectedNormal = 8.25 * scale * ( z0 + g * 3 * width ) / z0;
+
+        throwExceptionOnFailure( std::abs( exact.bottomShear + 4.0 * scale ) < 1e-5 * 4.0 * scale,
+                                 "The element with fields at the stations has not the exact traction of the bottom "
+                                 "face." );
+        throwExceptionOnFailure( std::abs( exact.topShear + 1.0 * scale ) < 1e-5 * 4.0 * scale,
+                                 "The element with fields at the stations has not the exact traction of the top "
+                                 "face." );
+        throwExceptionOnFailure( std::abs( exact.topNormal - expectedNormal ) < 1e-5 * expectedNormal,
+                                 "The element with fields at the stations has not the exact normal traction." );
+      }
+    }
   }
 
   /// The two-sided element with a nonlocal field at every station: the tangent over the displacements and fields.
@@ -1206,7 +1140,7 @@ namespace {
     using Element3d16 = GYHInterfaceFiniteElementFiniteStrain< 3, 16, 3 >;
     using Element2d   = GYHInterfaceFiniteElementFiniteStrain< 2, 4, 4 >;
 
-    // without the closure of the tangential gradient of the correction the tangent is exact
+    // without the tangential gradient of the correction the tangent is exact
     assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
                                                               twoSidedStationCard( hn,
                                                                                    { 0.0, 0.5, 1.0 },
@@ -1248,7 +1182,8 @@ namespace {
                                                               "GYH3 with the Dufour model",
                                                               "DUFOURMODEL" );
 
-    // with the closure, the tangent neglects the dependence of the derivative of the correction on the state
+    // with the tangential gradient, the tangent neglects the dependence of the derivative of the correction on the
+    // state
     assertTangentMatchesFiniteDifference< Element3d8, 3, 8 >( inclinedQuadrilateral( angle, gap ),
                                                               twoSidedStationCard( hn,
                                                                                    { 0.0, 0.5, 1.0 },
@@ -1256,7 +1191,7 @@ namespace {
                                                                                    1 ),
                                                               makeDisplacementsAndStationFields< Element3d8,
                                                                                                  3 >( 3e-3, 1, 3e-3 ),
-                                                              "GYH3 3D with the closure",
+                                                              "GYH3 3D with the tangential gradient",
                                                               gradientEnhancedMaterial,
                                                               1e-1 );
   }
@@ -1305,12 +1240,12 @@ namespace {
   /// A material with a different number of stations than the element has fields is refused.
   void testStationCountMismatchIsRefused()
   {
-    using Element = GYSInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
+    using Element = GYHInterfaceFiniteElementFiniteStrain< 3, 8, 3 >;
 
     bool refused = false;
     try {
       evaluate< Element, 3, 8 >( inclinedQuadrilateral( 0.0, 0.1 ),
-                                 stationCard( 0.1, { 0.0, 1.0 }, neoHookeDamageBulk ),
+                                 twoSidedStationCard( 0.1, { 0.0, 1.0 }, neoHookeDamageBulk, 0 ),
                                  makeDisplacementsAndStationFields< Element, 3 >( 3e-3, 1, 3e-3 ),
                                  gradientEnhancedMaterial );
     }
@@ -1325,9 +1260,7 @@ namespace {
     for ( const std::string name :
           { "ILINE2UL",     "IQUAD4UL",     "IQUAD8UL",     "YILINE2UL",    "YIQUAD4UL",    "YIQUAD8UL",
             "GYILINE2UL",   "GYIQUAD4UL",   "GYIQUAD8UL",   "GY2ILINE2UL",  "GY2IQUAD4UL",  "GY2IQUAD8UL",
-            "HILINE2UL",    "HIQUAD4UL",    "HIQUAD8UL",    "HYLINE2UL",    "HYQUAD4UL",    "HYQUAD8UL",
-            "GYS2ILINE2UL", "GYS2IQUAD4UL", "GYS2IQUAD8UL", "GYS3ILINE2UL", "GYS3IQUAD4UL", "GYS3IQUAD8UL",
-            "GYS4ILINE2UL", "GYS4IQUAD4UL", "GYS4IQUAD8UL", "GYH2ILINE2UL", "GYH2IQUAD4UL", "GYH2IQUAD8UL",
+            "HYLINE2UL",    "HYQUAD4UL",    "HYQUAD8UL",    "GYH2ILINE2UL", "GYH2IQUAD4UL", "GYH2IQUAD8UL",
             "GYH3ILINE2UL", "GYH3IQUAD4UL", "GYH3IQUAD8UL", "GYH4ILINE2UL", "GYH4IQUAD4UL", "GYH4IQUAD8UL" } )
       throwExceptionOnFailure( std::unique_ptr< MarmotElement >(
                                  MarmotLibrary::MarmotElementFactory::createElement( name, 1 ) ) != nullptr,
@@ -1356,13 +1289,11 @@ int main()
                                                    testCoincidentFacesAreRejected,
                                                    testInvalidMaterialsAreRejected,
                                                    testMaterialAccessors,
-                                                   testGradedElementEqualsThePlainElementForAHomogeneousLayer,
-                                                   testGradedElementTangentMatchesFiniteDifference,
                                                    testGradedEquilibratedElementIsTheEquilibratedElement,
+                                                   testGradedEquilibratedElementReproducesExactPlaneStrainTractions,
                                                    testGradedEquilibratedElementTangentAndRotation,
-                                                   testStationFieldsElement,
-                                                   testTwoStationsAreTheFaceFieldsElement,
                                                    testTwoSidedStationFieldsElement,
+                                                   testStationFieldsElementReproducesPlaneStrainTractions,
                                                    testTwoStationsAreTheFaceFieldsElementExactly,
                                                    testStationCountMismatchIsRefused,
                                                    testRegistration };

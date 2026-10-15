@@ -32,15 +32,15 @@
  * station through the thickness, for a layer with a stiffness varying through the thickness.
  *
  * This file defines the formulation `Marmot::Elements::GradientEnhancedTwoSidedStationFieldsFormulation` and the
- * element `Marmot::Elements::GYHInterfaceFiniteElementFiniteStrain`. It is the two-sided counterpart of
- * `GYSInterfaceFiniteElementFiniteStrain`: the surface gradients of the top and of the bottom face are given to the
- * material separately, and a surface stress is returned for every face, as for the equilibrated elements. The
- * nonlocal fields and their equations are those of the element with one-sided kinematics.
+ * element `Marmot::Elements::GYHInterfaceFiniteElementFiniteStrain`. The surface gradients of the top and of the
+ * bottom face are given to the material separately, and a surface stress is returned for every face, as for the
+ * equilibrated elements. The nonlocal fields and their equations are those of the element with a nonlocal field
+ * for each face (`GradientEnhancedFaceFieldsFormulation`), generalized to any number of stations.
  */
 #pragma once
 
 #include "Marmot/GYInterfaceFiniteElementFiniteStrain.h"
-#include "Marmot/GYSInterfaceFiniteElementFiniteStrain.h"
+#include "Marmot/GradientEnhancedStationFieldsFormulation.h"
 #include "Marmot/MarmotGradedEquilibratedGradientEnhancedInterfaceMaterialFiniteStrain.h"
 
 #include <Eigen/Dense>

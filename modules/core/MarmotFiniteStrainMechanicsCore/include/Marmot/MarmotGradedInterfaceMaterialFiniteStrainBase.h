@@ -38,8 +38,8 @@
 /**
  * @brief Integration points through the thickness of a layer with finite-strain bulk materials.
  *
- * This is the part that all graded finite-strain interface materials share (see
- * MarmotGradedInterfaceMaterialFiniteStrain and MarmotGradedEquilibratedInterfaceMaterialFiniteStrain), with the
+ * This is the part that graded finite-strain interface materials share (see
+ * MarmotGradedEquilibratedInterfaceMaterialFiniteStrain), with the
  * update of a single point added to the points of MarmotGradedFiniteStrainLayer. The state variables are, for every
  * integration point through the thickness, the correction @f$w@f$ of its last converged state, followed by the
  * state variables of its bulk material.

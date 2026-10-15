@@ -60,24 +60,6 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           YInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
 
-  const static bool HILINE2_isRegistered = MarmotElementFactory::
-    registerElement( "HILINE2",
-                     makeFactoryFunction< GradedInterfaceFiniteElement< 2, 4 >,
-                                          FullIntegration,
-                                          GradedInterfaceFiniteElement< 2, 4 >::SectionType::Interface >() );
-
-  const static bool HIQUAD4_isRegistered = MarmotElementFactory::
-    registerElement( "HIQUAD4",
-                     makeFactoryFunction< GradedInterfaceFiniteElement< 3, 8 >,
-                                          FullIntegration,
-                                          GradedInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
-
-  const static bool HIQUAD8_isRegistered = MarmotElementFactory::
-    registerElement( "HIQUAD8",
-                     makeFactoryFunction< GradedInterfaceFiniteElement< 3, 16 >,
-                                          FullIntegration,
-                                          GradedInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
-
   const static bool HYLINE2_isRegistered = MarmotElementFactory::
     registerElement( "HYLINE2",
                      makeFactoryFunction< GradedYInterfaceFiniteElement< 2, 4 >,

@@ -63,12 +63,12 @@
  * gradient of the correction below. The test function is therefore built from the same operator as the strain, the
  * generalized stress is the derivative of the energy of the layer, and the tangent, condensed over the corrections,
  * is symmetric for an elastic layer. With two integration points at the faces (mode 2 of the profile) and without
- * the closure below, the response is identical to the one of the equilibrated material.
+ * the tangential gradient below, the response is identical to the one of the equilibrated material.
  *
  * @par Tangential gradient of the correction
  * The variational form has the terms @f$h \, \nabla_T u^1@f$, which are kept. The correction @f$u^1@f$ varies along
  * the surface because the strain of the layer does, through the jump of the displacement: its tangential gradient
- * is @f$\nabla_T [\![u]\!] = A^+ - A^-@f$. The material therefore uses the closure
+ * is @f$\nabla_T [\![u]\!] = A^+ - A^-@f$. The material therefore uses the tangential gradient
  * @f[
  *   \partial_r \varepsilon_q = \frac{1}{\ell} \mathrm{sym} \left( ( A^+ - A^- ) e_r \otimes n \right) , \qquad
  *   \partial_r w_q = \frac{\partial w_q}{\partial \varepsilon} \, \partial_r \varepsilon_q ,
@@ -81,11 +81,12 @@
  * traction term is present for a homogeneous layer as well, because a surface gradient of the jump produces a
  * tangential divergence of the stress there too. The response is therefore not the one of the equilibrated
  * material, which has neither term, unless the optional last material property (see
- * Marmot::Materials::ThicknessProfile) is zero, which switches the closure off. The derivative of the correction
- * is the one of the converged state of the increment, which is iterated until it does not change, and the tangent
- * neglects its own derivative, which is of the order of the second derivative of the stress.
+ * Marmot::Materials::ThicknessProfile) is zero, which switches the tangential gradient off. The derivative of the
+ * correction is the one of the converged state of the increment, which is iterated until it does not change, and the
+ * tangent neglects its own derivative, which is of the order of the second derivative of the stress.
  *
- * The material properties and the state variables are those of MarmotGradedInterfaceMaterialHypoElastic.
+ * The material properties are described in Marmot::Materials::ThicknessProfile. The state variables are the
+ * stress and the state variables of the bulk material of every integration point through the thickness.
  */
 class MarmotGradedXInterfaceMaterialHypoElastic : public MarmotGradedInterfaceMaterialHypoElasticBase {
 
