@@ -261,6 +261,71 @@ namespace {
                              "The stiffness of a patch of graded elements is not symmetric." );
   }
 
+  /**
+   * A strip of two elastic layers, whose faces are displaced such that the top face has u_z = z0 + g x and u_x = 0, and
+   * the bottom face is fixed, has an exact solution of plane strain, which is polynomial in the layers. It was derived
+   * with the computer algebra system sympy for the thickness 0.02, z0 = 3e-5, g = 2e-3, the lower layer E = 4000,
+   * nu = 0.3 of 40 % of the thickness and the upper layer E = 20000, nu = 0.2. The tractions of the faces do not depend
+   * on the element size, so that the nodal forces of an interior node of a patch, divided by the width of the
+   * elements, are the exact tractions. The tangential gradient of the correction of the microproblem is needed for the
+   * shear traction: without it the traction of the bottom face is off by 3 %, and the one of the top face by a factor.
+   */
+  void TestPatchReproducesExactPlaneStrainTractions()
+  {
+    constexpr int    nElements = 6;
+    constexpr int    nSide     = nElements + 1;
+    constexpr int    nDof      = 4 * nSide;
+    constexpr double h         = 0.02;
+    constexpr double z0        = 3e-5;
+    constexpr double g         = 2e-3;
+
+    std::vector< double > card = { h, 0, 3, 2, 2, 0.4, 4000., 0.3, 0.6, 20000., 0.2, 1.0 };
+
+    for ( const double width : { 0.2, 0.05, 0.01 } ) {
+      Eigen::VectorXd dUglobal = Eigen::VectorXd::Zero( nDof );
+      for ( int i = 0; i < nSide; i++ )
+        dUglobal( 2 * ( nSide + i ) + 1 ) = z0 + g * width * i;
+
+      Eigen::VectorXd P = Eigen::VectorXd::Zero( nDof );
+      for ( int e = 0; e < nElements; e++ ) {
+        const double                  x0 = width * e, x1 = width * ( e + 1 );
+        const std::array< double, 8 > coordinates = { x0, 0., x1, 0., x0, h, x1, h };
+
+        const int             global[4] = { e, e + 1, nSide + e, nSide + e + 1 };
+        std::vector< double > dU( 8 );
+        for ( int a = 0; a < 4; a++ )
+          for ( int i = 0; i < 2; i++ )
+            dU[2 * a + i] = dUglobal( 2 * global[a] + i );
+
+        std::vector< double > stateVars;
+        auto                  element = makeElement< GradedYInterfaceFiniteElement< 2, 4 > >( "LINEARELASTIC",
+                                                                             card,
+                                                                             coordinates.data(),
+                                                                             stateVars );
+        std::vector< double > U( 8, 0. ), Pe( 8, 0. ), Ke( 64, 0. );
+        element->computeKernels( U.data(), dU.data(), Pe.data(), Ke.data(), 0., 1. );
+
+        for ( int a = 0; a < 4; a++ )
+          for ( int i = 0; i < 2; i++ )
+            P( 2 * global[a] + i ) += Pe[2 * a + i];
+      }
+
+      // interior node 3 of the bottom and of the top side
+      const double bottomShear = P( 2 * 3 ) / width;
+      const double topShear    = P( 2 * ( nSide + 3 ) ) / width;
+      const double normal      = P( 2 * ( nSide + 3 ) + 1 ) / width;
+
+      const double expectedNormal = 14.809590973201692 * ( z0 + g * 3 * width ) / z0;
+
+      throwExceptionOnFailure( std::abs( bottomShear + 6.397097558074329 ) < 1e-5 * 6.4,
+                               "The shear traction of the bottom face differs from the exact plane strain solution." );
+      throwExceptionOnFailure( std::abs( topShear - 0.05012999813074583 ) < 1e-5 * 6.4,
+                               "The shear traction of the top face differs from the exact plane strain solution." );
+      throwExceptionOnFailure( std::abs( normal - expectedNormal ) < 1e-8 * expectedNormal,
+                               "The normal traction differs from the exact plane strain solution." );
+    }
+  }
+
   void TestElementsAreRegistered()
   {
     for ( const std::string name : { "HYLINE2", "HYQUAD4", "HYQUAD8" } ) {
@@ -280,6 +345,7 @@ int main()
                                                        TestTwoFacesAreEquilibratedElement2D,
                                                        TestTangentOfStackIsConsistent,
                                                        TestStiffnessOfPatchIsSymmetric,
+                                                       TestPatchReproducesExactPlaneStrainTractions,
                                                        TestElementsAreRegistered };
 
   executeTestsAndCollectExceptions( tests );
