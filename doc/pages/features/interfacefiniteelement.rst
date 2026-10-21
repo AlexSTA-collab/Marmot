@@ -78,6 +78,10 @@ Elements
    * - ``YIQUAD8``
      - 16
      - As ``IQUAD8``, with the equilibrated two-sided interface material
+   * - ``YIQUAD4_STABP_MINI``
+     - 8
+     - As ``YIQUAD4``, with an independent nodal pressure on the bottom side, a Brezzi-Pitkaranta stabilisation and a
+       condensed bubble, see :ref:`stabpressureinterfaceelement`
    * - ``IQUAD4UL``, ``IQUAD8UL``
      - 8, 16
      - As ``IQUAD4`` and ``IQUAD8`` at finite strain, with the finite-strain interface material

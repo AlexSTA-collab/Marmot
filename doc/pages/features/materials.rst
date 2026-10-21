@@ -21,6 +21,7 @@ This section contains the ready to use available material models.
   linearviscoelasticwiechert
   interfacematerialhypoelastic
   equilibratedinterfacematerialhypoelastic
+  stabpressureinterfaceelement
   equilibratedinterfacematerialfinitestrain
   gradedinterfacematerial
   vonmises
