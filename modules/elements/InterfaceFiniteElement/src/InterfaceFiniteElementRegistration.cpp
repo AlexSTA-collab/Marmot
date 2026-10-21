@@ -2,6 +2,7 @@
 #include "Marmot/MarmotElementFactory.h"
 #include "Marmot/MarmotFiniteElement.h"
 #include "Marmot/YInterfaceFiniteElement.h"
+#include "Marmot/YStabPressureMiniInterfaceFiniteElement.h"
 
 namespace Marmot::Elements::Registration {
 
@@ -77,5 +78,11 @@ namespace Marmot::Elements::Registration {
                      makeFactoryFunction< GradedYInterfaceFiniteElement< 3, 16 >,
                                           FullIntegration,
                                           GradedYInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
+
+  const static bool YIQUAD4_STABP_MINI_isRegistered = MarmotElementFactory::
+    registerElement( "YIQUAD4_STABP_MINI",
+                     makeFactoryFunction< YStabPressureMiniInterfaceFiniteElement< 3, 8 >,
+                                          FullIntegration,
+                                          YStabPressureMiniInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
 
 } // namespace Marmot::Elements::Registration

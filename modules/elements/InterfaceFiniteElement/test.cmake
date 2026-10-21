@@ -9,3 +9,6 @@ add_marmot_test("TestYInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestYInte
 
 # Tests for GradedYInterfaceFiniteElement
 add_marmot_test("TestGradedYInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestGradedYInterfaceFiniteElement.cpp" REQUIRES LinearElastic VonMises)
+
+# Tests for YStabPressureMiniInterfaceFiniteElement
+add_marmot_test("TestYStabPressureMiniInterfaceFiniteElement" "${CURR_TEST_SOURCE_DIR}/TestYStabPressureMiniInterfaceFiniteElement.cpp" REQUIRES LinearElastic VonMises)

@@ -144,6 +144,11 @@ namespace Marmot::Elements {
    * - optionally `nExtraDofs`, a static member with the number of degrees of freedom in addition to the displacements,
    *   which are placed after them in the vectors of the element, together with the static functions `nodeFields()` and
    *   `dofIndicesPermutationPattern()` that describe their place on the nodes,
+   * - optionally `computeElementKernels()`, a static function template that evaluates the whole element from the
+   *   total nodal values and their increment, the time and the time increment, and adds the contributions to the
+   *   residual and the tangent. A formulation with an unknown that couples the quadrature points, for instance an
+   *   internal degree of freedom that is condensed at the level of the element, has to provide it, and then needs
+   *   no `integrate()`,
    * - `integrate()`: a static function template that evaluates the material at a quadrature point from the
    *   total nodal displacements of the element and the increments of the interface displacement and of the surface
    *   gradient, updates the state variables of the
@@ -690,15 +695,20 @@ namespace Marmot::Elements {
     Eigen::Map< KeSizedMatrix >  Ke( Ke_ );
     Eigen::Map< RhsSized >       Pe( Pe_ );
 
-    for ( QuadraturePoint& qp : qps ) {
-      const InterfaceDisplSized       dU_GPs              = qp.interpolateToSides( dQ );
-      const InterfaceSurfaceGradSized dSurface_strain_GPs = qp.surfaceGradientsAtSides( dQ );
+    if constexpr ( requires { Formulation::computeElementKernels( *this, QTotal, dQ, time, dT, Pe, Ke ); } ) {
+      Formulation::computeElementKernels( *this, QTotal, dQ, time, dT, Pe, Ke );
+    }
+    else {
+      for ( QuadraturePoint& qp : qps ) {
+        const InterfaceDisplSized       dU_GPs              = qp.interpolateToSides( dQ );
+        const InterfaceSurfaceGradSized dSurface_strain_GPs = qp.surfaceGradientsAtSides( dQ );
 
-      // the shared material carries no per-quadrature-point state, so the characteristic length of
-      // THIS point has to be installed before every evaluation
-      material->setCharacteristicElementLength( qp.characteristicLength );
+        // the shared material carries no per-quadrature-point state, so the characteristic length of
+        // THIS point has to be installed before every evaluation
+        material->setCharacteristicElementLength( qp.characteristicLength );
 
-      Formulation::integrate( *this, qp, QTotal, dU_GPs, dSurface_strain_GPs, time, dT, Pe, Ke );
+        Formulation::integrate( *this, qp, QTotal, dU_GPs, dSurface_strain_GPs, time, dT, Pe, Ke );
+      }
     }
   }
 
