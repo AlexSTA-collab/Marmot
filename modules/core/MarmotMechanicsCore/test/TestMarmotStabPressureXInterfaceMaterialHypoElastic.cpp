@@ -272,13 +272,34 @@ namespace {
     throwExceptionOnFailure( thrown, "h = 0 must be rejected." );
   }
 
+  /// A zero increment after a plastic one leaves the stress where it is. The jump z enters the face strains as an
+  /// increment, so the local solve must not start from the z of the previous increment: applied to a zero increment it
+  /// would move the faces, and at a load reversal it has the wrong sign.
+  void testZeroIncrementAfterPlasticIncrementIsInert()
+  {
+    const std::vector< double > softPlastic = { 210000., 0.3, 0.2, 120., 0.1, 0.0, 0.0, 0 };
+    Material                    material( "VONMISES", softPlastic.data(), static_cast< int >( softPlastic.size() ), 1 );
+    material.setCharacteristicElementLength( 1.0 );
+
+    std::vector< double > stateVars = initialState( material );
+    const Result          loaded    = update( material, stateVars, makeStrain( 5.0, 2 ), 1.0e-1, normalTilt, tiltSeparation );
+    const Result          inert     = update(
+      material, stateVars, Vector21d::Zero(), 0.0, normalTilt, tiltSeparation, 1.0, 0.0 );
+
+    throwExceptionOnFailure( loaded.response.allFinite() && inert.response.allFinite(), "nan or inf." );
+    const double scale = std::max( 1.0, loaded.response.head< 21 >().norm() );
+    throwExceptionOnFailure( ( inert.response.head< 21 >() - loaded.response.head< 21 >() ).norm() / scale < 1e-8,
+                             "A zero increment changed the generalized stress." );
+  }
+
 } // namespace
 
 int main()
 {
   std::vector< std::function< void() > > tests = { testTangentIsTheDerivative,
                                                    testConstitutivePressureGivesAnElasticResponse,
-                                                   testRejectsIncompressibleAndNegativeThickness };
+                                                   testRejectsIncompressibleAndNegativeThickness,
+                                                   testZeroIncrementAfterPlasticIncrementIsInert };
   executeTestsAndCollectExceptions( tests );
   return 0;
 }

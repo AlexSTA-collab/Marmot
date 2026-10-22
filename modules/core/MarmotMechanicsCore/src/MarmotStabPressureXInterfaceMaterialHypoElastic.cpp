@@ -396,7 +396,11 @@ void MarmotStabPressureXInterfaceMaterialHypoElastic::computeStress( State&     
     return evaluation;
   };
 
-  Vector3d        z         = Eigen::Map< const Vector3d >( normalGradientJump );
+  // z enters the strain of both faces as an INCREMENT, like gBar, so the solve starts from zero. The committed z of the
+  // previous increment is not a starting guess for this one: at a load reversal it has the wrong sign, and at a zero
+  // increment it is applied as a strain increment to faces that should not move, which can make the return mapping of
+  // the base material fail before the first iteration. It is still stored for output.
+  Vector3d        z         = Vector3d::Zero();
   LocalEvaluation current   = evaluateLocal( z );
   bool            converged = current.rNorm <= localTolerance;
 
