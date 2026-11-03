@@ -16,3 +16,4 @@ build mixed         DisplacementMixedBubbleRegistration.cpp libMarmotMixed.so   
   -o "$OUT/libMarmotDRUCKERPRAGER.so") && echo "built libMarmotDRUCKERPRAGER.so"                      # DRUCKERPRAGER
 build psie-avg      Registration.cpp                        libMarmotPSIEAVG.so        # YIQUAD4_STABP_MINI_AVG
 build psie-squeeze  Registration.cpp                        libMarmotPSIESQ.so         # YIQUAD4_STABP_MINI_SQ
+build twophase      Registration.cpp                        libMarmotTWOPHASE.so       # YIQUAD4_TWOPHASE

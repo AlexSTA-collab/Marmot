@@ -11,6 +11,7 @@ loaded into EdelweissFE with `LD_PRELOAD`.
 | `druckerprager` | `DRUCKERPRAGER` | Drucker--Prager material with tension cap, linear hardening, closed-form return on every branch |
 | `psie-avg` | `YIQUAD4_STABP_MINI_AVG` | PSIE variant with the averaged pressure |
 | `psie-squeeze` | `YIQUAD4_STABP_MINI_SQ` | PSIE with the squeeze-flow term (Section 4.4.4 of the manuscript) |
+| `twophase` | `YIQUAD4_TWOPHASE` | EIE of a biphasic viscoelastic layer, each face with its own phase (Section 4.3.3) |
 
 `druckerprager/test_dp.cpp` checks the return mapping and its consistent tangent against finite differences.
 
