@@ -4,6 +4,9 @@
 #include "Marmot/MarmotExceptions.h"
 #include "Marmot/MarmotTypedefs.h"
 #include "Marmot/VonMisesConstants.h"
+#include <algorithm>
+#include <cstdlib>
+#include <string>
 
 namespace Marmot::Materials {
 
@@ -94,7 +97,12 @@ namespace Marmot::Materials {
       // compute return mapping direction
       Vector6d n = ContinuumMechanics::VoigtNotation::IDev * trialStress / rhoTrial;
 
-      while ( std::abs( g( dKappa ) ) > VonMisesConstants::innerNewtonTol ) {
+      // MARMOT_VONMISES_RELTOL=1 makes the tolerance relative to the trial stress, so that the round-off of a large
+      // trial stress (|g| ~ 1e-16 rhoTrial) does not exceed it; off by default (the absolute tolerance)
+      static const bool relTol = std::getenv( "MARMOT_VONMISES_RELTOL" ) != nullptr &&
+                                 std::string( std::getenv( "MARMOT_VONMISES_RELTOL" ) ) == "1";
+      const double gTol = VonMisesConstants::innerNewtonTol * ( relTol ? std::max( 1.0, rhoTrial ) : 1.0 );
+      while ( std::abs( g( dKappa ) ) > gTol ) {
 
         if ( counter == VonMisesConstants::nMaxInnerNewtonCycles ) {
           throw StressUpdateFailed( "return mapping failed to converge in VonMisesModel::computeStress" );
