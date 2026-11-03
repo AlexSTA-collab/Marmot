@@ -79,6 +79,12 @@ namespace Marmot::Elements::Registration {
                                           FullIntegration,
                                           GradedYInterfaceFiniteElement< 3, 16 >::SectionType::Interface >() );
 
+  const static bool YIQUAD4_BIPHASIC_isRegistered = MarmotElementFactory::
+    registerElement( "YIQUAD4_BIPHASIC",
+                     makeFactoryFunction< FacePropsYInterfaceFiniteElement< 3, 8 >,
+                                          FullIntegration,
+                                          FacePropsYInterfaceFiniteElement< 3, 8 >::SectionType::Interface >() );
+
   const static bool YIQUAD4_STABP_MINI_isRegistered = MarmotElementFactory::
     registerElement( "YIQUAD4_STABP_MINI",
                      makeFactoryFunction< YStabPressureMiniInterfaceFiniteElement< 3, 8 >,

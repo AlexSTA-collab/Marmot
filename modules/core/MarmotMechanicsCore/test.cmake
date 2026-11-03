@@ -72,3 +72,6 @@ add_marmot_test("TestMarmotGradedXInterfaceMaterialHypoElastic" "${CURR_TEST_SOU
 
 # Tests for MarmotStabPressureXInterfaceMaterialHypoElastic
 add_marmot_test("TestMarmotStabPressureXInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotStabPressureXInterfaceMaterialHypoElastic.cpp" REQUIRES LinearElastic VonMises)
+
+# Tests for MarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic
+add_marmot_test("TestMarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic" "${CURR_TEST_SOURCE_DIR}/TestMarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic.cpp" REQUIRES LinearElastic)

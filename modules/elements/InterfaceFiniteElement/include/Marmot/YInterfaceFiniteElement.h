@@ -40,6 +40,7 @@
 #pragma once
 
 #include "Marmot/InterfaceFiniteElementBase.h"
+#include "Marmot/MarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotEquilibratedXInterfaceMaterialHypoElastic.h"
 #include "Marmot/MarmotFastorTensorBasics.h"
 #include "Marmot/MarmotGradedXInterfaceMaterialHypoElastic.h"
@@ -522,6 +523,21 @@ namespace Marmot::Elements {
   using YInterfaceFiniteElement = InterfaceFiniteElementBase< nDim,
                                                               nNodes,
                                                               EquilibratedTwoSidedFormulation< nDim, nNodes > >;
+
+  /**
+   * @brief Equilibrated two-sided interface finite element whose two faces carry different bulk properties.
+   *
+   * The element has the formulation of YInterfaceFiniteElement with the material
+   * MarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic, for a layer whose two halves are different materials.
+   *
+   * @tparam nDim Spatial embedding dimension.
+   * @tparam nNodes Number of element nodes.
+   */
+  template < int nDim, int nNodes >
+  using FacePropsYInterfaceFiniteElement = InterfaceFiniteElementBase<
+    nDim,
+    nNodes,
+    EquilibratedTwoSidedFormulation< nDim, nNodes, MarmotEquilibratedXFacePropsInterfaceMaterialHypoElastic > >;
 
   /**
    * @brief Equilibrated two-sided interface finite element for a layer with a stiffness varying through the
