@@ -1,6 +1,6 @@
 # Solver of the IJES revision: Marmot and EdelweissFE at the tags the analyses were run with, the plug-ins of
 # Marmot/plugins/ijes-revision, and the conda environment of the workstation (env/linux-64.explicit.txt).
-#   docker build -t ijes-interface .        or    apptainer pull docker://ghcr.io/alexsta-collab/ijes-interface-reproducibility:2026-11
+#   docker build -t ijes-interface .        or    apptainer pull docker://ghcr.io/alexsta-collab/marmot:ijes-reproducibility-2026-11
 FROM mambaorg/micromamba:2.0.5
 
 ARG MARMOT_REPO=https://github.com/AlexSTA-collab/Marmot

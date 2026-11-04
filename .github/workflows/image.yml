@@ -1,8 +1,9 @@
 name: image
-# Build the solver image from the Dockerfile and publish it as ghcr.io/<owner>/ijes-interface-reproducibility:<tag>.
+# Build the solver image from the Dockerfile and publish it as ghcr.io/<owner>/<repository>:<tag> (on the Marmot fork:
+# ghcr.io/alexsta-collab/marmot:ijes-reproducibility-<date>). Runs on tags of the ijes-reproducibility branch only.
 on:
   push:
-    tags: ["v*"]
+    tags: ["ijes-reproducibility-*"]
   workflow_dispatch:
 
 permissions:

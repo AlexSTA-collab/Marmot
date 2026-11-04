@@ -1,5 +1,8 @@
 # Reproducibility package: a generalised interface model for inelastic interphases (IJES, revision 2026-11)
 
+Branch `ijes-reproducibility` of https://github.com/AlexSTA-collab/Marmot. It shares no history with the Marmot sources: the
+solver is built from the tags below, and this branch holds the job files, the scorer, the scores and the figure scripts.
+
 Every analysis of the revised manuscript can be rerun from this package, and every convergence figure and table rebuilt
 from its scores. It holds
 
@@ -27,9 +30,9 @@ The meshes (~300 MB) and the archived outputs of all analyses are on Zenodo and 
 
 ```bash
 # the solver (Docker or Apptainer)
-docker pull ghcr.io/alexsta-collab/ijes-interface-reproducibility:2026-11
-docker run --rm -it -v $PWD/work:/work ghcr.io/alexsta-collab/ijes-interface-reproducibility:2026-11 bash
-#   apptainer run docker://ghcr.io/alexsta-collab/ijes-interface-reproducibility:2026-11
+docker pull ghcr.io/alexsta-collab/marmot:ijes-reproducibility-2026-11
+docker run --rm -it -v $PWD/work:/work ghcr.io/alexsta-collab/marmot:ijes-reproducibility-2026-11 bash
+#   apptainer run docker://ghcr.io/alexsta-collab/marmot:ijes-reproducibility-2026-11
 
 # inside the container
 ijes fetch meshes                       # once
