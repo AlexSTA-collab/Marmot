@@ -1,0 +1,10 @@
+15:47:59 elastic/EIE load 4.48 -> 4.32 wall 0:10.74 maxrss_kB 2832336 failed=0
+15:49:04 elastic/resolved load 4.37 -> 6.39 wall 1:04.82 maxrss_kB 12274684 failed=0
+15:52:51 visco/EIE load 6.39 -> 6.77 wall 3:47.04 maxrss_kB 3044712 failed=0
+16:30:05 visco/resolved load 6.77 -> 8.09 wall 37:13.91 maxrss_kB 13982516 failed=0
+16:30:50 plastic/EIE load 8.09 -> 8.07 wall 0:45.42 maxrss_kB 3193464 failed=0
+16:32:11 plastic/PSIE load 8.07 -> 7.98 wall 1:20.44 maxrss_kB 3321536 failed=0
+17:15:09 plastic/resolved load 7.98 -> 7.30 wall 42:58.25 maxrss_kB 13000624 failed=0
+17:17:55 cyclic/PSIE load 7.30 -> 6.93 wall 2:45.63 maxrss_kB 3705880 failed=0
+18:12:05 cyclic/resolved load 6.93 -> 5.19 wall 54:10.13 maxrss_kB 15573560 failed=0
+ALLDONE 18:12:05 48 cores,  INTEL(R) XEON(R) PLATINUM 8558P

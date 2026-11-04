@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Run one EdelweissFE job directory as the paper's analyses were run on the workstation (~/psie26/run_job_*.sh):
+# Marmot of the tag, every plug-in of plugins/ijes-revision preloaded, and ijes/efe_run.py (roller tolerance 1.0, npydump output).
+# usage: ijes-run <job dir> [threads]        writes <job dir>/run.log
+set -e
+d=$1; export OMP_NUM_THREADS=${2:-${OMP_NUM_THREADS:-4}} PYTHONUNBUFFERED=1
+M=${MARMOT_PREFIX:-/opt/marmot}
+P=$M/lib/libMarmot.so.1
+for f in "$M"/plugins/*.so; do P=$P:$f; done
+cd "$d" && LD_PRELOAD=$P exec "${ENV_PREFIX:-/opt/env}/bin/python" -m ijes.efe_run 1.0 job.inp > run.log 2>&1

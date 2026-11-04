@@ -1,0 +1,6 @@
+# fetched from Zenodo or written by runs
+meshes/
+outputs/
+work/
+__pycache__/
+*.egg-info/

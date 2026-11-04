@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ijes-interface-reproducibility"
+version = "2026.11"
+description = "Job files, scorer and figure scripts of the IJES revision on the generalised interface model for inelastic interphases"
+requires-python = ">=3.10"
+
+[project.scripts]
+ijes = "ijes.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ijes*"]

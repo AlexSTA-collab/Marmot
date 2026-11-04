@@ -1,0 +1,110 @@
+*node
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nodes.inp
+*element, type=C3D8, provider=marmot, elset=bottom-body
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_elset_bottom.inp
+*element, type=C3D8, provider=marmot, elset=interface-bottom
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_elset_interface_bottom.inp
+*element, type=C3D8, provider=marmot, elset=interface-top
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_elset_interface_top.inp
+*element, type=C3D8, provider=marmot, elset=top-body
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_elset_top.inp
+*NSET, NSET=bottom-Z+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-Z+.inp
+*NSET, NSET=bottom-Y+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-Y+.inp
+*NSET, NSET=bottom-X+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-X+.inp
+*NSET, NSET=bottom-Z-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-Z-.inp
+*NSET, NSET=bottom-Y-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-Y-.inp
+*NSET, NSET=bottom-X-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_bottom-X-.inp
+*NSET, NSET=top-Z-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-Z-.inp
+*NSET, NSET=top-Y+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-Y+.inp
+*NSET, NSET=top-X-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-X-.inp
+*NSET, NSET=top-Z+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-Z+.inp
+*NSET, NSET=top-Y-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-Y-.inp
+*NSET, NSET=top-X+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_top-X+.inp
+*NSET, NSET=interphase-Z-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-Z-.inp
+*NSET, NSET=interphase-Y+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-Y+.inp
+*NSET, NSET=interphase-X-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-X-.inp
+*NSET, NSET=interphase-Z+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-Z+.inp
+*NSET, NSET=interphase-Y-
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-Y-.inp
+*NSET, NSET=interphase-X+
+*include, input=@IJES_ROOT@/meshes/full_layer_60/angle_0/height_0.06/include_nset_interphase-X+.inp
+*material, name=LinearElastic, id=body_top, provider=marmotmaterial
+ 200000, 0.3
+*material, name=LinearElastic, id=body_bottom, provider=marmotmaterial
+ 4000, 0.3
+*material, name=LinearElastic, id=layer_top, provider=marmotmaterial
+ 400000, 0.3
+*material, name=LinearElastic, id=layer_bottom, provider=marmotmaterial
+ 4000, 0.3
+*section, name=s0, material=body_bottom, type=solid
+bottom-body
+*section, name=s1, material=body_top, type=solid
+top-body
+*section, name=s2, material=layer_bottom, type=solid
+interface-bottom
+*section, name=s3, material=layer_top, type=solid
+interface-top
+*job, name=BiphasicReference_job, domain=3d
+*solver, solver=NISTParallel, name=theSolver
+*fieldOutput
+>>perNode, elSet=top-body, field=displacement, result=U, name=displacement_top
+>>perNode, elSet=top-body, field=displacement, result=P, name=reaction_top
+>>perElement, elSet=top-body, quadraturePoint=0:8, result=stress, name=stress_top, f(x)='np.mean(x,axis=1)'
+>>perNode, elSet=bottom-body, field=displacement, result=U, name=displacement_bottom
+>>perNode, elSet=bottom-body, field=displacement, result=P, name=reaction_bottom
+>>perElement, elSet=bottom-body, quadraturePoint=0:8, result=stress, name=stress_bottom, f(x)='np.mean(x,axis=1)'
+>>perNode, elSet=interface-bottom, field=displacement, result=U, name=displacement_layer_bottom
+>>perElement, elSet=interface-bottom, quadraturePoint=0:8, result=stress, name=stress_layer_bottom, f(x)='np.mean(x,axis=1)'
+>>perNode, elSet=interface-top, field=displacement, result=U, name=displacement_layer_top
+>>perElement, elSet=interface-top, quadraturePoint=0:8, result=stress, name=stress_layer_top, f(x)='np.mean(x,axis=1)'
+*output, type=ensight, name=Cauchy_Full_model_top_0.06
+>>perNode, fieldOutput=displacement_top
+>>perNode, fieldOutput=reaction_top
+>>perElement, fieldOutput=stress_top
+>>configuration, overwrite=yes
+*output, type=ensight, name=Cauchy_Full_model_bottom_0.06
+>>perNode, fieldOutput=displacement_bottom
+>>perNode, fieldOutput=reaction_bottom
+>>perElement, fieldOutput=stress_bottom
+>>configuration, overwrite=yes
+*output, type=ensight, name=Cauchy_Full_model_layerbottom_0.06
+>>perNode, fieldOutput=displacement_layer_bottom
+>>perElement, fieldOutput=stress_layer_bottom
+>>configuration, overwrite=yes
+*output, type=ensight, name=Cauchy_Full_model_layertop_0.06
+>>perNode, fieldOutput=displacement_layer_top
+>>perElement, fieldOutput=stress_layer_top
+>>configuration, overwrite=yes
+*step, solver=theSolver
+maxInc=1, minInc=1, maxNumInc=1000, maxIter=1000, stepLength=1.0
+>>options, name=theSolver, extrapolation=off
+>>dirichlet, name = bottom,   nSet = bottom-Z-,  field=displacement, 1=0., 2=0, 3=0, f(t)=t
+>>dirichlet, name = top,      nSet = top-Z+,  field=displacement, 1=1e-2, 2=0, 3=0, f(t)=t
+>>dirichlet, name = bottom-LX, nSet = bottom-X-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = bottom-RX, nSet = bottom-X+, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = bottom-FY, nSet = bottom-Y-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = bottom-BY, nSet = bottom-Y+, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = top-LX, nSet = top-X-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = top-RX, nSet = top-X+, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = top-FY, nSet = top-Y-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = top-BY, nSet = top-Y+, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = interphase-LX, nSet = interphase-X-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = interphase-RX, nSet = interphase-X+, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = interphase-FY, nSet = interphase-Y-, field=displacement, 2=0, 3=0, f(t)=t
+>>dirichlet, name = interphase-BY, nSet = interphase-Y+, field=displacement, 2=0, 3=0, f(t)=t
