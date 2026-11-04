@@ -309,42 +309,6 @@ j2_refconv/n20/H0.1/h0.02	j2_refconv	j2	stiff	10	0.02	ref_n20	j2_refconv/n20/H0.
 j2_refconv/n20/H0.1/h0.04	j2_refconv	j2	stiff	10	0.04	ref_n20	j2_refconv/n20/H0.1/h0.04/job.inp			Fig H.28; reply Table R1, Figure R2	optA/bb_refs/bbhm04_ref20_H0.1
 j2_refconv/n20/H0.1/h0.06	j2_refconv	j2	stiff	10	0.06	ref_n20	j2_refconv/n20/H0.1/h0.06/job.inp			Fig H.28; reply Table R1, Figure R2	optA/bb_refs/bbhm06_ref20_H0.1
 j2_refconv/n20/H0.1/h0.08	j2_refconv	j2	stiff	10	0.08	ref_n20	j2_refconv/n20/H0.1/h0.08/job.inp			Fig H.28; reply Table R1, Figure R2	optA/bb_refs/bbhm08_ref20_H0.1
-dp/ref/stiff_psi0/a0/h0.01	dp	dp	stiff_psi0	0	0.01	ref	dp/ref/stiff_psi0/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.01
-dp/eie/stiff_psi0/a0/h0.01	dp	dp	stiff_psi0	0	0.01	eie	dp/eie/stiff_psi0/a0/h0.01/job.inp	dp/ref/stiff_psi0/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.01
-dp/ref/stiff_psi0/a0/h0.02	dp	dp	stiff_psi0	0	0.02	ref	dp/ref/stiff_psi0/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.02
-dp/eie/stiff_psi0/a0/h0.02	dp	dp	stiff_psi0	0	0.02	eie	dp/eie/stiff_psi0/a0/h0.02/job.inp	dp/ref/stiff_psi0/a0/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.02
-dp/ref/stiff_psi0/a0/h0.04	dp	dp	stiff_psi0	0	0.04	ref	dp/ref/stiff_psi0/a0/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.04
-dp/eie/stiff_psi0/a0/h0.04	dp	dp	stiff_psi0	0	0.04	eie	dp/eie/stiff_psi0/a0/h0.04/job.inp	dp/ref/stiff_psi0/a0/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.04
-dp/ref/stiff_psi0/a0/h0.06	dp	dp	stiff_psi0	0	0.06	ref	dp/ref/stiff_psi0/a0/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.06
-dp/eie/stiff_psi0/a0/h0.06	dp	dp	stiff_psi0	0	0.06	eie	dp/eie/stiff_psi0/a0/h0.06/job.inp	dp/ref/stiff_psi0/a0/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.06
-dp/ref/stiff_psi0/a0/h0.08	dp	dp	stiff_psi0	0	0.08	ref	dp/ref/stiff_psi0/a0/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.08
-dp/eie/stiff_psi0/a0/h0.08	dp	dp	stiff_psi0	0	0.08	eie	dp/eie/stiff_psi0/a0/h0.08/job.inp	dp/ref/stiff_psi0/a0/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.08
-dp/ref/stiff_psi0/a0/h0.1	dp	dp	stiff_psi0	0	0.1	ref	dp/ref/stiff_psi0/a0/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_0/h_0.1
-dp/eie/stiff_psi0/a0/h0.1	dp	dp	stiff_psi0	0	0.1	eie	dp/eie/stiff_psi0/a0/h0.1/job.inp	dp/ref/stiff_psi0/a0/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_0/h_0.1
-dp/ref/stiff_psi0/a10/h0.01	dp	dp	stiff_psi0	10	0.01	ref	dp/ref/stiff_psi0/a10/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.01
-dp/eie/stiff_psi0/a10/h0.01	dp	dp	stiff_psi0	10	0.01	eie	dp/eie/stiff_psi0/a10/h0.01/job.inp	dp/ref/stiff_psi0/a10/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.01
-dp/ref/stiff_psi0/a10/h0.02	dp	dp	stiff_psi0	10	0.02	ref	dp/ref/stiff_psi0/a10/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.02
-dp/eie/stiff_psi0/a10/h0.02	dp	dp	stiff_psi0	10	0.02	eie	dp/eie/stiff_psi0/a10/h0.02/job.inp	dp/ref/stiff_psi0/a10/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.02
-dp/ref/stiff_psi0/a10/h0.04	dp	dp	stiff_psi0	10	0.04	ref	dp/ref/stiff_psi0/a10/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.04
-dp/eie/stiff_psi0/a10/h0.04	dp	dp	stiff_psi0	10	0.04	eie	dp/eie/stiff_psi0/a10/h0.04/job.inp	dp/ref/stiff_psi0/a10/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.04
-dp/ref/stiff_psi0/a10/h0.06	dp	dp	stiff_psi0	10	0.06	ref	dp/ref/stiff_psi0/a10/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.06
-dp/eie/stiff_psi0/a10/h0.06	dp	dp	stiff_psi0	10	0.06	eie	dp/eie/stiff_psi0/a10/h0.06/job.inp	dp/ref/stiff_psi0/a10/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.06
-dp/ref/stiff_psi0/a10/h0.08	dp	dp	stiff_psi0	10	0.08	ref	dp/ref/stiff_psi0/a10/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.08
-dp/eie/stiff_psi0/a10/h0.08	dp	dp	stiff_psi0	10	0.08	eie	dp/eie/stiff_psi0/a10/h0.08/job.inp	dp/ref/stiff_psi0/a10/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.08
-dp/ref/stiff_psi0/a10/h0.1	dp	dp	stiff_psi0	10	0.1	ref	dp/ref/stiff_psi0/a10/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_psi0/ref/angle_10/h_0.1
-dp/eie/stiff_psi0/a10/h0.1	dp	dp	stiff_psi0	10	0.1	eie	dp/eie/stiff_psi0/a10/h0.1/job.inp	dp/ref/stiff_psi0/a10/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_psi0/eie/angle_10/h_0.1
-dp_refconv/n5/stiff_psi0/h0.01	dp_refconv	dp	stiff_psi0	10	0.01	ref_n5	dp_refconv/n5/stiff_psi0/h0.01/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.01
-dp_refconv/n5/stiff_psi0/h0.02	dp_refconv	dp	stiff_psi0	10	0.02	ref_n5	dp_refconv/n5/stiff_psi0/h0.02/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.02
-dp_refconv/n5/stiff_psi0/h0.04	dp_refconv	dp	stiff_psi0	10	0.04	ref_n5	dp_refconv/n5/stiff_psi0/h0.04/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.04
-dp_refconv/n5/stiff_psi0/h0.06	dp_refconv	dp	stiff_psi0	10	0.06	ref_n5	dp_refconv/n5/stiff_psi0/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.06
-dp_refconv/n5/stiff_psi0/h0.08	dp_refconv	dp	stiff_psi0	10	0.08	ref_n5	dp_refconv/n5/stiff_psi0/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.08
-dp_refconv/n5/stiff_psi0/h0.1	dp_refconv	dp	stiff_psi0	10	0.1	ref_n5	dp_refconv/n5/stiff_psi0/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n5/angle_10/h_0.1
-dp_refconv/n10/stiff_psi0/h0.01	dp_refconv	dp	stiff_psi0	10	0.01	ref_n10	dp_refconv/n10/stiff_psi0/h0.01/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.01
-dp_refconv/n10/stiff_psi0/h0.02	dp_refconv	dp	stiff_psi0	10	0.02	ref_n10	dp_refconv/n10/stiff_psi0/h0.02/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.02
-dp_refconv/n10/stiff_psi0/h0.04	dp_refconv	dp	stiff_psi0	10	0.04	ref_n10	dp_refconv/n10/stiff_psi0/h0.04/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.04
-dp_refconv/n10/stiff_psi0/h0.06	dp_refconv	dp	stiff_psi0	10	0.06	ref_n10	dp_refconv/n10/stiff_psi0/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.06
-dp_refconv/n10/stiff_psi0/h0.08	dp_refconv	dp	stiff_psi0	10	0.08	ref_n10	dp_refconv/n10/stiff_psi0/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.08
-dp_refconv/n10/stiff_psi0/h0.1	dp_refconv	dp	stiff_psi0	10	0.1	ref_n10	dp_refconv/n10/stiff_psi0/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_psi0/refconv/n10/angle_10/h_0.1
 dp/ref/stiff_dp/a0/h0.01	dp	dp	stiff_psi10	0	0.01	ref	dp/ref/stiff_dp/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_dp/ref/angle_0/h_0.01
 dp/eie/stiff_dp/a0/h0.01	dp	dp	stiff_psi10	0	0.01	eie	dp/eie/stiff_dp/a0/h0.01/job.inp	dp/ref/stiff_dp/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_stiff_dp/eie/angle_0/h_0.01
 dp/ref/stiff_dp/a0/h0.02	dp	dp	stiff_psi10	0	0.02	ref	dp/ref/stiff_dp/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_stiff_dp/ref/angle_0/h_0.02
@@ -381,42 +345,6 @@ dp_refconv/n10/stiff_dp/h0.04	dp_refconv	dp	stiff_psi10	10	0.04	ref_n10	dp_refco
 dp_refconv/n10/stiff_dp/h0.06	dp_refconv	dp	stiff_psi10	10	0.06	ref_n10	dp_refconv/n10/stiff_dp/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_dp/refconv/n10/angle_10/h_0.06
 dp_refconv/n10/stiff_dp/h0.08	dp_refconv	dp	stiff_psi10	10	0.08	ref_n10	dp_refconv/n10/stiff_dp/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_dp/refconv/n10/angle_10/h_0.08
 dp_refconv/n10/stiff_dp/h0.1	dp_refconv	dp	stiff_psi10	10	0.1	ref_n10	dp_refconv/n10/stiff_dp/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_stiff_dp/refconv/n10/angle_10/h_0.1
-dp/ref/initial_psi0/a0/h0.01	dp	dp	initial_psi0	0	0.01	ref	dp/ref/initial_psi0/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.01
-dp/eie/initial_psi0/a0/h0.01	dp	dp	initial_psi0	0	0.01	eie	dp/eie/initial_psi0/a0/h0.01/job.inp	dp/ref/initial_psi0/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.01
-dp/ref/initial_psi0/a0/h0.02	dp	dp	initial_psi0	0	0.02	ref	dp/ref/initial_psi0/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.02
-dp/eie/initial_psi0/a0/h0.02	dp	dp	initial_psi0	0	0.02	eie	dp/eie/initial_psi0/a0/h0.02/job.inp	dp/ref/initial_psi0/a0/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.02
-dp/ref/initial_psi0/a0/h0.04	dp	dp	initial_psi0	0	0.04	ref	dp/ref/initial_psi0/a0/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.04
-dp/eie/initial_psi0/a0/h0.04	dp	dp	initial_psi0	0	0.04	eie	dp/eie/initial_psi0/a0/h0.04/job.inp	dp/ref/initial_psi0/a0/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.04
-dp/ref/initial_psi0/a0/h0.06	dp	dp	initial_psi0	0	0.06	ref	dp/ref/initial_psi0/a0/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.06
-dp/eie/initial_psi0/a0/h0.06	dp	dp	initial_psi0	0	0.06	eie	dp/eie/initial_psi0/a0/h0.06/job.inp	dp/ref/initial_psi0/a0/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.06
-dp/ref/initial_psi0/a0/h0.08	dp	dp	initial_psi0	0	0.08	ref	dp/ref/initial_psi0/a0/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.08
-dp/eie/initial_psi0/a0/h0.08	dp	dp	initial_psi0	0	0.08	eie	dp/eie/initial_psi0/a0/h0.08/job.inp	dp/ref/initial_psi0/a0/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.08
-dp/ref/initial_psi0/a0/h0.1	dp	dp	initial_psi0	0	0.1	ref	dp/ref/initial_psi0/a0/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_0/h_0.1
-dp/eie/initial_psi0/a0/h0.1	dp	dp	initial_psi0	0	0.1	eie	dp/eie/initial_psi0/a0/h0.1/job.inp	dp/ref/initial_psi0/a0/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_0/h_0.1
-dp/ref/initial_psi0/a10/h0.01	dp	dp	initial_psi0	10	0.01	ref	dp/ref/initial_psi0/a10/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.01
-dp/eie/initial_psi0/a10/h0.01	dp	dp	initial_psi0	10	0.01	eie	dp/eie/initial_psi0/a10/h0.01/job.inp	dp/ref/initial_psi0/a10/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.01
-dp/ref/initial_psi0/a10/h0.02	dp	dp	initial_psi0	10	0.02	ref	dp/ref/initial_psi0/a10/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.02
-dp/eie/initial_psi0/a10/h0.02	dp	dp	initial_psi0	10	0.02	eie	dp/eie/initial_psi0/a10/h0.02/job.inp	dp/ref/initial_psi0/a10/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.02
-dp/ref/initial_psi0/a10/h0.04	dp	dp	initial_psi0	10	0.04	ref	dp/ref/initial_psi0/a10/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.04
-dp/eie/initial_psi0/a10/h0.04	dp	dp	initial_psi0	10	0.04	eie	dp/eie/initial_psi0/a10/h0.04/job.inp	dp/ref/initial_psi0/a10/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.04
-dp/ref/initial_psi0/a10/h0.06	dp	dp	initial_psi0	10	0.06	ref	dp/ref/initial_psi0/a10/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.06
-dp/eie/initial_psi0/a10/h0.06	dp	dp	initial_psi0	10	0.06	eie	dp/eie/initial_psi0/a10/h0.06/job.inp	dp/ref/initial_psi0/a10/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.06
-dp/ref/initial_psi0/a10/h0.08	dp	dp	initial_psi0	10	0.08	ref	dp/ref/initial_psi0/a10/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.08
-dp/eie/initial_psi0/a10/h0.08	dp	dp	initial_psi0	10	0.08	eie	dp/eie/initial_psi0/a10/h0.08/job.inp	dp/ref/initial_psi0/a10/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.08
-dp/ref/initial_psi0/a10/h0.1	dp	dp	initial_psi0	10	0.1	ref	dp/ref/initial_psi0/a10/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_psi0/ref/angle_10/h_0.1
-dp/eie/initial_psi0/a10/h0.1	dp	dp	initial_psi0	10	0.1	eie	dp/eie/initial_psi0/a10/h0.1/job.inp	dp/ref/initial_psi0/a10/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_psi0/eie/angle_10/h_0.1
-dp_refconv/n5/initial_psi0/h0.01	dp_refconv	dp	initial_psi0	10	0.01	ref_n5	dp_refconv/n5/initial_psi0/h0.01/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.01
-dp_refconv/n5/initial_psi0/h0.02	dp_refconv	dp	initial_psi0	10	0.02	ref_n5	dp_refconv/n5/initial_psi0/h0.02/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.02
-dp_refconv/n5/initial_psi0/h0.04	dp_refconv	dp	initial_psi0	10	0.04	ref_n5	dp_refconv/n5/initial_psi0/h0.04/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.04
-dp_refconv/n5/initial_psi0/h0.06	dp_refconv	dp	initial_psi0	10	0.06	ref_n5	dp_refconv/n5/initial_psi0/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.06
-dp_refconv/n5/initial_psi0/h0.08	dp_refconv	dp	initial_psi0	10	0.08	ref_n5	dp_refconv/n5/initial_psi0/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.08
-dp_refconv/n5/initial_psi0/h0.1	dp_refconv	dp	initial_psi0	10	0.1	ref_n5	dp_refconv/n5/initial_psi0/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n5/angle_10/h_0.1
-dp_refconv/n10/initial_psi0/h0.01	dp_refconv	dp	initial_psi0	10	0.01	ref_n10	dp_refconv/n10/initial_psi0/h0.01/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.01
-dp_refconv/n10/initial_psi0/h0.02	dp_refconv	dp	initial_psi0	10	0.02	ref_n10	dp_refconv/n10/initial_psi0/h0.02/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.02
-dp_refconv/n10/initial_psi0/h0.04	dp_refconv	dp	initial_psi0	10	0.04	ref_n10	dp_refconv/n10/initial_psi0/h0.04/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.04
-dp_refconv/n10/initial_psi0/h0.06	dp_refconv	dp	initial_psi0	10	0.06	ref_n10	dp_refconv/n10/initial_psi0/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.06
-dp_refconv/n10/initial_psi0/h0.08	dp_refconv	dp	initial_psi0	10	0.08	ref_n10	dp_refconv/n10/initial_psi0/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.08
-dp_refconv/n10/initial_psi0/h0.1	dp_refconv	dp	initial_psi0	10	0.1	ref_n10	dp_refconv/n10/initial_psi0/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_psi0/refconv/n10/angle_10/h_0.1
 dp/ref/initial_dp/a0/h0.01	dp	dp	initial_psi10	0	0.01	ref	dp/ref/initial_dp/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_dp/ref/angle_0/h_0.01
 dp/eie/initial_dp/a0/h0.01	dp	dp	initial_psi10	0	0.01	eie	dp/eie/initial_dp/a0/h0.01/job.inp	dp/ref/initial_dp/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_initial_dp/eie/angle_0/h_0.01
 dp/ref/initial_dp/a0/h0.02	dp	dp	initial_psi10	0	0.02	ref	dp/ref/initial_dp/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_initial_dp/ref/angle_0/h_0.02
@@ -453,30 +381,6 @@ dp_refconv/n10/initial_dp/h0.04	dp_refconv	dp	initial_psi10	10	0.04	ref_n10	dp_r
 dp_refconv/n10/initial_dp/h0.06	dp_refconv	dp	initial_psi10	10	0.06	ref_n10	dp_refconv/n10/initial_dp/h0.06/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_dp/refconv/n10/angle_10/h_0.06
 dp_refconv/n10/initial_dp/h0.08	dp_refconv	dp	initial_psi10	10	0.08	ref_n10	dp_refconv/n10/initial_dp/h0.08/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_dp/refconv/n10/angle_10/h_0.08
 dp_refconv/n10/initial_dp/h0.1	dp_refconv	dp	initial_psi10	10	0.1	ref_n10	dp_refconv/n10/initial_dp/h0.1/job.inp			reply Table R1, Figure R3	plastic_bbar/dp/S75_initial_dp/refconv/n10/angle_10/h_0.1
-dp/ref/soft_psi0/a0/h0.01	dp	dp	soft_psi0	0	0.01	ref	dp/ref/soft_psi0/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.01
-dp/eie/soft_psi0/a0/h0.01	dp	dp	soft_psi0	0	0.01	eie	dp/eie/soft_psi0/a0/h0.01/job.inp	dp/ref/soft_psi0/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.01
-dp/ref/soft_psi0/a0/h0.02	dp	dp	soft_psi0	0	0.02	ref	dp/ref/soft_psi0/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.02
-dp/eie/soft_psi0/a0/h0.02	dp	dp	soft_psi0	0	0.02	eie	dp/eie/soft_psi0/a0/h0.02/job.inp	dp/ref/soft_psi0/a0/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.02
-dp/ref/soft_psi0/a0/h0.04	dp	dp	soft_psi0	0	0.04	ref	dp/ref/soft_psi0/a0/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.04
-dp/eie/soft_psi0/a0/h0.04	dp	dp	soft_psi0	0	0.04	eie	dp/eie/soft_psi0/a0/h0.04/job.inp	dp/ref/soft_psi0/a0/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.04
-dp/ref/soft_psi0/a0/h0.06	dp	dp	soft_psi0	0	0.06	ref	dp/ref/soft_psi0/a0/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.06
-dp/eie/soft_psi0/a0/h0.06	dp	dp	soft_psi0	0	0.06	eie	dp/eie/soft_psi0/a0/h0.06/job.inp	dp/ref/soft_psi0/a0/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.06
-dp/ref/soft_psi0/a0/h0.08	dp	dp	soft_psi0	0	0.08	ref	dp/ref/soft_psi0/a0/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.08
-dp/eie/soft_psi0/a0/h0.08	dp	dp	soft_psi0	0	0.08	eie	dp/eie/soft_psi0/a0/h0.08/job.inp	dp/ref/soft_psi0/a0/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.08
-dp/ref/soft_psi0/a0/h0.1	dp	dp	soft_psi0	0	0.1	ref	dp/ref/soft_psi0/a0/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_0/h_0.1
-dp/eie/soft_psi0/a0/h0.1	dp	dp	soft_psi0	0	0.1	eie	dp/eie/soft_psi0/a0/h0.1/job.inp	dp/ref/soft_psi0/a0/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_0/h_0.1
-dp/ref/soft_psi0/a10/h0.01	dp	dp	soft_psi0	10	0.01	ref	dp/ref/soft_psi0/a10/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.01
-dp/eie/soft_psi0/a10/h0.01	dp	dp	soft_psi0	10	0.01	eie	dp/eie/soft_psi0/a10/h0.01/job.inp	dp/ref/soft_psi0/a10/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.01
-dp/ref/soft_psi0/a10/h0.02	dp	dp	soft_psi0	10	0.02	ref	dp/ref/soft_psi0/a10/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.02
-dp/eie/soft_psi0/a10/h0.02	dp	dp	soft_psi0	10	0.02	eie	dp/eie/soft_psi0/a10/h0.02/job.inp	dp/ref/soft_psi0/a10/h0.02		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.02
-dp/ref/soft_psi0/a10/h0.04	dp	dp	soft_psi0	10	0.04	ref	dp/ref/soft_psi0/a10/h0.04/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.04
-dp/eie/soft_psi0/a10/h0.04	dp	dp	soft_psi0	10	0.04	eie	dp/eie/soft_psi0/a10/h0.04/job.inp	dp/ref/soft_psi0/a10/h0.04		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.04
-dp/ref/soft_psi0/a10/h0.06	dp	dp	soft_psi0	10	0.06	ref	dp/ref/soft_psi0/a10/h0.06/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.06
-dp/eie/soft_psi0/a10/h0.06	dp	dp	soft_psi0	10	0.06	eie	dp/eie/soft_psi0/a10/h0.06/job.inp	dp/ref/soft_psi0/a10/h0.06		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.06
-dp/ref/soft_psi0/a10/h0.08	dp	dp	soft_psi0	10	0.08	ref	dp/ref/soft_psi0/a10/h0.08/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.08
-dp/eie/soft_psi0/a10/h0.08	dp	dp	soft_psi0	10	0.08	eie	dp/eie/soft_psi0/a10/h0.08/job.inp	dp/ref/soft_psi0/a10/h0.08		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.08
-dp/ref/soft_psi0/a10/h0.1	dp	dp	soft_psi0	10	0.1	ref	dp/ref/soft_psi0/a10/h0.1/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_psi0/ref/angle_10/h_0.1
-dp/eie/soft_psi0/a10/h0.1	dp	dp	soft_psi0	10	0.1	eie	dp/eie/soft_psi0/a10/h0.1/job.inp	dp/ref/soft_psi0/a10/h0.1		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_psi0/eie/angle_10/h_0.1
 dp/ref/soft_dp/a0/h0.01	dp	dp	soft_psi10	0	0.01	ref	dp/ref/soft_dp/a0/h0.01/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_dp/ref/angle_0/h_0.01
 dp/eie/soft_dp/a0/h0.01	dp	dp	soft_psi10	0	0.01	eie	dp/eie/soft_dp/a0/h0.01/job.inp	dp/ref/soft_dp/a0/h0.01		Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/S75_soft_dp/eie/angle_0/h_0.01
 dp/ref/soft_dp/a0/h0.02	dp	dp	soft_psi10	0	0.02	ref	dp/ref/soft_dp/a0/h0.02/job.inp			Figs 23-25, Table L.7, Figs I.40-I.41, K.46	plastic_bbar/dp/R075_soft_dp/ref/angle_0/h_0.02

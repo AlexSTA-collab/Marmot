@@ -17,7 +17,7 @@ Numbers as in the revised manuscript; "reply" marks the figures and the table of
 | Fig 20, Fig H.30 | `j2/plot_reaction_H100.py`, `j2/render_deformed_H100.py` | `global/reaction_H100_smesh.json`, `global/reaction_H0p1_smesh.json` (from `j2/extract_reaction_2611.py`) | j2 |
 | Fig 21 | `j2/render_oscillation_H100.py` | EnSight output of `j2/oscillation/eie`, `j2/psie/stiff/a10/H100/h0.01` | j2 |
 | Fig 22, Fig H.31 | `cyclic/plot_cycle_H100.py` | `cyclic/H100`, `cyclic/H0.1` (`loop.npz` from `cyclic/loop2.py`, `err_*.json` from `cyclic/analyze.py`) | cyclic |
-| Figs 23-24, Table L.7 | `convergence/plot_dp_panels.py`, `convergence/make_rate_tables.py` | `convergence/dp/*.json` (scorer `scorers/score_dp.py`) | dp |
+| Figs 23-24, Table L.7 | `convergence/plot_visco.py` on the tables of `convergence/make_dp_figure_tables.py`, `convergence/make_rate_tables.py` | `convergence/dp/*_dp.json` (scorer `scorers/score_dp.py`) | dp |
 | Fig 25 | `dp/plot_dp_global.py`, `dp/extract_dp_global.py`, `dp/render_deformed_dp.py` | EnSight output of `dp/*/initial_dp/a10/h0.01` | dp |
 | Fig F.26 | `viscoelastic/regime60.py` (with `common/extract_regime.py`, `common/plot_regime.py`) | EnSight and npydump output | regime |
 | Fig G.27 | `viscoelastic/bochner60.py` | `regime/bochner60.json` | visco10 |
@@ -25,7 +25,7 @@ Numbers as in the revised manuscript; "reply" marks the figures and the table of
 | Fig H.29 | `reference/plot_psie_H.py` | `convergence/j2_scores_H100_sq.json` | j2 |
 | Figs I.32-I.35 | `convergence/plot_visco.py` | `single_reference/{elastic,visco*}_fixed_table_angle*.md` (from `viscoelastic/score_fixed60.py`) | elastic, visco0, visco10 |
 | Figs I.36-I.39 | `convergence/plot_visco.py` on `convergence/scores_to_tables.py --fixed` | `single_reference/j2_scores_fixed_H100.json` (from `j2/score_fixed.py`) | j2 |
-| Figs I.40-I.41 | `convergence/plot_dp_panels.py` | `single_reference/dp/*.json` (from `scorers/score_fixed_dp.py`) | dp |
+| Figs I.40-I.41 | `convergence/plot_visco.py` on the tables of `convergence/make_dp_figure_tables.py` | `single_reference/dp/*_dp.json` (from `scorers/score_fixed_dp.py`) | dp |
 | Figs J.42-J.44, Table J.2 | `inplane/inplane_study.py`, `inplane/plot_psie_inplane.py` | `inplane/inplane_scores.json` | inplane |
 | Figs K.45-K.46 | `edge/plot_edge_panels.py` | `edge/*.json` (from `edge/sweep60.py`) | elastic, visco10, biphasic, biphasic_visco, j2, dp |
 | Table 1 | typed from the logs | `costs/bench*.log` (wall time, peak memory; increments and iterations from each run.log) | bench |

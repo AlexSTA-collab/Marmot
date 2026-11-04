@@ -110,18 +110,16 @@ for a in (0, 10):
             rows.append(r)
 (HERE / "rates_j2.tex").write_text(table([r"$\alpha$", "element", "family"], rows))
 
-# Drucker--Prager interphase, EIE, the two flow rules the paper reports
-RULES = (("psi0", r"$30^\circ,0^\circ$"), ("dp", r"$30^\circ,10^\circ$"))
+# Drucker--Prager interphase, EIE, phi = 30 and psi = 10 (the case the paper reports)
 rows = []
 for a in (0, 10):
+    if rows:
+        rows.append(None)
     for fam in FAMS:
-        if rows:
-            rows.append(None)
-        for rule, name in RULES:
-            s = json.loads((DATA / "dp" / f"{fam}_{rule}.json").read_text())
-            r = [deg(a) if (fam, rule) == ("stiff", "psi0") else "", name, fam]
-            for i in range(3):
-                r += cells([s[f"eie/{a}/{h}"][i] for h in HS], floor=(fam == "soft"))   # the soft layer stays elastic: no rate
-            rows.append(r)
-(HERE / "rates_dp.tex").write_text(table([r"$\alpha$", r"$\varphi,\psi$", "family"], rows))
+        s = json.loads((DATA / "dp" / f"{fam}_dp.json").read_text())
+        r = [deg(a) if fam == "stiff" else "", fam]
+        for i in range(3):
+            r += cells([s[f"eie/{a}/{h}"][i] for h in HS], floor=(fam == "soft"))   # the soft layer stays elastic: no rate
+        rows.append(r)
+(HERE / "rates_dp.tex").write_text(table([r"$\alpha$", "family"], rows))
 print("wrote rates_elastic.tex, rates_biphasic.tex, rates_visco.tex, rates_j2.tex, rates_dp.tex")
