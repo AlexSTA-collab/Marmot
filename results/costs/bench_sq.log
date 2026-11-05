@@ -1,3 +1,0 @@
-21:28:44 plastic/PSIE load 4.26 -> 4.55 wall 1:20.11 maxrss_kB 3310068 inc 21 iter 35 cutbacks 0 failed=0
-21:31:48 cyclic/PSIE load 4.55 -> 6.56 wall 3:04.08 maxrss_kB 3712968 inc 25 iter 89 cutbacks 0 failed=0
-ALLDONE 21:33:03 osc 1

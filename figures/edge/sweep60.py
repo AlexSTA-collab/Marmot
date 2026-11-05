@@ -9,7 +9,7 @@ usage: sweep60.py <analysis> <out.json>
   biphasic             biphasic/runs60_as2605/c100/{full,supp,ref}          biphasic/errors.py measures (node_matched_errors)
   biphasic_visco       biphasic_visco/runs60/creep/{full,supp,ref}, last output, score_visco.py measures
 The roots of the shared-node reruns are given by EDGE_EV_JOBS (elastic/visco: <root>/{elastic,visco10}/{ifc,ref}),
-EDGE_PSIE and EDGE_EIE (<root>/<fam>/angle_10/H_100/h_*), EDGE_J2_REF (the J2 references, same layout), EDGE_BIPHASIC (<root>/{full,supp,ref}) and EDGE_BIPHASIC_VISCO."""
+EDGE_PSIE and EDGE_EIE (<root>/<fam>/angle_10/H_<EDGE_H, default 100>/h_*), EDGE_J2_REF (the J2 references, same layout), EDGE_BIPHASIC (<root>/{full,supp,ref}) and EDGE_BIPHASIC_VISCO."""
 import json
 import os
 import sys
@@ -60,8 +60,9 @@ elif what in ("eie", "psie"):
     B = REPRO / "plastic_bbar"
     M = {"eie": Path(os.environ.get("EDGE_EIE", B / "jobs" / "eie")), "psie": Path(os.environ.get("EDGE_PSIE", B / "jobs_sq" / "psie"))}[what]
     R = Path(os.environ.get("EDGE_J2_REF", B / "jobs" / "ref"))
-    sweep_measures(("stiff", "initial", "soft"), lambda f, h: (M / f / "angle_10" / "H_100" / f"h_{h}",
-                                                              R / f / "angle_10" / "H_100" / f"h_{h}"))
+    HH = "H_" + os.environ.get("EDGE_H", "100")   # EDGE_H=0.1: the J2 analyses of the revised paper
+    sweep_measures(("stiff", "initial", "soft"), lambda f, h: (M / f / "angle_10" / HH / f"h_{h}",
+                                                              R / f / "angle_10" / HH / f"h_{h}"))
 elif what == "dp":
     D = Path.home() / "psie26/plastic_bbar/dp"
     sweep_measures(("stiff", "initial"), lambda f, h: (D / f"S75_{f}_dp/eie/angle_10/h_{h}",

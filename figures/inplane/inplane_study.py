@@ -22,6 +22,7 @@ Runs (end of the loading):
                                                <dir>/legend_inplane.pdf, <dir>/contours_H<H>.pdf, inplane_scores.json
 """
 import json
+import os
 import sys
 from glob import glob
 from pathlib import Path
@@ -44,13 +45,20 @@ from ensight_reader_2611 import read_geo  # noqa: E402
 
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 LEVELS = {"L-1": 15, "L0": 30, "L1": 60, "L2": 120}
-HS = ("100", "0.1")
+# INPLANE_HS=0.1 and INPLANE_ELEMS=eie,psie restrict the study (the paper: H = 0.1, EIE and PSIE without the squeeze-flow term)
+HS = tuple(os.environ.get("INPLANE_HS", "100,0.1").split(","))
 ELEMENTS = {"eie": "EIE", "psie": r"PSIE, no squeeze flow", "sq": r"PSIE, squeeze flow"}
+ELEMENTS = {k: v for k, v in ELEMENTS.items() if k in os.environ.get("INPLANE_ELEMS", "eie,psie,sq").split(",")}
+if "sq" not in ELEMENTS:
+    ELEMENTS = {k: "PSIE" if k == "psie" else v for k, v in ELEMENTS.items()}
 STYLE = {"eie": ("#1f77b4", "o", "--"), "psie": ("#d62728", "s", ":"), "sq": ("#111111", "D", "-")}  # EIE, PSIE as in Fig. 20
 SUF = "0.01"
 
 
 def run(elem, H, lev):
+    # INPLANE_ROOT=<root>: the runs on the flat interface meshes, <root>/{eie,psie,psie_sq}/H_<H>/L<l>
+    if os.environ.get("INPLANE_ROOT"):
+        return Path(os.environ["INPLANE_ROOT"]) / {"eie": "eie", "psie": "psie", "sq": "psie_sq"}[elem] / f"H_{H}" / lev
     if elem == "eie" and H == "100" and lev == "L1":
         return HERE / "osc100" / "eie"
     root = {"eie": "eie_inplane", "psie": "psie_inplane", "sq": "psie_squeeze_frozen"}[elem]
@@ -132,7 +140,7 @@ fig.legend(handles=handles, loc="center", ncol=1, frameon=False, fontsize=13, ha
 fig.savefig(OUT / "legend_inplane.pdf")
 plt.close(fig)
 fig = plt.figure(figsize=(9.0, 0.45))                   # the same, in one row under the panels
-fig.legend(handles=handles, loc="center", ncol=3, frameon=False, fontsize=13, handlelength=2.4, columnspacing=2.0)
+fig.legend(handles=handles, loc="center", ncol=len(handles), frameon=False, fontsize=13, handlelength=2.4, columnspacing=2.0)
 fig.savefig(OUT / "legend_inplane_row.pdf")
 plt.close(fig)
 
@@ -193,11 +201,11 @@ def crop_square(img, frac):
 
 
 for H in HS:
-    fig = plt.figure(figsize=(14.0, 10.6))
-    gs = fig.add_gridspec(3, 6, width_ratios=[1, 1, 1, 1, 0.035, 0.22], wspace=0.04, hspace=0.12)
+    fig = plt.figure(figsize=(14.0, 10.6 * len(ELEMENTS) / 3))
+    gs = fig.add_gridspec(len(ELEMENTS), 6, width_ratios=[1, 1, 1, 1, 0.035, 0.22], wspace=0.04, hspace=0.12)
     allm = {el: {lev: pressure_mesh(el, H, lev) for lev in LEVELS} for el in ELEMENTS}
     lims = {}
-    for group in (("eie",), ("psie",), ("sq",)):  # one colour range per row
+    for group in ((el,) for el in ELEMENTS):  # one colour range per row
         vals = np.concatenate([interior_values(m) for el in group for m in allm[el].values()])
         mid = float(np.median(vals)); amp = float(np.percentile(np.abs(vals - mid), 98))
         for el in group:

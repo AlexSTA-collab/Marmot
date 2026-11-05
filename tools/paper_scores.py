@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """results/paper_scores.json: the error measures the paper reports for every interface-model case that `ijes score` can
 recompute (errors_end.measures: elastic, viscoelastic, J2, Drucker-Prager), keyed by case, [e_u, e_[u], e_t]. Read from
-the data behind the convergence figures and the tables of Appendix L (IJES_submission_Revision/tables/data).
+the data behind the convergence figures and the tables of Appendix J (IJES_submission_Revision/tables/data).
 usage: paper_scores.py <tables/data dir> <cases/index.tsv> <out.json>"""
 import csv
 import json
@@ -30,7 +30,7 @@ def md(name):
 paper = {}
 tab = {("elastic", 0): md("elastic_table_angle0.md"), ("elastic", 10): md("elastic_table_angle10.md"),
        ("visco0", 0): md("visco0_table_angle0.md"), ("visco10", 10): md("visco10_table_angle10.md")}
-j2 = json.loads((DATA / "j2_scores_H100_sq.json").read_text())
+j2 = json.loads((DATA / "j2_scores_H01.json").read_text())
 K = ("e_u_global", "e_jump", "e_traction")
 with open(INDEX) as fh:
     for r in csv.DictReader(fh, delimiter="\t"):

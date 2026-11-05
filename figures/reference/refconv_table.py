@@ -41,18 +41,17 @@ for layer, md, name in (("elastic", "elastic_table_angle10.md", "elastic, C3D8")
     b = [[ev[f"{layer}/{h}/succ/20"][k] for h in HS] for k in range(3)]
     row(name, "stiff", a, b, model_md(md))
 bb = json.loads((RP / "refinement/appendix_bbar/bbar.json").read_text())
-j2 = json.loads((DATA / "j2_scores_H100_sq.json").read_text())
+j2 = json.loads((DATA / "j2_scores_H01.json").read_text())   # H = 0.1 MPa, the J2 analyses of the paper
 K = ("e_u_global", "e_jump", "e_traction")
-for H, case in (("0.1", "$H=0.1$~MPa"), ("100", "$H=100$~MPa")):
+for H, case in (("0.1", "$H=0.1$~MPa"),):
     a = [[bb[f"{h}_{H}"]["succ"]["10"][k] for h in HS] for k in range(3)]
     b = [[bb[f"{h}_{H}"]["succ"]["20"][k] for h in HS] for k in range(3)]
     e = [[j2[f"psie/stiff/10/{H}/{h}"][K[k]] for h in HS] for k in range(3)]
     row("$J_2$, C3D8B" if H == "0.1" else "", case, a, b, e)
 rc = json.loads(Path(sys.argv[1]).read_text())
-for c, case in (("stiff_psi0", r"stiff, $\psi=0^\circ$"), ("stiff_dp", r"stiff, $\psi=10^\circ$"),
-                ("initial_psi0", r"initial, $\psi=0^\circ$"), ("initial_dp", r"initial, $\psi=10^\circ$")):
+for c, case in (("stiff_dp", "stiff"), ("initial_dp", "initial")):   # psi = 10 degrees, the Drucker-Prager layer of the paper
     a = [[rc[f"{c}/{h}/5-10"][k] for h in HS] for k in range(3)]
     b = [[rc[f"{c}/{h}/10-20"][k] for h in HS] for k in range(3)]
     eie = json.loads((DATA / "dp" / f"{c}.json").read_text())
     e = [[eie[f"eie/10/{h}"][k] for h in HS] for k in range(3)]
-    row("Drucker--Prager, C3D8" if c == "stiff_psi0" else "", case, a, b, e)
+    row("Drucker--Prager, C3D8" if c == "stiff_dp" else "", case, a, b, e)

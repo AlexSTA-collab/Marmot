@@ -1,10 +1,14 @@
+# Table 1 of the revised manuscript: each run alone with four threads (/usr/bin/time -v), stiff family, alpha = 10, h = 0.01.
+# elastic, viscoelastic: 27 Oct 2026 (bench/); Drucker-Prager: 31 Oct 2026 (bench/); J2 at H = 0.1: 4-5 Nov 2026 (bench01/).
 15:47:59 elastic/EIE load 4.48 -> 4.32 wall 0:10.74 maxrss_kB 2832336 failed=0
 15:49:04 elastic/resolved load 4.37 -> 6.39 wall 1:04.82 maxrss_kB 12274684 failed=0
 15:52:51 visco/EIE load 6.39 -> 6.77 wall 3:47.04 maxrss_kB 3044712 failed=0
 16:30:05 visco/resolved load 6.77 -> 8.09 wall 37:13.91 maxrss_kB 13982516 failed=0
-16:30:50 plastic/EIE load 8.09 -> 8.07 wall 0:45.42 maxrss_kB 3193464 failed=0
-16:32:11 plastic/PSIE load 8.07 -> 7.98 wall 1:20.44 maxrss_kB 3321536 failed=0
-17:15:09 plastic/resolved load 7.98 -> 7.30 wall 42:58.25 maxrss_kB 13000624 failed=0
-17:17:55 cyclic/PSIE load 7.30 -> 6.93 wall 2:45.63 maxrss_kB 3705880 failed=0
-18:12:05 cyclic/resolved load 6.93 -> 5.19 wall 54:10.13 maxrss_kB 15573560 failed=0
+16:02:27 dp/EIE load 30.73 -> 35.90 wall 1:19.83 maxrss_kB 3215640 failed=0
+16:18:35 dp/resolved load 35.90 -> 37.09 wall 16:07.39 maxrss_kB 13697168 failed=0
+16:55:51 plastic/EIE load 10.93 -> 12.67 wall 0:42.40 maxrss_kB 3187316 inc 21 iter 23 cutbacks 0 failed=0
+16:57:18 plastic/PSIE load 12.67 -> 13.33 wall 1:27.19 maxrss_kB 3324268 inc 21 iter 39 cutbacks 0 failed=0
+17:06:40 cyclic/PSIE load 13.33 -> 13.99 wall 9:22.33 maxrss_kB 3892156 inc 69 iter 218 cutbacks 12 failed=0
+19:26:02 plastic/resolved load (started 17:06, alone until 18:16, then with cyclic/resolved) wall 2:19:04 maxrss_kB 13155028 inc 110 iter 478 cutbacks 8 failed=0
+04:21:22 cyclic/resolved load 17.18 -> 7.56 wall 10:02:46 maxrss_kB 14778800 inc 428 iter 2184 cutbacks 38 failed=0 [parallel with plastic/resolved]
 ALLDONE 18:12:05 48 cores,  INTEL(R) XEON(R) PLATINUM 8558P

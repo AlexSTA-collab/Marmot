@@ -1,8 +1,9 @@
 {
  "base": "https://zenodo.org/records/<record id>/files",
  "files": {
-  "meshes": ["meshes.tar.gz"],
-  "outputs": ["elastic.tar.gz", "visco0.tar.gz", "visco10.tar.gz", "j2.tar.gz", "cyclic.tar.gz", "dp.tar.gz", "biphasic.tar.gz",
-              "biphasic_visco.tar.gz", "regime.tar.gz", "j2_refconv.tar.gz", "dp_refconv.tar.gz", "ev_refconv.tar.gz", "inplane.tar.gz", "bench.tar.gz"]
+  "meshes": ["meshes.tar.zst"],
+  "outputs": ["elastic.tar.zst", "visco0.tar.zst", "visco10.tar.zst", "j2.tar.zst", "cyclic.tar.zst", "dp.tar.zst", "biphasic.tar.zst",
+              "biphasic_visco.tar.zst", "regime.tar.zst", "j2_refconv.tar.zst", "dp_refconv.tar.zst", "ev_refconv.tar.zst", "inplane.tar.zst",
+              "bench.tar.zst"]
  }
 }

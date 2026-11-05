@@ -5,7 +5,7 @@ convergence figures are drawn from:
   data/elastic_table_angle{0,10}.md, data/visco0_table_angle0.md, data/visco10_table_angle10.md
       (reproducibility/rerun60/tables, written by rerun60/score60.py)
   data/biphasic_errors60.json   (reproducibility/biphasic/errors60.json, drawn by biphasic/plot_panels.py)
-  data/j2_scores_H100_sq.json   (reproducibility/plastic_bbar/scores_H100_sq.json)
+  data/j2_scores_H01.json   (H = 0.1 MPa, S_mesh, workstation ~/psie26/smesh_score/out/j2_scores_H01.json)
   data/dp/<family>_<rule>.json  (workstation ~/psie26/plastic_bbar/dp/fam_<family>_<rule>_cap/scores.json)
 A rate is left out (--) where the six errors lie below 1e-7, i.e. at the solver tolerance or at round-off, and for the
 soft Drucker--Prager layer at alpha = 0, which stays elastic.
@@ -96,8 +96,8 @@ for a in (0, 10):
             rows.append(r)
 (HERE / "rates_biphasic.tex").write_text(table([r"$\alpha$", r"$E^{+}/E^{-}$", r"$[C^{e}_{ijkl}]$"], rows))
 
-# J_2 interphase, H = 100 MPa, EIE and PSIE with the squeeze-flow term
-d = json.loads((DATA / "j2_scores_H100_sq.json").read_text())
+# J_2 interphase, H = 0.1 MPa, EIE and PSIE on the shared-node mesh
+d = json.loads((DATA / "j2_scores_H01.json").read_text())
 rows = []
 for a in (0, 10):
     for el, name in (("eie", "EIE"), ("psie", "PSIE")):
@@ -106,7 +106,7 @@ for a in (0, 10):
         for fam in FAMS:
             r = [deg(a) if (el, fam) == ("eie", "stiff") else "", name if fam == "stiff" else "", fam]
             for k in ("e_u_global", "e_jump", "e_traction"):
-                r += cells([d[f"{el}/{fam}/{a}/100/{h}"][k] for h in HS], floor=(fam == "soft" and (k != "e_traction" or el == "psie")))
+                r += cells([d[f"{el}/{fam}/{a}/0.1/{h}"][k] for h in HS], floor=(fam == "soft"))   # the soft layer: displacements at the floor, traction falling to it -- no rate
             rows.append(r)
 (HERE / "rates_j2.tex").write_text(table([r"$\alpha$", "element", "family"], rows))
 

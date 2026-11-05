@@ -5,7 +5,8 @@
   ijes score CASE                       error measures of an interface-model case against its reference case,
                                         next to the value the paper reports
   ijes sweep STUDY [-j N] [-t T]        run every case of a study, references first, then score them
-  ijes fetch meshes|outputs [--study S] download the meshes or the archived outputs of the paper (Zenodo)
+  ijes fetch meshes|outputs [--study S] download the meshes, or the archived outputs of the paper into the work
+                                        directory (Zenodo)
 
 A case is a row of cases/index.tsv. Its job file includes the meshes as @IJES_ROOT@/meshes/..., filled in when the
 job is copied to $IJES_WORK/<case> (default ./work), so it runs where the package is unpacked once the meshes are
@@ -78,12 +79,14 @@ def fetch(what, study):
     if not ZENODO:
         raise SystemExit("zenodo.json is missing: the record is not published yet")
     names = [n for n in ZENODO["files"][what] if study is None or n.startswith(study)]
+    # meshes.tar.zst holds meshes/<set>/..., unpacked into the package; <study>.tar.zst holds <case>/... (every file of the
+    # run as it ran), unpacked into the work directory, where `ijes score` reads it
     for n in names:
-        url, dst = f"{ZENODO['base']}/{n}?download=1", ROOT / ("meshes" if what == "meshes" else "outputs") / n
+        url, dst = f"{ZENODO['base']}/{n}?download=1", (ROOT if what == "meshes" else WORK) / n
         dst.parent.mkdir(parents=True, exist_ok=True)
         print("fetching", n, flush=True)
         urllib.request.urlretrieve(url, dst)
-        with tarfile.open(dst) as t:
+        with tarfile.open(dst) as t:   # zstd: tarfile of Python 3.14
             t.extractall(dst.parent, filter="data")
         dst.unlink()
 

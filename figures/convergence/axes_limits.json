@@ -1,0 +1,226 @@
+{
+ "elastic_matched/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.12290999999999999
+  ],
+  "displacement_jump": [
+   3.4039999999999998e-18,
+   0.107283
+  ],
+  "traction": [
+   3.8726666666666666e-17,
+   2.7
+  ]
+ },
+ "elastic_fixed/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.12290999999999999
+  ],
+  "displacement_jump": [
+   3.4039999999999998e-18,
+   0.107283
+  ],
+  "traction": [
+   3.8726666666666666e-17,
+   2.7
+  ]
+ },
+ "vm_eie_matched/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.0030006
+  ],
+  "displacement_jump": [
+   8.607e-18,
+   0.00250395
+  ],
+  "traction": [
+   4.1116666666666666e-17,
+   2.7
+  ]
+ },
+ "vm_eie_fixed/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.0030006
+  ],
+  "displacement_jump": [
+   8.607e-18,
+   0.00250395
+  ],
+  "traction": [
+   4.1116666666666666e-17,
+   2.7
+  ]
+ },
+ "vm_psie_matched/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.0030006
+  ],
+  "displacement_jump": [
+   8.561666666666666e-18,
+   0.00250395
+  ],
+  "traction": [
+   4.4939999999999997e-17,
+   2.7
+  ]
+ },
+ "vm_psie_fixed/angle_0": {
+  "global_relative_error": [
+   2.5043666666666668e-17,
+   0.0030006
+  ],
+  "displacement_jump": [
+   8.561666666666666e-18,
+   0.00250395
+  ],
+  "traction": [
+   4.4939999999999997e-17,
+   2.7
+  ]
+ },
+ "visco_matched/angle_0": {
+  "global_relative_error": [
+   1.0338666666666667e-17,
+   27.0
+  ],
+  "displacement_jump": [
+   3.334333333333333e-18,
+   1.33644
+  ],
+  "traction": [
+   1.4213666666666667e-15,
+   0.0142749
+  ]
+ },
+ "visco_fixed_comparison/angle_0": {
+  "global_relative_error": [
+   1.0338666666666667e-17,
+   27.0
+  ],
+  "displacement_jump": [
+   3.334333333333333e-18,
+   1.33644
+  ],
+  "traction": [
+   1.4213666666666667e-15,
+   0.0142749
+  ]
+ },
+ "elastic_matched/angle_10": {
+  "global_relative_error": [
+   9.342666666666666e-11,
+   0.12078
+  ],
+  "displacement_jump": [
+   5.15e-12,
+   0.10305
+  ],
+  "traction": [
+   7.257e-05,
+   2.7
+  ]
+ },
+ "elastic_fixed/angle_10": {
+  "global_relative_error": [
+   9.342666666666666e-11,
+   0.12078
+  ],
+  "displacement_jump": [
+   5.15e-12,
+   0.10305
+  ],
+  "traction": [
+   7.257e-05,
+   2.7
+  ]
+ },
+ "vm_eie_matched/angle_10": {
+  "global_relative_error": [
+   7.958e-12,
+   0.0031788
+  ],
+  "displacement_jump": [
+   1.1931333333333332e-15,
+   0.0040029
+  ],
+  "traction": [
+   9.412e-05,
+   2.7
+  ]
+ },
+ "vm_eie_fixed/angle_10": {
+  "global_relative_error": [
+   7.958e-12,
+   0.0031788
+  ],
+  "displacement_jump": [
+   1.1931333333333332e-15,
+   0.0040029
+  ],
+  "traction": [
+   9.412e-05,
+   2.7
+  ]
+ },
+ "vm_psie_matched/angle_10": {
+  "global_relative_error": [
+   7.946e-12,
+   0.0032046
+  ],
+  "displacement_jump": [
+   1.0093666666666667e-15,
+   0.0040023
+  ],
+  "traction": [
+   5.0883333333333335e-05,
+   2.7
+  ]
+ },
+ "vm_psie_fixed/angle_10": {
+  "global_relative_error": [
+   7.946e-12,
+   0.0032046
+  ],
+  "displacement_jump": [
+   1.0093666666666667e-15,
+   0.0040023
+  ],
+  "traction": [
+   5.0883333333333335e-05,
+   2.7
+  ]
+ },
+ "visco_matched/angle_10": {
+  "global_relative_error": [
+   5.383e-05,
+   26.9865
+  ],
+  "displacement_jump": [
+   2.2114666666666667e-05,
+   1.2920099999999999
+  ],
+  "traction": [
+   0.00010957333333333334,
+   0.267177
+  ]
+ },
+ "visco_fixed_comparison/angle_10": {
+  "global_relative_error": [
+   5.383e-05,
+   26.9865
+  ],
+  "displacement_jump": [
+   2.2114666666666667e-05,
+   1.2920099999999999
+  ],
+  "traction": [
+   0.00010957333333333334,
+   0.267177
+  ]
+ }
+}

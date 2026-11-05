@@ -1,42 +1,42 @@
 *node
 ** Our  nodes
 **
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nodes.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nodes.inp
 ********************************** E L E M E N T S ****************************
 *element, type=C3D8, provider=marmot, elset=bottom-body
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_elset_bottom.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_elset_bottom.inp
 
 *element, type=YIQUAD4, provider=marmot, elset=interface-body
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_elset_interface.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_elset_interface.inp
 
 *element, type=C3D8, provider=marmot, elset=top-body
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_elset_top.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_elset_top.inp
 
 ********************************** N O D E S E T S **********************************
 *NSET, NSET=bottom-Z+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-Z+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-Z+.inp
 *NSET, NSET=bottom-Y+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-Y+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-Y+.inp
 *NSET, NSET=bottom-X+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-X+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-X+.inp
 *NSET, NSET=bottom-Z-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-Z-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-Z-.inp
 *NSET, NSET=bottom-Y-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-Y-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-Y-.inp
 *NSET, NSET=bottom-X-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_bottom-X-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_bottom-X-.inp
 *NSET, NSET=top-Z-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-Z-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-Z-.inp
 *NSET, NSET=top-Y+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-Y+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-Y+.inp
 *NSET, NSET=top-X-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-X-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-X-.inp
 *NSET, NSET=top-Z+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-Z+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-Z+.inp
 *NSET, NSET=top-Y-
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-Y-.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-Y-.inp
 *NSET, NSET=top-X+
-*include, input=@IJES_ROOT@/meshes/if_L2/angle_10/height_0.01/include_nset_top-X+.inp
+*include, input=@IJES_ROOT@/meshes/flat_L2/angle_10/height_0.01/include_nset_top-X+.inp
 
 *material, name=LinearElastic, id=linearelastic_body_1, provider=marmotmaterial
 **Isotropic

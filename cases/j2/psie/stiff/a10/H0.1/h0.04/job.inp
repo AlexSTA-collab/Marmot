@@ -6,7 +6,7 @@
 *element, type=C3D8, provider=marmot, elset=bottom-body
 *include, input=@IJES_ROOT@/meshes/L1nt20/angle_10/height_0.04/include_elset_bottom.inp
 
-*element, type=YIQUAD4_STABP_MINI_SQ, provider=marmot, elset=interface-body
+*element, type=YIQUAD4_STABP_MINI, provider=marmot, elset=interface-body
 *include, input=@IJES_ROOT@/meshes/S_mesh/angle_10/height_0.04/include_elset_interface.inp
 
 *element, type=C3D8, provider=marmot, elset=top-body
