@@ -33,7 +33,7 @@ jobs:
           tags: |
             ${{ steps.name.outputs.image }}:${{ github.ref_type == 'tag' && github.ref_name || 'dev' }}
             ${{ steps.name.outputs.image }}:latest
-      - name: Smoke test: solver, plug-ins and one elastic case
+      - name: "Smoke test: solver, plug-ins and one elastic case"
         run: |
           docker run --rm ${{ steps.name.outputs.image }}:latest bash -c '
             python -c "import edelweissfe; print(edelweissfe.__file__)" &&
