@@ -1,4 +1,6 @@
-# Reproducibility package: a generalised interface model for inelastic interphases (IJES, revision 2026-11)
+# Reproducibility package: An inelastic imperfect interface model derived from the underlying interphase
+
+International Journal of Engineering Science, manuscript JENS-D-26-01640 (revision, November 2026).
 
 Branch `ijes-reproducibility` of https://github.com/AlexSTA-collab/Marmot. It shares no history with the Marmot sources: the
 solver is built from the tags below, and this branch holds the job files, the scorer, the scores and the figure scripts.
