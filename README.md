@@ -17,8 +17,9 @@ from its scores. It holds
   (`env/linux-64.explicit.txt`, 309 packages), Marmot (tag `ijes-revision-2026-11c`) and EdelweissFE (tag `ijes-revision-2026-11`), and the
   plug-ins of Marmot `plugins/ijes-revision` (C3D8B, the Drucker--Prager material, the PSIE).
 
-The meshes and the archived outputs of all analyses are on Zenodo (one zstd-compressed tar per study, see below) and are
-fetched by `ijes fetch`.
+The meshes and the archived outputs of all analyses (one zstd-compressed tar per study, see below) will be deposited on
+Zenodo; the record is not published yet. Until it is, they are available from the corresponding author on request, and
+`ijes fetch` stops with a message saying so. The scores in `results/` and the figure scripts need neither.
 
 ## Software
 
@@ -85,7 +86,7 @@ interface models in Table 1, which ran on the interface mesh `if_L1` of that dat
 ran with: the EIE of the J2 layer at H = 0.1 MPa uses `MARMOT_VONMISES_RELTOL=1` (relative tolerance of the return
 mapping, tag `ijes-revision-2026-11c`).
 
-## Zenodo deposit
+## Zenodo deposit (not published yet)
 
 `meshes.tar.zst` holds `meshes/<set>/angle_<a>/height_<h>/...`, the meshes the job files include. `<study>.tar.zst` holds
 `<case>/...`, every file of each run of the study as it ran (EnSight output, `run.log`, the job file with the paths of the
