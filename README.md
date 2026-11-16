@@ -17,9 +17,8 @@ from its scores. It holds
   (`env/linux-64.explicit.txt`, 309 packages), Marmot (tag `ijes-revision-2026-11c`) and EdelweissFE (tag `ijes-revision-2026-11`), and the
   plug-ins of Marmot `plugins/ijes-revision` (C3D8B, the Drucker--Prager material, the PSIE).
 
-The meshes and the archived outputs of all analyses (one zstd-compressed tar per study, see below) will be deposited on
-Zenodo; the record is not published yet. Until it is, they are available from the corresponding author on request, and
-`ijes fetch` stops with a message saying so. The scores in `results/` and the figure scripts need neither.
+The meshes and the raw outputs of the analyses are available from the corresponding author on request. The scores in
+`results/` and the figure scripts need neither.
 
 ## Software
 
@@ -39,11 +38,9 @@ docker run --rm -it -v $PWD/work:/work ghcr.io/alexsta-collab/marmot:ijes-reprod
 #   apptainer run docker://ghcr.io/alexsta-collab/marmot:ijes-reproducibility-2026-11
 
 # inside the container
-ijes fetch meshes                       # once
 ijes list --study elastic               # the cases of a study and the figure each one feeds
 ijes run elastic/ref/stiff/a10/h0.04 elastic/eie/stiff/a10/h0.04 -j 2
 ijes score elastic/eie/stiff/a10/h0.04  # e_u, e_[u], e_t, and the value the paper reports
-ijes fetch outputs --study j2            # or score the archived outputs of the paper without rerunning
 ijes sweep elastic -j 4                 # a whole thickness sweep: references, models, scores
 ```
 
@@ -85,9 +82,3 @@ in-plane study, which uses its own flat interface meshes, and the October timing
 interface models in Table 1, which ran on the interface mesh `if_L1` of that date (included for that table only). The `env` column of `cases/index.tsv` holds the settings a case
 ran with: the EIE of the J2 layer at H = 0.1 MPa uses `MARMOT_VONMISES_RELTOL=1` (relative tolerance of the return
 mapping, tag `ijes-revision-2026-11c`).
-
-## Zenodo deposit (not published yet)
-
-`meshes.tar.zst` holds `meshes/<set>/angle_<a>/height_<h>/...`, the meshes the job files include. `<study>.tar.zst` holds
-`<case>/...`, every file of each run of the study as it ran (EnSight output, `run.log`, the job file with the paths of the
-workstation). `SHA256SUMS` lists the checksums. Unpack by hand with `tar --zstd -xf <file>` or let `ijes fetch` do it.
